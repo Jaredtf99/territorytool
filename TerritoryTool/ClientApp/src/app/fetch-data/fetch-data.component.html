@@ -1,0 +1,22 @@
+<h1>Territorios</h1>
+
+<p *ngIf="!territories"><em>Cargando...</em></p>
+
+<table class='table' *ngIf="territories">
+  <thead>
+    <tr>
+      <th>Id</th>
+      <th>Code</th>
+      <th>Name</th>
+      <th>URL Mapa</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let territory of territories">
+      <td>{{ territory.id }}</td>
+      <td>{{ territory.code }}</td>
+      <td>{{ territory.name }}</td>
+      <td>{{ territory.mapUrl }}</td>
+    </tr>
+  </tbody>
+</table>

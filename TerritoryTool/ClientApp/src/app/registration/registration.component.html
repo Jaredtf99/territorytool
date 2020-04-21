@@ -1,0 +1,45 @@
+<link href="https://cdnjs.cloudflare.com/ajax/libs/simple-line-icons/2.4.1/css/simple-line-icons.min.css" rel="stylesheet">
+
+<div class="registration-form">
+
+  <form [formGroup]="userService.formModel" (ngSubmit)="register()" autocomplete="off">
+
+    <div class="form-icon">
+      <span><i class="fas fa-user-plus"></i></span>
+    </div>
+
+    <div class="form-group">
+      <input type="text" class="form-control item" placeholder="Nombre de usuario" formControlName="UserName">
+    </div>
+
+    <div *ngIf="(submitted || userService.formModel.get('UserName').dirty || userService.formModel.get('UserName').touched) && userService.formModel.get('UserName').errors" class="alert alert-danger">
+      <div *ngIf="userService.formModel.get('UserName').errors.required">Introduce el nombre de usuario</div>
+    </div>
+
+    <div formGroupName="Passwords">
+      <div class="form-group">
+        <input type="password" class="form-control item" placeholder="Contraseña" formControlName="Password">
+      </div>
+
+      <div *ngIf="(submitted || userService.formModel.get('Passwords.Password').dirty || userService.formModel.get('Passwords.Password').touched) && userService.formModel.get('Passwords.Password').errors" class="alert alert-danger">
+        <div *ngIf="userService.formModel.get('Passwords.Password').errors.required">Introduce una contraseña</div>
+        <div *ngIf="userService.formModel.get('Passwords.Password').errors.minlength">La contraseña debe tener minimo 4 caracteres</div>
+      </div>
+
+      <div class="form-group">
+        <input type="password" class="form-control item" placeholder="Repite la contraseña" formControlName="ConfirmPassword">
+      </div>
+
+      <div *ngIf="(submitted || userService.formModel.get('Passwords.ConfirmPassword').dirty || userService.formModel.get('Passwords.ConfirmPassword').touched) && userService.formModel.get('Passwords.ConfirmPassword').errors" class="alert alert-danger">
+        <div *ngIf="userService.formModel.get('Passwords.ConfirmPassword').errors.required">Repite la contraseña</div>
+        <div *ngIf="userService.formModel.get('Passwords.ConfirmPassword').errors.passwordMismatch">Las contraseñas no coinciden</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <button type="submit" class="btn btn-block create-account" [disabled]="!userService.formModel.valid">Regístrate</button>
+    </div>
+
+  </form>
+
+</div>
