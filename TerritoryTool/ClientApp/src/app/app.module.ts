@@ -18,6 +18,7 @@ import { LoginComponent } from './login/login.component';
 import { LoggedComponent } from './logged/logged.component';
 import { AuthGuard } from './auth/auth.guard';
 import { AuthInterceptor } from './auth/auth.interceptor';
+import { ForbiddenComponent } from './forbidden/forbidden.component';
 
 @NgModule({
   declarations: [
@@ -29,7 +30,8 @@ import { AuthInterceptor } from './auth/auth.interceptor';
     AddTerritoryComponent,
     RegistrationComponent,
     LoginComponent,
-    LoggedComponent
+    LoggedComponent,
+    ForbiddenComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -39,15 +41,16 @@ import { AuthInterceptor } from './auth/auth.interceptor';
     ReactiveFormsModule,
     RouterModule.forRoot([
       {
-        path: '', component: LoggedComponent, canActivate: [AuthGuard], children: [
+        path: '', component: LoggedComponent, canActivateChild: [AuthGuard], children: [
           { path: 'home', component: HomeComponent, },
           { path: 'counter', component: CounterComponent },
           { path: 'fetch-data', component: FetchDataComponent },
-          { path: 'add-territory', component: AddTerritoryComponent },
+          { path: 'add-territory', component: AddTerritoryComponent, data: {permittedRoles:['SuperAdmin']} },
           { path: 'registration', component: RegistrationComponent }
         ]
       },
-      { path: 'login', component: LoginComponent }
+      { path: 'login', component: LoginComponent },
+      { path: 'forbidden', component: ForbiddenComponent }
     ]),
     ToastrModule.forRoot({
       timeOut: 2000,

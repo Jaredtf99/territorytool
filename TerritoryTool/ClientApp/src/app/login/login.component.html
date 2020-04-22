@@ -12,7 +12,7 @@
         <input type="text" class="form-control item" placeholder="Usuario" #UserName="ngModel" name="UserName" [(ngModel)]="formModel.UserName">
       </div>
 
-      <div *ngIf="(submitted || userService.formModel.get('UserName').dirty || userService.formModel.get('UserName').touched) && userService.formModel.get('UserName').errors" class="alert alert-danger">
+      <div *ngIf="(userService.formModel.get('UserName').dirty || userService.formModel.get('UserName').touched) && userService.formModel.get('UserName').errors" class="alert alert-danger">
         <div *ngIf="userService.formModel.get('UserName').errors.required">Introduce el nombre de usuario</div>
       </div>
 
@@ -20,7 +20,7 @@
         <input type="password" class="form-control item" placeholder="Contraseña" #Password="ngModel" name="Password" [(ngModel)]="formModel.Password">
       </div>
 
-      <div *ngIf="(submitted || userService.formModel.get('UserName').dirty || userService.formModel.get('UserName').touched) && userService.formModel.get('UserName').errors" class="alert alert-danger">
+      <div *ngIf="(userService.formModel.get('UserName').dirty || userService.formModel.get('UserName').touched) && userService.formModel.get('UserName').errors" class="alert alert-danger">
         <div *ngIf="userService.formModel.get('UserName').errors.required">Introduce el nombre de usuario</div>
       </div>
 

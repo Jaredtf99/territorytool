@@ -40,4 +40,10 @@ export class UserService {
     return this.http.post(this.baseUrl + '/api/user/login', formData);
   }
 
+  roleMatch(allowedRoles: Array<string>): boolean {
+    const payload = JSON.parse(window.atob(localStorage.getItem('token').split('.')[1]));
+    const userRole = payload.role;
+    return allowedRoles.includes(userRole);
+  }
+
 }

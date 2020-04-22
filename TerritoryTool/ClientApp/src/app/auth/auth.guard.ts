@@ -1,19 +1,32 @@
 import { Injectable } from '@angular/core';
-import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, Router } from '@angular/router';
+import { ActivatedRouteSnapshot, RouterStateSnapshot, Router, CanActivateChild } from '@angular/router';
 import { Observable } from 'rxjs/Observable';
+import { UserService } from '../shared/user.service';
 
 
-@Injectable({
-})
-export class AuthGuard implements CanActivate {
+@Injectable()
+export class AuthGuard implements CanActivateChild {
 
-  constructor(private router: Router) { }
+  constructor(private router: Router, private userService: UserService) { }
 
-  canActivate(
+  canActivateChild(
     next: ActivatedRouteSnapshot,
     state: RouterStateSnapshot): boolean {
-    if (localStorage.getItem('token') != null)
+    if (localStorage.getItem('token') != null) {
+      const roles = next.data['permittedRoles'] as Array<string>;
+
+      if (roles) {
+        if (this.userService.roleMatch(roles))
+          return true;
+        else {
+          this.router.navigate(['/forbidden']);
+          return false;
+        }
+        
+      }
+
       return true;
+    }
     else {
       this.router.navigate(['/login']);
       return false;

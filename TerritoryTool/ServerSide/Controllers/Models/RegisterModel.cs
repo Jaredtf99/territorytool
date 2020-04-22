@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using TerritoryTool.Domain.Enums;
 
-namespace TerritoryTool.Models
+namespace TerritoryTool.Controllers.Models
 {
     public class RegisterModel
     {
         public string UserName { get; set; }
         public string Password { get; set; }
+        public RoleType Role { get; set; }
     }
 }

@@ -1,10 +1,8 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using TerritoryTool.Domain.Enums;
 using TerritoryTool.Persistence.Entities;
 using TerritoryTool.Persistence.Repositories.Interfaces;
 
@@ -34,7 +32,7 @@ namespace TerritoryTool.Controllers
         }
 
         [HttpPost("[action]")]
-        [Authorize]
+        [Authorize(Roles = "SuperAdmin, Admin")]
         public ActionResult AddTerritory(string code, string name, string mapUrl)
         {
             _logger.LogInformation("Adding territory...");

@@ -16,7 +16,7 @@ export class LoginComponent implements OnInit {
     Password: ''
   }
 
-  constructor(private userService:UserService, private router:Router, private toastr:ToastrService) { }
+  constructor(public userService:UserService, private router:Router, private toastr:ToastrService) { }
 
   ngOnInit() {
     if (localStorage.getItem('token') != null) {

@@ -12,7 +12,7 @@
       <input type="text" class="form-control item" placeholder="Nombre de usuario" formControlName="UserName">
     </div>
 
-    <div *ngIf="(submitted || userService.formModel.get('UserName').dirty || userService.formModel.get('UserName').touched) && userService.formModel.get('UserName').errors" class="alert alert-danger">
+    <div *ngIf="(userService.formModel.get('UserName').dirty || userService.formModel.get('UserName').touched) && userService.formModel.get('UserName').errors" class="alert alert-danger">
       <div *ngIf="userService.formModel.get('UserName').errors.required">Introduce el nombre de usuario</div>
     </div>
 
@@ -21,7 +21,7 @@
         <input type="password" class="form-control item" placeholder="Contraseña" formControlName="Password">
       </div>
 
-      <div *ngIf="(submitted || userService.formModel.get('Passwords.Password').dirty || userService.formModel.get('Passwords.Password').touched) && userService.formModel.get('Passwords.Password').errors" class="alert alert-danger">
+      <div *ngIf="(userService.formModel.get('Passwords.Password').dirty || userService.formModel.get('Passwords.Password').touched) && userService.formModel.get('Passwords.Password').errors" class="alert alert-danger">
         <div *ngIf="userService.formModel.get('Passwords.Password').errors.required">Introduce una contraseña</div>
         <div *ngIf="userService.formModel.get('Passwords.Password').errors.minlength">La contraseña debe tener minimo 4 caracteres</div>
       </div>
@@ -30,7 +30,7 @@
         <input type="password" class="form-control item" placeholder="Repite la contraseña" formControlName="ConfirmPassword">
       </div>
 
-      <div *ngIf="(submitted || userService.formModel.get('Passwords.ConfirmPassword').dirty || userService.formModel.get('Passwords.ConfirmPassword').touched) && userService.formModel.get('Passwords.ConfirmPassword').errors" class="alert alert-danger">
+      <div *ngIf="(userService.formModel.get('Passwords.ConfirmPassword').dirty || userService.formModel.get('Passwords.ConfirmPassword').touched) && userService.formModel.get('Passwords.ConfirmPassword').errors" class="alert alert-danger">
         <div *ngIf="userService.formModel.get('Passwords.ConfirmPassword').errors.required">Repite la contraseña</div>
         <div *ngIf="userService.formModel.get('Passwords.ConfirmPassword').errors.passwordMismatch">Las contraseñas no coinciden</div>
       </div>
