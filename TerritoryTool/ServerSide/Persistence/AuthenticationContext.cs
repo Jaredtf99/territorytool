@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace TerritoryTool.Persistence
+namespace TerritoryTool.ServerSide.Persistence
 {
     public class AuthenticationContext : IdentityDbContext
     {

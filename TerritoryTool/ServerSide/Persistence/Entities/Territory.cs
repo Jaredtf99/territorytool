@@ -1,4 +1,4 @@
-﻿namespace TerritoryTool.Persistence.Entities
+﻿namespace TerritoryTool.ServerSide.Persistence.Entities
 {
     public class Territory : Entity
     {

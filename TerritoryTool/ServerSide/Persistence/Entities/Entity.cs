@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace TerritoryTool.Persistence.Entities
+namespace TerritoryTool.ServerSide.Persistence.Entities
 {
     public abstract class Entity
     {

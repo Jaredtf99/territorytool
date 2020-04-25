@@ -33,11 +33,11 @@ export class UserService {
       UserName: this.formModel.value.UserName,
       Password: this.formModel.value.Passwords.Password
     };
-    return this.http.post(this.baseUrl + '/api/user/register', body);
+    return this.http.post(this.baseUrl + 'api/user/register', body);
   }
 
   login(formData) {
-    return this.http.post(this.baseUrl + '/api/user/login', formData);
+    return this.http.post(this.baseUrl + 'api/user/login', formData);
   }
 
   roleMatch(allowedRoles: Array<string>): boolean {

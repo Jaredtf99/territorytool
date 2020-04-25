@@ -4,17 +4,18 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using TerritoryTool.Controllers.Models;
-using TerritoryTool.Domain;
-using TerritoryTool.Domain.Enums;
-using TerritoryTool.Persistence;
+using TerritoryTool.ServerSide.Controllers.Models;
+using TerritoryTool.ServerSide.Domain;
+using TerritoryTool.ServerSide.Domain.Enums;
+using TerritoryTool.ServerSide.Persistence;
 
-namespace TerritoryTool.Controllers
+namespace TerritoryTool.ServerSide.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -36,8 +37,7 @@ namespace TerritoryTool.Controllers
 
         [HttpPost]
         [Route("register")]
-        //TODO: AUTHORIZAR ESTO SOLO A ADMIN!!!
-        //ROL POR DEFECTO DEBE SER USER, SALVO QUE EL USUARIO LOGUEADO SEA SUPERADMIN, QUE ENTONCES PODRIA REGISTRAR ADMINS
+        [Authorize(Roles = "SUPERADMIN,ADMIN")]
         public ActionResult RegisterUser(RegisterModel model)
         {
             var registerInfo = new ApplicationUser()
@@ -51,7 +51,7 @@ namespace TerritoryTool.Controllers
                 var result = _userManager.CreateAsync(registerInfo, model.Password);
                 result.Wait();
 
-                var taskAddRole = _userManager.AddToRoleAsync(registerInfo, RoleType.SuperAdmin.ToString()); //BORRAR ESTO!!!! SOLO TESTING
+                var taskAddRole = _userManager.AddToRoleAsync(registerInfo, RoleType.User.ToString());
                 taskAddRole.Wait();
 
                 return Ok(result.Result);

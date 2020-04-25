@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using TerritoryTool.Persistence.Entities;
+﻿using System.Collections.Generic;
+using TerritoryTool.ServerSide.Persistence.Entities;
 
-namespace TerritoryTool.Persistence.Repositories.Interfaces
+namespace TerritoryTool.ServerSide.Persistence.Repositories.Interfaces
 {
     public interface ITerritoryRepository
     {

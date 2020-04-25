@@ -1,4 +1,4 @@
-﻿namespace TerritoryTool.Controllers.Models
+﻿namespace TerritoryTool.ServerSide.Controllers.Models
 {
     public class LoginModel
     {

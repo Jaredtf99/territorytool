@@ -1,4 +1,4 @@
-﻿namespace TerritoryTool.Domain
+﻿namespace TerritoryTool.ServerSide.Domain
 {
     public class ApplicationSettings
     {

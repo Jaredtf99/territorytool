@@ -2,11 +2,10 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using TerritoryTool.Domain.Enums;
-using TerritoryTool.Persistence.Entities;
-using TerritoryTool.Persistence.Repositories.Interfaces;
+using TerritoryTool.ServerSide.Persistence.Entities;
+using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
 
-namespace TerritoryTool.Controllers
+namespace TerritoryTool.ServerSide.Controllers
 {
     [Route("api/[controller]")]
     public class SampleDataController : Controller
@@ -32,7 +31,7 @@ namespace TerritoryTool.Controllers
         }
 
         [HttpPost("[action]")]
-        [Authorize(Roles = "SuperAdmin, Admin")]
+        [Authorize(Roles = "SUPERADMIN,ADMIN")]
         public ActionResult AddTerritory(string code, string name, string mapUrl)
         {
             _logger.LogInformation("Adding territory...");

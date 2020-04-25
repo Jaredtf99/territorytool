@@ -1,16 +1,12 @@
 ﻿using Dapper;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
-using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
-using System.Linq;
-using System.Threading.Tasks;
-using TerritoryTool.Persistence.Entities;
-using TerritoryTool.Persistence.Repositories.Interfaces;
+using TerritoryTool.ServerSide.Persistence.Entities;
+using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
 
-namespace TerritoryTool.Persistence.Repositories.Implementation
+namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
 {
     public class TerritoryRepository : ITerritoryRepository
     {

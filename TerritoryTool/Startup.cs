@@ -12,10 +12,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Text;
-using TerritoryTool.Domain;
-using TerritoryTool.Persistence;
-using TerritoryTool.Persistence.Repositories.Implementation;
-using TerritoryTool.Persistence.Repositories.Interfaces;
+using TerritoryTool.ServerSide.Domain;
+using TerritoryTool.ServerSide.Persistence;
+using TerritoryTool.ServerSide.Persistence.Repositories.Implementation;
+using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
 
 namespace TerritoryTool
 {

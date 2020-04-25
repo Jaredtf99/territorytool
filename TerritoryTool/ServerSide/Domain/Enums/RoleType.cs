@@ -1,4 +1,4 @@
-﻿namespace TerritoryTool.Domain.Enums
+﻿namespace TerritoryTool.ServerSide.Domain.Enums
 {
     public enum RoleType
     {

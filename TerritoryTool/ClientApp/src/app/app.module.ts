@@ -45,8 +45,8 @@ import { ForbiddenComponent } from './forbidden/forbidden.component';
           { path: 'home', component: HomeComponent, },
           { path: 'counter', component: CounterComponent },
           { path: 'fetch-data', component: FetchDataComponent },
-          { path: 'add-territory', component: AddTerritoryComponent, data: {permittedRoles:['SuperAdmin']} },
-          { path: 'registration', component: RegistrationComponent }
+          { path: 'add-territory', component: AddTerritoryComponent, data: {permittedRoles:['SUPERADMIN', 'ADMIN']} },
+          { path: 'registration', component: RegistrationComponent, data: { permittedRoles: ['SUPERADMIN', 'ADMIN'] } }
         ]
       },
       { path: 'login', component: LoginComponent },
