@@ -46,4 +46,22 @@ export class UserService {
     return allowedRoles.includes(userRole);
   }
 
+  isSuperAdmin(): boolean {
+    const payload = JSON.parse(window.atob(localStorage.getItem('token').split('.')[1]));
+    const userRole = payload.role;
+    return ("SUPERADMIN" === userRole);
+  }
+
+  isAdmin(): boolean {
+    const payload = JSON.parse(window.atob(localStorage.getItem('token').split('.')[1]));
+    const userRole = payload.role;
+    return ("ADMIN" === userRole);
+  }
+
+  isUser(): boolean {
+    const payload = JSON.parse(window.atob(localStorage.getItem('token').split('.')[1]));
+    const userRole = payload.role;
+    return ("USER" === userRole);
+  }
+
 }

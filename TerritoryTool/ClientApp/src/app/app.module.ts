@@ -7,7 +7,7 @@ import { AppComponent } from './app.component';
 import { NavMenuComponent } from './nav-menu/nav-menu.component';
 import { HomeComponent } from './home/home.component';
 import { CounterComponent } from './counter/counter.component';
-import { FetchDataComponent } from './fetch-data/fetch-data.component';
+import { TerritoriesComponent } from './territories/territories.component';
 import { AddTerritoryComponent } from './add-territory/add-territory.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
@@ -26,7 +26,7 @@ import { ForbiddenComponent } from './forbidden/forbidden.component';
     NavMenuComponent,
     HomeComponent,
     CounterComponent,
-    FetchDataComponent,
+    TerritoriesComponent,
     AddTerritoryComponent,
     RegistrationComponent,
     LoginComponent,
@@ -44,7 +44,7 @@ import { ForbiddenComponent } from './forbidden/forbidden.component';
         path: '', component: LoggedComponent, canActivateChild: [AuthGuard], children: [
           { path: 'home', component: HomeComponent, },
           { path: 'counter', component: CounterComponent },
-          { path: 'fetch-data', component: FetchDataComponent },
+          { path: 'territories', component: TerritoriesComponent },
           { path: 'add-territory', component: AddTerritoryComponent, data: {permittedRoles:['SUPERADMIN', 'ADMIN']} },
           { path: 'registration', component: RegistrationComponent, data: { permittedRoles: ['SUPERADMIN', 'ADMIN'] } }
         ]

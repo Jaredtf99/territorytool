@@ -50,5 +50,44 @@ namespace TerritoryTool.ServerSide.Controllers
             return Ok();
         }
 
+        [HttpPost("[action]")]
+        [Authorize(Roles = "SUPERADMIN,ADMIN")]
+        public ActionResult EditTerritory(int id, string code, string name, string mapUrl)
+        {
+            _logger.LogInformation("Editing territory...");
+
+            if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(mapUrl))
+                return BadRequest("INVALID_PARAMETERS");
+
+            Territory territory = _territoryRepository.GetTerritoryById(id);
+
+
+            if (territory.Code != code &&_territoryRepository.GetTerritoryByCode(code) != null)
+                return BadRequest("CODE_EXIST");
+
+            if (territory.Name != name && _territoryRepository.GetTerritoryByName(name) != null)
+                return BadRequest("NAME_EXIST");
+
+            if (territory.MapUrl != mapUrl && _territoryRepository.GetTerritoryByMapUrl(mapUrl) != null)
+                return BadRequest("MAPURL_EXIST");
+
+
+            _territoryRepository.EditTerritory(id, code, name, mapUrl);
+
+            return Ok();
+        }
+
+        [HttpPost("[action]")]
+        [Authorize(Roles = "SUPERADMIN,ADMIN")]
+        public ActionResult DeleteTerritory(int idToDelete)
+        {
+            _logger.LogInformation("Delete territory...");
+
+            _territoryRepository.DeleteTerritory(idToDelete);
+
+            return Ok();
+        }
+
+
     }
 }

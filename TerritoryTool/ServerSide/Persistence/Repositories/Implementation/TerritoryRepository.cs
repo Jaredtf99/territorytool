@@ -36,6 +36,17 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             }
         }
 
+        public Territory GetTerritoryById(int id)
+        {
+            using (IDbConnection con = Connection)
+            {
+                string query = @"SELECT * FROM Territory WHERE Id = @id";
+                con.Open();
+                var result = con.QueryFirstOrDefault<Territory>(query, new { id });
+                return result;
+            }
+        }
+
         public Territory GetTerritoryByName(string name)
         {
             using (IDbConnection con = Connection)
@@ -54,6 +65,26 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                 string query = @"INSERT INTO Territory (Code, Name, MapUrl) VALUES (@code, @name, @mapUrl); SELECT LAST_INSERT_ROWID()";
                 con.Open();
                 con.Query<long>(query, new { code, name, mapUrl});
+            }
+        }
+
+        public void EditTerritory(int id, string code, string name, string mapUrl)
+        {
+            using (IDbConnection con = Connection)
+            {
+                string query = @"UPDATE Territory SET Name = @name, Code = @code, MapUrl = @mapUrl WHERE Id = @id; SELECT LAST_INSERT_ROWID()";
+                con.Open();
+                con.Query<long>(query, new { id, code, name, mapUrl });
+            }
+        }
+
+        public void DeleteTerritory(int id)
+        {
+            using (IDbConnection con = Connection)
+            {
+                string query = @"DELETE FROM Territory WHERE Id = @id; SELECT LAST_INSERT_ROWID()";
+                con.Open();
+                con.Query<long>(query, new { id });
             }
         }
 

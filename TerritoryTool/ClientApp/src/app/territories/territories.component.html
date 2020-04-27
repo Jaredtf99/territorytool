@@ -1,0 +1,90 @@
+<h1>Territorios</h1>
+
+<p *ngIf="!territories"><em>Cargando...</em></p>
+
+<div class="filters">
+
+  <input type="text" name="filterName" placeholder="Nombre" #ctrl="ngModel" [(ngModel)]="filterName" (change)="filter()"  />
+
+</div>
+
+<div class="cards">
+
+  <div *ngFor="let territory of territoriesFiltered" class="card">
+    
+    <div class="card__actions" *ngIf="userService.isSuperAdmin() || userService.isAdmin()">
+      <i class="fas fa-pencil-alt" data-toggle="modal" href="#editTerritory" (click)="openEditModal(territory.id)"></i>
+      <i class="fas fa-trash-alt" data-toggle="modal" href="#deleteTerritory" (click)="(idTerritoryToDelete = territory.id)"></i>
+    </div>
+
+      <div class="card__info">
+        <span class="card__category">{{ territory.code }}</span>
+        <h3 class="card__title"><a href="{{ territory.mapUrl }}" target="_blank">{{ territory.name }}</a></h3>
+        <span class="card__by">Asignado a <a href="#" class="card__author" title="author">Noemi Trapiello</a></span>
+      </div>
+    
+  </div>
+  
+</div>
+
+
+<div class="modal fade" id="editTerritory" tabindex="-1" role="dialog" aria-labelledby="editTerritoryLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editTerritoryLabel">Editar territorio</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+
+        <div class="form-group">
+          <input type="text" class="form-control item" placeholder="Nombre del territorio" #ctrl="ngModel" [(ngModel)]="territoryToEdit.name">
+        </div>
+
+        <div *ngIf="territoryToEdit.name === null || territoryToEdit.name === ''" class="alert alert-danger">
+          Introduce el nombre del territorio
+        </div>
+
+        <div class="form-group">
+          <input type="text" class="form-control item" placeholder="Código del territorio" #ctrl="ngModel" [(ngModel)]="territoryToEdit.code">
+        </div>
+
+        <div *ngIf="territoryToEdit.code === null || territoryToEdit.code === ''" class="alert alert-danger">
+          Introduce el código del territorio
+        </div>
+
+        <div class="form-group">
+          <input type="text" class="form-control item" placeholder="URL del mapa" #ctrl="ngModel" [(ngModel)]="territoryToEdit.mapUrl">
+        </div>
+
+        <div *ngIf="territoryToEdit.mapUrl === null || territoryToEdit.mapUrl === ''" class="alert alert-danger">
+          Introduce la URL del mapa
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" [disabled]="territoryToEdit.name === null || territoryToEdit.name === '' || territoryToEdit.code === null || territoryToEdit.code === '' || territoryToEdit.mapUrl === null || territoryToEdit.mapUrl === ''" (click)="editTerritory()">Editar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal fade" id="deleteTerritory" tabindex="-1" role="dialog" aria-labelledby="deleteTerritory" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <h4 class="col-xs-12">¿Seguro que quieres elminar este territorio?</h4>
+        <div class="row">
+          <button type="button" class="btn btn-secondary col-xs-3 col-xs-offset-2" data-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger col-xs-3 col-xs-offset-2" (click)="deleteTerritory()">Eliminar</button>
+
+        </div>
+        
+      </div>
+    </div>
+  </div>
+</div>

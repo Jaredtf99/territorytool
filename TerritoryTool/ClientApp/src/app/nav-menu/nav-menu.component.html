@@ -13,23 +13,23 @@
         <div class='navbar-collapse collapse' [ngClass]='{ "in": isExpanded }'>
           <ul class='nav navbar-nav'>
             <li [routerLinkActive]='["link-active"]'>
-              <a [routerLink]='["/fetch-data"]' (click)='collapse()'>
+              <a [routerLink]='["/territories"]' (click)='collapse()'>
                 <i class="fas fa-address-card mr-5px"></i> Ver territorios
               </a>
             </li>
-            <li [routerLinkActive]='["link-active"]'>
+            <li *ngIf="userService.roleMatch(['SUPERADMIN', 'ADMIN'])" [routerLinkActive]='["link-active"]'>
               <a [routerLink]='["/add-territory"]' (click)='collapse()'>
                 <i class="fas fa-folder-plus mr-5px"></i> Nuevo territorio
               </a>
             </li>
-            <li [routerLinkActive]='["link-active"]'>
+            <li *ngIf="userService.roleMatch(['SUPERADMIN', 'ADMIN'])" [routerLinkActive]='["link-active"]'>
               <a [routerLink]='["/registration"]' (click)='collapse()'>
                 <i class="fas fa-user-plus mr-5px"></i> Registrar usuario
               </a>
             </li>
             <li [routerLinkActive]='["link-active"]'>
               <a (click)='logout()'>
-                <i class="fas fa-sign-out-alt mr-5px"></i> Logout
+                <i class="fas fa-sign-out-alt mr-5px"></i> Cerrar sesión
               </a>
             </li>
           </ul>
