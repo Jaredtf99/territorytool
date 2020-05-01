@@ -13,6 +13,8 @@ using Microsoft.IdentityModel.Tokens;
 using TerritoryTool.ServerSide.Controllers.Models;
 using TerritoryTool.ServerSide.Domain;
 using TerritoryTool.ServerSide.Domain.Enums;
+using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
+using TerritoryTool.ServerSide.Domain.Helpers;
 using TerritoryTool.ServerSide.Persistence;
 
 namespace TerritoryTool.ServerSide.Controllers
@@ -24,15 +26,16 @@ namespace TerritoryTool.ServerSide.Controllers
         private readonly ILogger _logger;
 
         private UserManager<ApplicationUser> _userManager;
-        private SignInManager<ApplicationUser> _signInManager;
         private readonly ApplicationSettings _appSettings;
+        private readonly IUserActionLogFacade _userActionLogFacade;
 
-        public UserController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IOptions<ApplicationSettings> appSettings, ILogger<SampleDataController> logger)
+
+        public UserController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IOptions<ApplicationSettings> appSettings, ILogger<SampleDataController> logger, IUserActionLogFacade userActionLogFacade)
         {
             _userManager = userManager;
-            _signInManager = signInManager;
             _appSettings = appSettings.Value;
             _logger = logger;
+            _userActionLogFacade = userActionLogFacade;
         }
 
         [HttpPost]
@@ -40,12 +43,13 @@ namespace TerritoryTool.ServerSide.Controllers
         [Authorize(Roles = "SUPERADMIN,ADMIN")]
         public ActionResult RegisterUser(RegisterModel model)
         {
+            var userId = SecurityHelper.GetLoggedUserId(User);
+
             var registerInfo = new ApplicationUser()
             {
                 UserName = model.UserName,
                 Email = "nothing@nothing.com"
             };
-
             try
             {
                 var result = _userManager.CreateAsync(registerInfo, model.Password);
@@ -53,6 +57,9 @@ namespace TerritoryTool.ServerSide.Controllers
 
                 var taskAddRole = _userManager.AddToRoleAsync(registerInfo, RoleType.User.ToString());
                 taskAddRole.Wait();
+
+                _userActionLogFacade.AddNewActionLog(ActionType.AddUser, string.Format("User {0} registered", model.UserName), userId);
+
 
                 return Ok(result.Result);
             }
@@ -86,7 +93,8 @@ namespace TerritoryTool.ServerSide.Controllers
                 var tokenDescriptor = new SecurityTokenDescriptor
                 {
                     Subject = new ClaimsIdentity(new Claim[] {
-                        new Claim("UserID", user.Id.ToString()),
+                        new Claim(ConfigurationHelper.UserIDClaimKey, user.Id.ToString()),
+                        new Claim(ConfigurationHelper.UserNameClaimKey, user.UserName),
                         new Claim(_options.ClaimsIdentity.RoleClaimType, role.FirstOrDefault())
                     }),
                     Expires = DateTime.UtcNow.AddMonths(2),

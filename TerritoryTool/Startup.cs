@@ -13,6 +13,8 @@ using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Text;
 using TerritoryTool.ServerSide.Domain;
+using TerritoryTool.ServerSide.Domain.FacadeServices.Implementation;
+using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
 using TerritoryTool.ServerSide.Persistence;
 using TerritoryTool.ServerSide.Persistence.Repositories.Implementation;
 using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
@@ -33,6 +35,8 @@ namespace TerritoryTool
         {
             services.Configure<ApplicationSettings>(Configuration.GetSection("ApplicationSettings"));
             services.AddTransient<ITerritoryRepository, TerritoryRepository>();
+            services.AddTransient<IActionLogRepository, ActionLogRepository>();
+            services.AddTransient<IUserActionLogFacade, UserActionLogFacade>();
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
