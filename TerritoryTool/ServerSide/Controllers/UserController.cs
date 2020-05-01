@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using TerritoryTool.ServerSide.Controllers.Models;
+using TerritoryTool.ServerSide.Controllers.Models.User;
 using TerritoryTool.ServerSide.Domain;
 using TerritoryTool.ServerSide.Domain.Enums;
 using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
@@ -28,14 +28,15 @@ namespace TerritoryTool.ServerSide.Controllers
         private UserManager<ApplicationUser> _userManager;
         private readonly ApplicationSettings _appSettings;
         private readonly IUserActionLogFacade _userActionLogFacade;
+        private readonly IUserConfigurationFacade _userConfigurationFacade;
 
-
-        public UserController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IOptions<ApplicationSettings> appSettings, ILogger<SampleDataController> logger, IUserActionLogFacade userActionLogFacade)
+        public UserController(UserManager<ApplicationUser> userManager, IOptions<ApplicationSettings> appSettings, ILogger<SampleDataController> logger, IUserActionLogFacade userActionLogFacade, IUserConfigurationFacade userConfigurationFacade)
         {
             _userManager = userManager;
             _appSettings = appSettings.Value;
             _logger = logger;
             _userActionLogFacade = userActionLogFacade;
+            _userConfigurationFacade = userConfigurationFacade;
         }
 
         [HttpPost]
@@ -43,78 +44,55 @@ namespace TerritoryTool.ServerSide.Controllers
         [Authorize(Roles = "SUPERADMIN,ADMIN")]
         public ActionResult RegisterUser(RegisterModel model)
         {
-            var userId = SecurityHelper.GetLoggedUserId(User);
+            var userId  = SecurityHelper.GetLoggedUserId(User);
 
-            var registerInfo = new ApplicationUser()
-            {
-                UserName = model.UserName,
-                Email = "nothing@nothing.com"
-            };
-            try
-            {
-                var result = _userManager.CreateAsync(registerInfo, model.Password);
-                result.Wait();
+            IdentityResult result = _userConfigurationFacade.RegisterUser(model?.UserName, model?.Password, RoleType.User, userId); 
 
-                var taskAddRole = _userManager.AddToRoleAsync(registerInfo, RoleType.User.ToString());
-                taskAddRole.Wait();
+            if (result == null)
+                return BadRequest();
+            else
+                return Ok(result);
 
-                _userActionLogFacade.AddNewActionLog(ActionType.AddUser, string.Format("User {0} registered", model.UserName), userId);
-
-
-                return Ok(result.Result);
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
         }
 
 
         [HttpPost]
         [Route("login")]
-        public async Task<IActionResult> Login(LoginModel model)
+        public ActionResult Login(LoginModel model)
         {
-            _logger.LogInformation("Login user");
+            _logger.LogInformation("Loging user...");
 
-            var user = await _userManager.FindByNameAsync(model.UserName);
+            string token = _userConfigurationFacade.Login(model?.UserName, model?.Password);
 
-            _logger.LogInformation("final user checked");
-
-
-            if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
-            {
-                _logger.LogInformation("Password correct");
-                var role = await _userManager.GetRolesAsync(user);
-                _logger.LogInformation("Roles matched");
-
-                IdentityOptions _options = new IdentityOptions();
-
-                var tokenDescriptor = new SecurityTokenDescriptor
-                {
-                    Subject = new ClaimsIdentity(new Claim[] {
-                        new Claim(ConfigurationHelper.UserIDClaimKey, user.Id.ToString()),
-                        new Claim(ConfigurationHelper.UserNameClaimKey, user.UserName),
-                        new Claim(_options.ClaimsIdentity.RoleClaimType, role.FirstOrDefault())
-                    }),
-                    Expires = DateTime.UtcNow.AddMonths(2),
-                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_appSettings.JWT_Secret)), SecurityAlgorithms.HmacSha256Signature)
-                };
-                _logger.LogInformation("tokendescriptor created");
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var securityToken = tokenHandler.CreateToken(tokenDescriptor);
-                var token = tokenHandler.WriteToken(securityToken);
-
-                _logger.LogInformation("token writed... returning");
-
+            if (string.IsNullOrWhiteSpace(token))
+                return BadRequest("WRONG_USERNAME_PASSWORD");
+            else
                 return Ok(new { token });
-            }
+
+        }
+
+
+        [HttpPost]
+        [Route("change-password")]
+        [Authorize]
+        public ActionResult ChangePassword(ChangePasswordModel model)
+        {
+            var userId  = SecurityHelper.GetLoggedUserId(User);
+
+            IdentityResult result = _userConfigurationFacade.ChangePassword(userId, model?.OldPassword, model?.NewPassword);
+
+            if (result == null)
+                return BadRequest();
+            else if (result.Succeeded)
+                return Ok();
             else
             {
-                _logger.LogInformation("Wrong user or password");
-                return BadRequest(new { message = "Usuario o contraseña incorrecta" });
+                string codesJoined = string.Join(",", result.Errors.Select(x => x.Code));
+                _logger.LogInformation("Errors on changing password for userId {0}. Errors: {1}", userId, codesJoined);
+                return BadRequest(codesJoined);
             }
+
         }
-    
+
     }
 }

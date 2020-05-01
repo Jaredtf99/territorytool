@@ -58,7 +58,7 @@ namespace TerritoryTool.ServerSide.Controllers
 
             _territoryRepository.AddNewTerritory(code, name, mapUrl);
 
-            _userActionLogFacade.AddNewActionLog(ActionType.AddTerritory, string.Format("Added territory {0} {1}", code, name), userId);
+            _userActionLogFacade.AddNewActionLog(ActionType.AddTerritory, string.Format("Added territory {0} {1}", code, name), userId, true);
 
             return Ok();
         }
@@ -89,7 +89,7 @@ namespace TerritoryTool.ServerSide.Controllers
 
             _territoryRepository.EditTerritory(id, code, name, mapUrl);
 
-            _userActionLogFacade.AddNewActionLog(ActionType.EditTerritory, string.Format("Edited territory ID {0} to: Code ({1}) Name ({2}) MapURL ({3})", id, code, name, mapUrl), userId);
+            _userActionLogFacade.AddNewActionLog(ActionType.EditTerritory, string.Format("Edited territory ID {0} to: Code ({1}) Name ({2}) MapURL ({3})", id, code, name, mapUrl), userId, true);
 
             return Ok();
         }
@@ -104,7 +104,7 @@ namespace TerritoryTool.ServerSide.Controllers
 
             _territoryRepository.DeleteTerritory(idToDelete);
 
-            _userActionLogFacade.AddNewActionLog(ActionType.DeleteTerritory, string.Format("Deleted territory id {0}", idToDelete), userId);
+            _userActionLogFacade.AddNewActionLog(ActionType.DeleteTerritory, string.Format("Deleted territory id {0}", idToDelete), userId, true);
 
             return Ok();
         }

@@ -20,6 +20,7 @@ import { AuthGuard } from './auth/auth.guard';
 import { AuthInterceptor } from './auth/auth.interceptor';
 import { ForbiddenComponent } from './forbidden/forbidden.component';
 import { ViewActionlogsComponent } from './view-actionlogs/view-actionlogs.component';
+import { UserConfigurationComponent } from './user-configuration/user-configuration.component';
 
 @NgModule({
   declarations: [
@@ -33,7 +34,8 @@ import { ViewActionlogsComponent } from './view-actionlogs/view-actionlogs.compo
     LoginComponent,
     LoggedComponent,
     ForbiddenComponent,
-    ViewActionlogsComponent
+    ViewActionlogsComponent,
+    UserConfigurationComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -49,6 +51,7 @@ import { ViewActionlogsComponent } from './view-actionlogs/view-actionlogs.compo
           { path: 'territories', component: TerritoriesComponent },
           { path: 'add-territory', component: AddTerritoryComponent, data: {permittedRoles:['SUPERADMIN', 'ADMIN']} },
           { path: 'registration', component: RegistrationComponent, data: { permittedRoles: ['SUPERADMIN', 'ADMIN'] } },
+          { path: 'user-configuration', component: UserConfigurationComponent },
           { path: 'action-logs', component: ViewActionlogsComponent, data: { permittedRoles: ['SUPERADMIN'] } }
         ]
       },

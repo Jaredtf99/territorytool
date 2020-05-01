@@ -11,5 +11,6 @@ namespace TerritoryTool.ServerSide.Persistence.Entities
         public DateTime DateTimeUTC { get; set; }
         public string Message { get; set; }
         public int ActionType { get; set; }
+        public bool Successful { get; set; }
     }
 }

@@ -9,7 +9,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces
 {
     public interface IUserActionLogFacade
     {
-        bool AddNewActionLog(ActionType actionType, string message, string loggedUserId);
+        bool AddNewActionLog(ActionType actionType, string message, string loggedUserId, bool successful);
         IEnumerable<ActionLogInfo> GetAllActionLogs();
     }
 }

@@ -1,6 +1,6 @@
 ﻿using TerritoryTool.ServerSide.Domain.Enums;
 
-namespace TerritoryTool.ServerSide.Controllers.Models
+namespace TerritoryTool.ServerSide.Controllers.Models.User
 {
     public class RegisterModel
     {

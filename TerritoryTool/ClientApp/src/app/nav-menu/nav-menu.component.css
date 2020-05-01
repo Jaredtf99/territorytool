@@ -19,6 +19,29 @@ li.link-active a:focus {
     z-index: 1;
 }
 
+.navbar-user {
+  color: #9d9d9d;
+  display: inline-block;
+  float: right;
+  height: 50px;
+  padding: 15px 15px;
+  font-size: 18px;
+  line-height: 20px;
+}
+
+  .navbar-user button {
+    background: inherit;
+    border: 0;
+  }
+
+    .navbar-user button:hover {
+      color: #fff;
+    }
+
+    .navbar-user button:focus {
+      outline: none;
+    }
+
 @media (min-width: 768px) {
     /* On small screens, convert the nav menu to a vertical sidebar */
     .main-nav {
@@ -51,7 +74,6 @@ li.link-active a:focus {
     }
     .navbar a {
         /* If a menu item's text is too long, truncate it */
-        width: 100%;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;

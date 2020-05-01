@@ -45,14 +45,15 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
 
             using (IDbConnection con = Connection)
             {
-                string query = @"INSERT INTO ActionLog (UserId, DateTimeUTC, Message, ActionType) VALUES (@userId, @dateTimeUtc, @message, @actionType); SELECT LAST_INSERT_ROWID()";
+                string query = @"INSERT INTO ActionLog (UserId, DateTimeUTC, Message, ActionType, Successful) VALUES (@userId, @dateTimeUtc, @message, @actionType, @successful); SELECT LAST_INSERT_ROWID()";
                 con.Open();
                 con.Query<long>(query, new 
                 { 
                     userId = actionLog.UserId, 
                     dateTimeUtc = actionLog.DateTimeUTC, 
                     message = actionLog.Message, 
-                    actionType = actionLog.ActionType
+                    actionType = actionLog.ActionType,
+                    successful = actionLog.Successful
                 });
             }
 

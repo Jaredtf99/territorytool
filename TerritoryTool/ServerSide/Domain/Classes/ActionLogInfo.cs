@@ -15,5 +15,6 @@ namespace TerritoryTool.ServerSide.Domain.Classes
         public DateTime DateUtc { get; set; }
         public string Message { get; set; }
         public string UserName { get; set; }
+        public bool Successful { get; set; }
     }
 }

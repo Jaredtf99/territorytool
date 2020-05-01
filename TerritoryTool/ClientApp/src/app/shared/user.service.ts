@@ -17,6 +17,16 @@ export class UserService {
         }, { validator : this.comparePasswords})
     });
 
+  changePasswordForm = this.fb.group(
+    {
+      OldPassword: ['', [Validators.required, Validators.minLength(4)]],
+      NewPasswords: this.fb.group(
+        {
+          Password: ['', [Validators.required, Validators.minLength(4)]],
+          ConfirmPassword: ['', Validators.required]
+        }, { validator: this.comparePasswords })
+    });
+
   comparePasswords(fb:FormGroup) {
     let confirmPswrdCtrl = fb.get('ConfirmPassword');
 
@@ -40,6 +50,15 @@ export class UserService {
     return this.http.post(this.baseUrl + 'api/user/login', formData);
   }
 
+  changePassword() {
+    let body = {
+      OldPassword: this.changePasswordForm.value.OldPassword,
+      NewPassword: this.changePasswordForm.value.NewPasswords.Password
+    };
+    return this.http.post(this.baseUrl + 'api/user/change-password', body);
+  }
+
+
   roleMatch(allowedRoles: Array<string>): boolean {
     const payload = JSON.parse(window.atob(localStorage.getItem('token').split('.')[1]));
     const userRole = payload.role;
@@ -62,6 +81,12 @@ export class UserService {
     const payload = JSON.parse(window.atob(localStorage.getItem('token').split('.')[1]));
     const userRole = payload.role;
     return ("USER" === userRole);
+  }
+
+  getUserName(): string {
+    const payload = JSON.parse(window.atob(localStorage.getItem('token').split('.')[1]));
+    return payload.UserName;
+
   }
 
 }

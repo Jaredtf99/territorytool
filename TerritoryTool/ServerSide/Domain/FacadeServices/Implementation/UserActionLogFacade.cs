@@ -32,7 +32,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             _userManager = userManager;
         }
 
-        public bool AddNewActionLog(ActionType actionType, string message, string loggedUserId)
+        public bool AddNewActionLog(ActionType actionType, string message, string loggedUserId, bool successful)
         {
             Contract.Requires(actionType != ActionType.Unknown, "actionType cannot be unknown");
             Contract.Requires(!string.IsNullOrWhiteSpace(message), "message cannot be null or whitespace");
@@ -42,7 +42,8 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
                 ActionType = (int)actionType,
                 DateTimeUTC = DateTime.UtcNow,
                 Message = message,
-                UserId = loggedUserId
+                UserId = loggedUserId,
+                Successful = successful
             };
 
             _logger.LogInformation("Adding new actionLog. Type: {0}", actionType.ToString());
@@ -97,7 +98,8 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
                         ActionType = (ActionType)action.ActionType,
                         DateUtc = action.DateTimeUTC,
                         Message = action.Message,
-                        UserName = userNameFinded
+                        UserName = userNameFinded,
+                        Successful = action.Successful
                     };
 
                     retval.Add(actionInfo);
