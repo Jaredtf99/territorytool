@@ -6,7 +6,6 @@ import { RouterModule } from '@angular/router';
 import { AppComponent } from './app.component';
 import { NavMenuComponent } from './nav-menu/nav-menu.component';
 import { HomeComponent } from './home/home.component';
-import { CounterComponent } from './counter/counter.component';
 import { TerritoriesComponent } from './territories/territories.component';
 import { AddTerritoryComponent } from './add-territory/add-territory.component';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -21,13 +20,15 @@ import { AuthInterceptor } from './auth/auth.interceptor';
 import { ForbiddenComponent } from './forbidden/forbidden.component';
 import { ViewActionlogsComponent } from './view-actionlogs/view-actionlogs.component';
 import { UserConfigurationComponent } from './user-configuration/user-configuration.component';
+import { NgxLoadingModule } from 'ngx-loading';
+import { Globals } from './globals';
+
 
 @NgModule({
   declarations: [
     AppComponent,
     NavMenuComponent,
     HomeComponent,
-    CounterComponent,
     TerritoriesComponent,
     AddTerritoryComponent,
     RegistrationComponent,
@@ -43,11 +44,11 @@ import { UserConfigurationComponent } from './user-configuration/user-configurat
     HttpClientModule,
     FormsModule,
     ReactiveFormsModule,
+    NgxLoadingModule.forRoot({}),
     RouterModule.forRoot([
       {
         path: '', component: LoggedComponent, canActivateChild: [AuthGuard], children: [
           { path: 'home', component: HomeComponent, },
-          { path: 'counter', component: CounterComponent },
           { path: 'territories', component: TerritoriesComponent },
           { path: 'add-territory', component: AddTerritoryComponent, data: {permittedRoles:['SUPERADMIN', 'ADMIN']} },
           { path: 'registration', component: RegistrationComponent, data: { permittedRoles: ['SUPERADMIN', 'ADMIN'] } },
@@ -67,7 +68,7 @@ import { UserConfigurationComponent } from './user-configuration/user-configurat
     provide: HTTP_INTERCEPTORS,
     useClass: AuthInterceptor,
     multi: true
-  }],
+  }, Globals],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

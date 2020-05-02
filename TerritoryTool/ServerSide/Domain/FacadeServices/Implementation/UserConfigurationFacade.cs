@@ -39,7 +39,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
             var user = _userManager.FindByIdAsync(userId).Result;
 
-            _logger.LogError("Changing password for user: {0}", user?.UserName ?? userId);
+            _logger.LogInformation("Changing password for user: {0}", user?.UserName ?? userId);
 
             if (user == null)
                 _logger.LogError("Null user finded for change password. UserId: {0}", userId);

@@ -74,9 +74,9 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
         { 
             _logger.LogInformation("Converting action logs to action logs info");
 
-            ConcurrentDictionary<string, string> userIdsAndName = new ConcurrentDictionary<string, string>();
+            Dictionary<string, string> userIdsAndName = new Dictionary<string, string>();
 
-            Parallel.ForEach(actions.Select(x => x.UserId).Distinct(), (id) => 
+            foreach(var id in actions.Select(x => x.UserId).Distinct())
             {
                 string userName = _userManager.FindByIdAsync(id.ToString()).Result?.UserName;
                 if (string.IsNullOrWhiteSpace(userName))
@@ -84,8 +84,8 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
                     _logger.LogError("UserID {0} not finded on BBDD...", id);
                 }
                 else
-                    userIdsAndName.GetOrAdd(id, userName);
-            });
+                    userIdsAndName.Add(id, userName);
+            };
 
             List<ActionLogInfo> retval = new List<ActionLogInfo>();
 

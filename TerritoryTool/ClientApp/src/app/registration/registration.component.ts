@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { UserService } from '../shared/user.service';
 import { ToastrService } from 'ngx-toastr';
+import { Globals } from '../globals';
 
 @Component({
   selector: 'app-registration',
@@ -9,14 +10,17 @@ import { ToastrService } from 'ngx-toastr';
 })
 export class RegistrationComponent implements OnInit {
 
-  constructor(public userService: UserService, private toastr: ToastrService) { }
+  constructor(public userService: UserService, private toastr: ToastrService, private globals: Globals) { }
 
   ngOnInit() {
   }
 
   register() {
+    this.globals.loading = true;
+
     this.userService.register().subscribe(
       (res: any) => {
+        this.globals.loading = false;
         if (res.succeeded) {
           this.userService.formModel.reset();
           this.toastr.success("Registro con éxito");
@@ -34,6 +38,7 @@ export class RegistrationComponent implements OnInit {
         }
       },
       err => {
+        this.globals.loading = false;
         console.log(err);
       }
     )

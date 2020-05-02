@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { Globals } from './globals';
 
 
 @Component({
@@ -10,6 +11,6 @@ import { Router } from '@angular/router';
 export class AppComponent {
   title = 'app';
 
-  constructor(private router: Router) { }
+  constructor(private router: Router, public globals: Globals) { }
 
 }

@@ -4,6 +4,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import * as InstaScan from 'instascan';
 import { isNullOrUndefined } from 'util';
 import { ToastrService } from 'ngx-toastr';
+import { Globals } from '../globals';
 
 declare var $: any;
 let qrCodeScanner = this;
@@ -17,7 +18,7 @@ export class AddTerritoryComponent implements OnInit {
   addTerritoryForm: FormGroup;
   submitted = false;
 
-  constructor(private cd: ChangeDetectorRef, private formBuilder: FormBuilder, private http: HttpClient, @Inject('BASE_URL') private baseUrl: string, private toastr: ToastrService) {
+  constructor(private formBuilder: FormBuilder, private http: HttpClient, @Inject('BASE_URL') private baseUrl: string, private toastr: ToastrService, private globals: Globals) {
   }
 
   ngOnInit() {
@@ -37,16 +38,22 @@ export class AddTerritoryComponent implements OnInit {
 
     if (!this.addTerritoryForm.invalid) {
 
+      this.globals.loading = true;
+
       let formData = new FormData();
       formData.append('code', this.f.code.value);
       formData.append('name', this.f.name.value);
       formData.append('mapUrl', this.f.mapUrl.value);
 
       this.http.post(this.baseUrl + 'api/SampleData/AddTerritory', formData).subscribe(() => {
+        this.globals.loading = false;
         this.toastr.success('Territorio guardado');
         this.addTerritoryForm.reset();
         this.submitted = false;
-      }, error => this.toastr.error(error.error));
+      }, error => {
+        this.globals.loading = false;
+          this.toastr.error(error.error);
+      })
     }
 
 

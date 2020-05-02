@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { UserService } from '../shared/user.service';
 import { ToastrService } from 'ngx-toastr';
+import { Globals } from '../globals';
 
 @Component({
   selector: 'app-user-configuration',
@@ -9,18 +10,22 @@ import { ToastrService } from 'ngx-toastr';
 })
 export class UserConfigurationComponent implements OnInit {
 
-  constructor(public userService: UserService, private toastr: ToastrService) { }
+  constructor(public userService: UserService, private toastr: ToastrService, private globals: Globals) { }
 
   ngOnInit() {
   }
 
   changePassword() {
+    this.globals.loading = true;
+
     this.userService.changePassword().subscribe(
       (res: any) => {
-          this.userService.formModel.reset();
-          this.toastr.success("Contraseña cambiada");
+        this.globals.loading = false;
+        this.userService.formModel.reset();
+        this.toastr.success("Contraseña cambiada");
       },
       err => {
+        this.globals.loading = false;
         err.error.split(',').forEach(error => {
           switch (error) {
             case 'PasswordMismatch':
@@ -34,7 +39,7 @@ export class UserConfigurationComponent implements OnInit {
               console.log(err);
               break;
           }
-        });          
+        });
       }
     )
   }
