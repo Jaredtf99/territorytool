@@ -4,7 +4,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import * as InstaScan from 'instascan';
 import { isNullOrUndefined } from 'util';
 import { ToastrService } from 'ngx-toastr';
-import { Globals } from '../globals';
+import { Globals } from '../../globals';
 
 declare var $: any;
 let qrCodeScanner = this;

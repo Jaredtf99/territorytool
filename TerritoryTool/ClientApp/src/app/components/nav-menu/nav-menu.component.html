@@ -29,6 +29,11 @@
               </a>
             </li>
             <li *ngIf="userService.roleMatch(['SUPERADMIN', 'ADMIN'])" [routerLinkActive]='["link-active"]'>
+              <a [routerLink]='["/users"]' (click)='collapse()'>
+                <i class="fas fa-user mr-5px"></i> Usuarios
+              </a>
+            </li>
+            <li *ngIf="userService.roleMatch(['SUPERADMIN', 'ADMIN'])" [routerLinkActive]='["link-active"]'>
               <a [routerLink]='["/registration"]' (click)='collapse()'>
                 <i class="fas fa-user-plus mr-5px"></i> Registrar usuario
               </a>

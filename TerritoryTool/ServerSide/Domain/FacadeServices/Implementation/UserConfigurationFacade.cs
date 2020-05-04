@@ -10,7 +10,9 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using TerritoryTool.ServerSide.Domain.Classes;
 using TerritoryTool.ServerSide.Domain.Enums;
+using TerritoryTool.ServerSide.Domain.Exceptions;
 using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
 using TerritoryTool.ServerSide.Domain.Helpers;
 using TerritoryTool.ServerSide.Persistence;
@@ -115,5 +117,76 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
             return result;
         }
+
+        public IEnumerable<UserInfo> GetUsersInformation() 
+        {
+            _logger.LogInformation("Retrieving all users info...");
+
+            var users = _userManager.Users.ToList();
+
+            return ConvertApplicationUserToUserInfo(users, _userManager);
+        }
+
+        public bool EditUser(string userID, string userName, RoleType newRole, string loggedUserId, out string errorMsg)
+        {
+            errorMsg = null;
+
+            ApplicationUser user = _userManager.Users.Where(x => x.Id == userID).FirstOrDefault();
+
+            if (user == null)
+            {
+                errorMsg = "USER_NOT_EXISTS";
+                return false;
+            }
+
+            ApplicationUser userWithSameUserName = _userManager.Users.Where(x => x.Id != userID && x.UserName.ToLower() == userName.ToLower()).FirstOrDefault();
+
+            if (userWithSameUserName != null)
+            {
+                errorMsg = "USERNAME_IN_USE";
+                return false;
+            }
+
+            string actualRole = _userManager.GetRolesAsync(user).Result.FirstOrDefault();
+
+            if (string.IsNullOrWhiteSpace(actualRole))
+            {
+                _logger.LogError("Role not found for edit user with ID {0}", userID);
+                throw new DomainException("Role not found for user");
+            }
+
+            if (userName != user.UserName)
+                _userManager.SetUserNameAsync(user, userName);
+
+            if (actualRole != newRole.ToString())
+            {
+                _userManager.RemoveFromRoleAsync(user, actualRole);
+                _userManager.AddToRoleAsync(user, newRole.ToString());
+            }
+
+            _logger.LogInformation("User with ID {0} edited. Name: {1}. Role: {2}", userID, userName, newRole.ToString());
+
+            _userActionLogFacade.AddNewActionLog(ActionType.EditUser, string.Format("User with ID {0} edited. Name: {1}. Role: {2}", userID, userName, newRole.ToString()), loggedUserId, true);
+
+            return true;
+        }
+
+
+        private IEnumerable<UserInfo> ConvertApplicationUserToUserInfo(IEnumerable<ApplicationUser> users, UserManager<ApplicationUser> userManager)
+        {
+            foreach (var user in users)
+            {
+                RoleType role = Enum.Parse<RoleType>(userManager.GetRolesAsync(user).Result?.FirstOrDefault() ?? RoleType.Unknown.ToString());
+                UserInfo us = new UserInfo
+                {
+                    Role = role,
+                    UserID = user.Id,
+                    UserName = user.UserName
+                };
+
+                yield return us;
+            }
+        }
+
     }
 }

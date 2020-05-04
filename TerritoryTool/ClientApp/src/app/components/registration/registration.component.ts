@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { UserService } from '../shared/user.service';
+import { UserService } from '../../shared/user.service';
 import { ToastrService } from 'ngx-toastr';
-import { Globals } from '../globals';
+import { Globals } from '../../globals';
 
 @Component({
   selector: 'app-registration',

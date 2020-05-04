@@ -29,11 +29,17 @@
 
   <ItemGroup>
     <None Remove="ClientApp\src\app\auth\auth.interceptor.ts" />
+    <None Remove="ClientApp\src\app\classes\Territory.ts" />
+    <None Remove="ClientApp\src\app\classes\User.ts" />
+    <None Remove="ClientApp\src\app\enums\RoleType.ts" />
     <None Remove="ClientApp\src\app\globals.ts" />
   </ItemGroup>
 
   <ItemGroup>
     <TypeScriptCompile Include="ClientApp\src\app\auth\auth.interceptor.ts" />
+    <TypeScriptCompile Include="ClientApp\src\app\classes\Territory.ts" />
+    <TypeScriptCompile Include="ClientApp\src\app\classes\User.ts" />
+    <TypeScriptCompile Include="ClientApp\src\app\enums\RoleType.ts" />
     <TypeScriptCompile Include="ClientApp\src\app\globals.ts" />
   </ItemGroup>
 

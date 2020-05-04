@@ -1,8 +1,9 @@
 import { Component, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { UserService } from '../shared/user.service';
+import { UserService } from '../../shared/user.service';
 import { ToastrService } from 'ngx-toastr';
-import { Globals } from '../globals';
+import { Globals } from '../../globals';
+import { Territory } from '../../classes/Territory';
 
 declare var $: any;
 
@@ -14,7 +15,7 @@ export class TerritoriesComponent {
   public territories: Territory[];
   public territoriesFiltered: Territory[];
   public territoryToEdit: Territory = new Territory();
-  public idTerritoryToDelete: number = 0;
+  public idTerritoryToDelete = 0;
 
   filterName = '';
 
@@ -95,11 +96,4 @@ export class TerritoriesComponent {
     });
 
   }
-}
-
-class Territory {
-  id: number;
-  code: string;
-  name: string;
-  mapUrl: string;
 }

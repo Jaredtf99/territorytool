@@ -3,8 +3,8 @@
     public enum RoleType
     {
         Unknown = 0,
-        SuperAdmin = 1,
-        Admin = 2,
-        User = 3
+        SUPERADMIN = 1,
+        ADMIN = 2,
+        USER = 3
     }
 }

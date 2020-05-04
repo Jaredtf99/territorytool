@@ -1,6 +1,6 @@
 import { Component, OnInit, Input, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Globals } from '../globals';
+import { Globals } from '../../globals';
 
 @Component({
   selector: 'app-view-actionlogs',

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -10,8 +11,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using TerritoryTool.ServerSide.Controllers.Models.User;
 using TerritoryTool.ServerSide.Domain;
+using TerritoryTool.ServerSide.Domain.Classes;
 using TerritoryTool.ServerSide.Domain.Enums;
 using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
 using TerritoryTool.ServerSide.Domain.Helpers;
@@ -25,17 +28,11 @@ namespace TerritoryTool.ServerSide.Controllers
     {
         private readonly ILogger _logger;
 
-        private UserManager<ApplicationUser> _userManager;
-        private readonly ApplicationSettings _appSettings;
-        private readonly IUserActionLogFacade _userActionLogFacade;
         private readonly IUserConfigurationFacade _userConfigurationFacade;
 
-        public UserController(UserManager<ApplicationUser> userManager, IOptions<ApplicationSettings> appSettings, ILogger<SampleDataController> logger, IUserActionLogFacade userActionLogFacade, IUserConfigurationFacade userConfigurationFacade)
+        public UserController(ILogger<SampleDataController> logger, IUserConfigurationFacade userConfigurationFacade)
         {
-            _userManager = userManager;
-            _appSettings = appSettings.Value;
             _logger = logger;
-            _userActionLogFacade = userActionLogFacade;
             _userConfigurationFacade = userConfigurationFacade;
         }
 
@@ -46,7 +43,7 @@ namespace TerritoryTool.ServerSide.Controllers
         {
             var userId  = SecurityHelper.GetLoggedUserId(User);
 
-            IdentityResult result = _userConfigurationFacade.RegisterUser(model?.UserName, model?.Password, RoleType.User, userId); 
+            IdentityResult result = _userConfigurationFacade.RegisterUser(model?.UserName, model?.Password, RoleType.USER, userId); 
 
             if (result == null)
                 return BadRequest();
@@ -91,6 +88,39 @@ namespace TerritoryTool.ServerSide.Controllers
                 _logger.LogInformation("Errors on changing password for userId {0}. Errors: {1}", userId, codesJoined);
                 return BadRequest(codesJoined);
             }
+
+        }
+
+
+        [HttpGet]
+        [Route("get-users")]
+        [Authorize(Roles = "SUPERADMIN,ADMIN")]
+        public ActionResult GetUsers()
+        {
+            IEnumerable<UserInfo> users = _userConfigurationFacade.GetUsersInformation();
+
+            return Content(JsonConvert.SerializeObject(users), ConfigurationHelper.JsonMime);
+        }
+
+        [HttpPost]
+        [Route("edit-user")]
+        [Authorize(Roles = "SUPERADMIN,ADMIN")]
+        public ActionResult EditUser(EditUserModel model)
+        {
+            if (string.IsNullOrWhiteSpace(model.UserID) || string.IsNullOrWhiteSpace(model.UserName) || model.Role == RoleType.Unknown || model.Role == RoleType.SUPERADMIN)
+                return BadRequest("INVALID_PARAMETERS");
+
+            if (model.Role == RoleType.ADMIN && !User.IsInRole(RoleType.SUPERADMIN.ToString()))
+                return Forbid();
+
+            var loggedUserId = SecurityHelper.GetLoggedUserId(User);
+
+            bool successful = _userConfigurationFacade.EditUser(model.UserID, model.UserName, model.Role, loggedUserId, out string errorMsg);
+
+            if (successful)
+                return Ok();
+            else
+                return BadRequest(errorMsg);
 
         }
 

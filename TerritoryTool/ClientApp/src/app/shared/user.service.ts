@@ -1,6 +1,7 @@
 import { Injectable, Inject } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { HttpClient } from '@angular/common/http'
+import { RoleType } from '../enums/RoleType';
 
 @Injectable()
 export class UserService {
@@ -66,21 +67,24 @@ export class UserService {
   }
 
   isSuperAdmin(): boolean {
-    const payload = JSON.parse(window.atob(localStorage.getItem('token').split('.')[1]));
-    const userRole = payload.role;
-    return ("SUPERADMIN" === userRole);
+    const userRole = this.getRole();
+    return (RoleType.SUPERADMIN === userRole);
   }
 
   isAdmin(): boolean {
-    const payload = JSON.parse(window.atob(localStorage.getItem('token').split('.')[1]));
-    const userRole = payload.role;
-    return ("ADMIN" === userRole);
+    const userRole = this.getRole();
+    return (RoleType.ADMIN === userRole);
   }
 
   isUser(): boolean {
+    const userRole = this.getRole();
+    return (RoleType.USER === userRole);
+  }
+
+  getRole(): RoleType {
     const payload = JSON.parse(window.atob(localStorage.getItem('token').split('.')[1]));
     const userRole = payload.role;
-    return ("USER" === userRole);
+    return RoleType[userRole as keyof typeof RoleType];
   }
 
   getUserName(): string {
