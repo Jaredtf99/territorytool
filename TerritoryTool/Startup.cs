@@ -38,6 +38,8 @@ namespace TerritoryTool
             services.AddTransient<IActionLogRepository, ActionLogRepository>();
             services.AddTransient<IUserActionLogFacade, UserActionLogFacade>();
             services.AddTransient<IUserConfigurationFacade, UserConfigurationFacade>();
+            services.AddTransient<IPersonRepository, PersonRepository>();
+            services.AddTransient<IPersonFacade, PersonFacade>();
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 

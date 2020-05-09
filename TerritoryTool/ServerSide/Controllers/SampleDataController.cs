@@ -23,12 +23,14 @@ namespace TerritoryTool.ServerSide.Controllers
 
         private readonly ITerritoryRepository _territoryRepository;
         private readonly IUserActionLogFacade _userActionLogFacade;
+        private readonly IPersonFacade _personFacade;
 
-        public SampleDataController(ITerritoryRepository territoryRepository, ILogger<SampleDataController> logger, IUserActionLogFacade userActionLogFacade)
+        public SampleDataController(ITerritoryRepository territoryRepository, ILogger<SampleDataController> logger, IUserActionLogFacade userActionLogFacade, IPersonFacade personFacade)
         {
             _territoryRepository = territoryRepository;
             _logger = logger;
             _userActionLogFacade = userActionLogFacade;
+            _personFacade = personFacade;
         }
 
         [HttpGet("[action]")]
@@ -116,6 +118,18 @@ namespace TerritoryTool.ServerSide.Controllers
             var actionLogs = _userActionLogFacade.GetAllActionLogs();
 
             return Content(JsonConvert.SerializeObject(actionLogs), ConfigurationHelper.JsonMime);
+        }
+
+        [HttpPost("[action]")]
+        [Authorize()]
+        public ActionResult AddPerson(string name)
+        {
+            var userId = SecurityHelper.GetLoggedUserId(User);
+            _logger.LogInformation("Adding person...");
+
+            _personFacade.AddNewPerson(name, userId);
+
+            return Ok();
         }
 
 

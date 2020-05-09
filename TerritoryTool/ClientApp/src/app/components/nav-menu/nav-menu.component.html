@@ -38,6 +38,11 @@
                 <i class="fas fa-user-plus mr-5px"></i> Registrar usuario
               </a>
             </li>
+            <li [routerLinkActive]='["link-active"]'>
+              <a [routerLink]='["/add-person"]' (click)='collapse()'>
+                <i class="fas fa-user-tie mr-5px"></i> Registrar hermano
+              </a>
+            </li>
             <li *ngIf="userService.roleMatch(['SUPERADMIN'])" [routerLinkActive]='["link-active"]'>
               <a [routerLink]='["/action-logs"]' (click)='collapse()'>
                 <i class="fas fa-file-contract mr-5px"></i> Action logs

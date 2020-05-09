@@ -46,3 +46,16 @@ INSERT INTO ActionLog (
 DROP TABLE sqlitestudio_temp_table;
 
 PRAGMA foreign_keys = 1;
+
+
+
+-- New table Person --
+
+CREATE TABLE Person (
+    Id          INTEGER PRIMARY KEY AUTOINCREMENT
+                        UNIQUE
+                        NOT NULL,
+    Name        TEXT    NOT NULL,
+    IdTerritory INTEGER REFERENCES Territory (Id) 
+                        UNIQUE
+);

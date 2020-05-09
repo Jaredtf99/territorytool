@@ -14,6 +14,9 @@ namespace TerritoryTool.ServerSide.Domain.Enums
         AddUser = 4,
         DeleteUser = 5,
         ChangeUserPassword = 6,
-        EditUser = 7
+        EditUser = 7,
+        AddPerson = 8,
+        EditPerson = 9,
+        DeletePerson = 10
     }
 }
