@@ -29,13 +29,19 @@ export class UsersComponent implements OnInit {
 
     this.setRolesCanIChange();
 
-    http.get<User[]>(baseUrl + 'api/user/get-users').subscribe(result => {
+    this.getUsersData();
+  }
+
+  getUsersData() {
+
+    this.http.get<User[]>(this.baseUrl + 'api/user/get-users').subscribe(result => {
       this.globals.loading = false;
       this.users = result;
     }, error => {
       this.globals.loading = false;
       console.error(error);
     });
+
 
   }
 
@@ -113,29 +119,29 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  //assignIdToDelete(idToDelete) {
-  //  this.idTerritoryToDelete = idToDelete;
-  //}
+  assignIdToDelete(idToDelete) {
+    this.idUserToDelete = idToDelete;
+  }
 
-  //deleteTerritory() {
-  //  this.globals.loading = true;
+  deleteUser() {
+    this.globals.loading = true;
 
-  //  let formData = new FormData();
-  //  formData.append('idToDelete', this.idTerritoryToDelete.toString());
-  //  $('#deleteTerritory').modal('hide');
+    let body = {
+      idToDelete: this.idUserToDelete
+    };
 
-  //  this.http.post(this.baseUrl + 'api/SampleData/deleteTerritory', formData).subscribe(() => {
-  //    this.globals.loading = false;
-  //    this.toastr.success('Territorio eliminado');
-  //    this.territories.splice(this.territories.indexOf(this.territoriesFiltered.filter(territory => territory.id === this.idTerritoryToDelete)[0]), 1);
-  //    this.filter();
-  //  }, error => {
-  //    this.globals.loading = false;
-  //    this.toastr.error("Error desconocido");
-  //    console.error(error.error);
-  //  });
+    $('#deleteUser').modal('hide');
 
-  //}
+    this.http.get(this.baseUrl + 'api/user/delete-user?idToDelete=' + this.idUserToDelete).subscribe(() => {
+      this.toastr.success('Usuario eliminado');
+      this.getUsersData();
+    }, error => {
+      this.globals.loading = false;
+      this.toastr.error("Error desconocido");
+      console.error(error.error);
+    });
+
+  }
 
 
   ngOnInit() {

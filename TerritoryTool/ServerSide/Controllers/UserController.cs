@@ -124,5 +124,22 @@ namespace TerritoryTool.ServerSide.Controllers
 
         }
 
+        [HttpGet]
+        [Route("delete-user")]
+        [Authorize(Roles = "SUPERADMIN,ADMIN")]
+        public ActionResult DeleteUser(string idToDelete)
+        {
+            if (string.IsNullOrWhiteSpace(idToDelete))
+                return BadRequest("INVALID_PARAMETERS");
+
+            var loggedUserId = SecurityHelper.GetLoggedUserId(User);
+
+            _userConfigurationFacade.DeleteUser(idToDelete, loggedUserId);
+
+            return Ok();
+
+        }
+
+
     }
 }

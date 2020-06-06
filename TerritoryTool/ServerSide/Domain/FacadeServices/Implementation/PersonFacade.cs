@@ -37,11 +37,55 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
             Person person = new Person { Name = name };
 
+            _logger.LogInformation(string.Format("Adding {0} to persons", name));
+
             _personRepo.AddNewPerson(person);
 
             _actionLog.AddNewActionLog(ActionType.AddPerson, string.Format("Person {0} added", name), idLoggedUser, true);
 
             return true;
+        }
+
+        public IEnumerable<PersonInfo> GetAllPersons()
+        {
+            IEnumerable<PersonInfo> personsInfo = new List<PersonInfo>();
+
+            var persons = _personRepo.GetAllPersons();
+
+            var retval = ConvertPersonToPersonInfo(persons);
+
+            return retval;
+        }
+
+        public void DeletePerson(string name, string loggedUserId)
+        {
+            var personToDelete = _personRepo.SearchPersonsByName(name).FirstOrDefault(x => x.Name == name);
+
+            if (personToDelete == null)
+                _logger.LogError($"Cannot found person to delete. Name: {name}");
+            else
+                _personRepo.DeletePerson(personToDelete.Id);
+
+            _actionLog.AddNewActionLog(ActionType.DeletePerson, $"Deleting person {name}", loggedUserId, personToDelete != null);
+        }
+
+
+        private IEnumerable<PersonInfo> ConvertPersonToPersonInfo(IEnumerable<Person> persons)
+        {
+            List<PersonInfo> retval = new List<PersonInfo>();
+
+            foreach (Person person in persons)
+            {
+                PersonInfo personInfo = new PersonInfo();
+
+                personInfo.Name = person.Name;
+                personInfo.TerritoryCode = person.Territory?.Code;
+                personInfo.TerritoryName = person.Territory?.Name;
+
+                retval.Add(personInfo);
+            }
+
+            return retval;
         }
     }
 }

@@ -10,5 +10,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces
     public interface IPersonFacade
     {
         bool AddNewPerson(string name, string idLoggedUser);
+        IEnumerable<PersonInfo> GetAllPersons();
+        void DeletePerson(string name, string loggedUserId);
     }
 }

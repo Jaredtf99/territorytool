@@ -15,6 +15,8 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces
         IdentityResult ChangePassword(string userId, string currentPassword, string newPassword);
         bool EditUser(string userID, string userName, RoleType newRole, string loggedUserId, out string errorMsg);
 
+        void DeleteUser(string userID, string loggedUserId);
+
         IEnumerable<UserInfo> GetUsersInformation();
     }
 }

@@ -25,6 +25,7 @@ import { Globals } from './globals';
 import { UsersComponent } from './components/users/users.component';
 import { SelectorComponent } from './components/selector/selector.component';
 import { AddPersonComponent } from './components/add-person/add-person.component';
+import { PersonsComponent } from './components/persons/persons.component';
 
 
 @NgModule({
@@ -42,7 +43,8 @@ import { AddPersonComponent } from './components/add-person/add-person.component
     UserConfigurationComponent,
     UsersComponent,
     SelectorComponent,
-    AddPersonComponent
+    AddPersonComponent,
+    PersonsComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -61,7 +63,9 @@ import { AddPersonComponent } from './components/add-person/add-person.component
           { path: 'user-configuration', component: UserConfigurationComponent },
           { path: 'action-logs', component: ViewActionlogsComponent, data: { permittedRoles: ['SUPERADMIN'] } },
           { path: 'users', component: UsersComponent, data: { permittedRoles: ['SUPERADMIN', 'ADMIN'] } },
-          { path: 'add-person', component: AddPersonComponent }
+          { path: 'add-person', component: AddPersonComponent, data: { permittedRoles: ['SUPERADMIN', 'ADMIN'] } },
+          { path: 'persons', component: PersonsComponent }
+
         ]
       },
       { path: 'login', component: LoginComponent },

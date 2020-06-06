@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Identity;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using TerritoryTool.ServerSide.Persistence.Entities;
 using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
 
@@ -30,33 +31,70 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
         {
             using (IDbConnection con = Connection)
             {
-                string query = @"SELECT * FROM Person WHERE Id = @id";
+                string query = @"SELECT * FROM Person AS A LEFT JOIN Territory AS B ON A.IdTerritory = B.Id WHERE A.Id = @id";
                 con.Open();
-                var result = con.QueryFirstOrDefault<Person>(query, new { id });
-                return result;
+                var result = con.Query<Person, Territory, Person>(query, 
+                    (person, territory) => 
+                    {
+                        person.Territory = territory;
+                        return person;
+                    },
+                    new { id });
+
+                return result?.FirstOrDefault();
             }
         }
 
         public IEnumerable<Person> SearchPersonsByName(string name)
         {
+            var nameFormat = "%" + name + "%";
             using (IDbConnection con = Connection)
             {
-                string query = "SELECT * FROM Person WHERE Name LIKE '%@name%'";
+                string query = "SELECT * FROM Person AS A LEFT JOIN Territory AS B ON A.IdTerritory = B.Id WHERE A.Name LIKE @nameFormat";
                 con.Open();
-                var result = con.Query<Person>(query, new { name });
+                var result = con.Query<Person, Territory, Person>(query, 
+                    (person, territory) =>
+                    {
+                        person.Territory = territory;
+                        return person;
+                    },
+                    new { nameFormat });
                 return result;
             }
 
         }
 
+        public IEnumerable<Person> GetAllPersons()
+        {
+            using (IDbConnection con = Connection)
+            {
+                string query = "SELECT * FROM Person AS A LEFT JOIN Territory AS B ON A.IdTerritory = B.Id";
+                con.Open();
+                var result = con.Query<Person, Territory, Person>(query,
+                    (person, territory) =>
+                    {
+                        person.Territory = territory;
+                        return person;
+                    });
+                return result;
+            }
+
+        }
         public Person GetPersonWithTerritory(int idTerritory)
         {
             using (IDbConnection con = Connection)
             {
-                string query = @"SELECT * FROM Person WHERE idTerritory = @idTerritory";
+                string query = @"SELECT * FROM Person AS A LEFT JOIN Territory AS B ON A.IdTerritory = B.Id WHERE A.idTerritory = @idTerritory";
                 con.Open();
-                var result = con.QueryFirstOrDefault<Person>(query, new { idTerritory });
-                return result;
+                var result = con.Query<Person, Territory, Person>(query,
+                    (person, territory) =>
+                    {
+                        person.Territory = territory;
+                        return person;
+                    }, 
+                    new { idTerritory });
+
+                return result?.FirstOrDefault();
             }
 
         }

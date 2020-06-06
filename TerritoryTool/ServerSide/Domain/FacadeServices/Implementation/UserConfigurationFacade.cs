@@ -171,6 +171,36 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             return true;
         }
 
+        public void DeleteUser(string userID, string loggedUserId)
+        {
+            ApplicationUser userToDelete = _userManager.Users.FirstOrDefault(x => x.Id == userID);
+
+            bool deleted = false;
+
+            if (userToDelete != null)
+            {
+                ApplicationUser loggedUser = _userManager.Users.FirstOrDefault(x => x.Id == loggedUserId);
+
+                string loggedRole = _userManager.GetRolesAsync(loggedUser).Result.FirstOrDefault();
+                string userToDeleteRole = _userManager.GetRolesAsync(userToDelete).Result.FirstOrDefault();
+
+                if (loggedRole == RoleType.SUPERADMIN.ToString() || (loggedRole == RoleType.ADMIN.ToString() && userToDeleteRole == RoleType.USER.ToString()))
+                {
+                    var result = _userManager.DeleteAsync(userToDelete).Result;
+
+                    deleted = result.Succeeded;
+
+                    if (deleted)
+                        _logger.LogInformation("User with ID {0} deleted.", userID);
+                    else
+                        _logger.LogError("Error deleting user with id {0}. Errors: {1}", userID, string.Join(", ", result.Errors.Select(x => x.Description)));
+                }
+                else
+                    _logger.LogWarning("Unauthorized user delete action. LoggedUserID: {0}. UserToDelete: {1}", loggedUserId, userID);
+            }
+
+            _userActionLogFacade.AddNewActionLog(ActionType.DeleteUser, string.Format("User with ID {0} deleted.", userID), loggedUserId, deleted);
+        }
 
         private IEnumerable<UserInfo> ConvertApplicationUserToUserInfo(IEnumerable<ApplicationUser> users, UserManager<ApplicationUser> userManager)
         {

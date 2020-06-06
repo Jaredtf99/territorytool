@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebSockets.Internal;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using TerritoryTool.ServerSide.Domain.Classes;
 using TerritoryTool.ServerSide.Domain.Enums;
 using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
 using TerritoryTool.ServerSide.Domain.Helpers;
@@ -115,19 +116,39 @@ namespace TerritoryTool.ServerSide.Controllers
         [Authorize(Roles = "SUPERADMIN")]
         public ActionResult GetAllActionLogs()
         {
-            var actionLogs = _userActionLogFacade.GetAllActionLogs();
+            IEnumerable<ActionLogInfo> actionLogs = _userActionLogFacade.GetAllActionLogs();
 
             return Content(JsonConvert.SerializeObject(actionLogs), ConfigurationHelper.JsonMime);
         }
 
         [HttpPost("[action]")]
-        [Authorize()]
+        [Authorize(Roles = "SUPERADMIN,ADMIN")]
         public ActionResult AddPerson(string name)
         {
             var userId = SecurityHelper.GetLoggedUserId(User);
             _logger.LogInformation("Adding person...");
 
             _personFacade.AddNewPerson(name, userId);
+
+            return Ok();
+        }
+
+        [HttpGet("[action]")]
+        [Authorize]
+        public ActionResult GetAllPersons()
+        {
+            IEnumerable<PersonInfo> persons = _personFacade.GetAllPersons();
+
+            return Content(JsonConvert.SerializeObject(persons), ConfigurationHelper.JsonMime);
+        }
+
+        [HttpPost("[action]")]
+        [Authorize(Roles = "SUPERADMIN,ADMIN")]
+        public ActionResult DeletePerson(string name)
+        {
+            var userId = SecurityHelper.GetLoggedUserId(User);
+
+            _personFacade.DeletePerson(name, userId);
 
             return Ok();
         }
