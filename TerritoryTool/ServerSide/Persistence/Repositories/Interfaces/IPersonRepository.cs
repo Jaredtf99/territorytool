@@ -11,6 +11,6 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Interfaces
         IEnumerable<Person> GetAllPersons();
         void AddNewPerson(Person person);
         void EditPerson(Person person);
-        void DeletePerson(int idPerson);
+        void DeletePerson(Person person);
     }
 }

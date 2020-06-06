@@ -1,6 +1,6 @@
-﻿using Dapper;
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Identity;
 using System.Collections.Generic;
 using System.Data;
@@ -12,123 +12,61 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
 {
     public class PersonRepository : IPersonRepository
     {
-        private readonly IConfiguration _config;
+        private readonly TerritoryToolDbContext _context;
+        private readonly ILogger _logger;
 
-        private IDbConnection Connection
+        public PersonRepository(TerritoryToolDbContext context, ILogger<PersonRepository> logger)
         {
-            get
-            {
-                return new SqliteConnection(_config.GetConnectionString("SQLite"));
-            }
-        }
-
-        public PersonRepository(IConfiguration config)
-        {
-            _config = config;
+            _context = context;
+            _logger = logger;
         }
 
         public Person GetPersonById(int id)
         {
-            using (IDbConnection con = Connection)
-            {
-                string query = @"SELECT * FROM Person AS A LEFT JOIN Territory AS B ON A.IdTerritory = B.Id WHERE A.Id = @id";
-                con.Open();
-                var result = con.Query<Person, Territory, Person>(query, 
-                    (person, territory) => 
-                    {
-                        person.Territory = territory;
-                        return person;
-                    },
-                    new { id });
-
-                return result?.FirstOrDefault();
-            }
+            return _context.Person.Find(id);
         }
 
         public IEnumerable<Person> SearchPersonsByName(string name)
         {
-            var nameFormat = "%" + name + "%";
-            using (IDbConnection con = Connection)
-            {
-                string query = "SELECT * FROM Person AS A LEFT JOIN Territory AS B ON A.IdTerritory = B.Id WHERE A.Name LIKE @nameFormat";
-                con.Open();
-                var result = con.Query<Person, Territory, Person>(query, 
-                    (person, territory) =>
-                    {
-                        person.Territory = territory;
-                        return person;
-                    },
-                    new { nameFormat });
-                return result;
-            }
-
+            return _context.Person.Where(x => x.Name.Contains(name)).ToList();
         }
 
         public IEnumerable<Person> GetAllPersons()
         {
-            using (IDbConnection con = Connection)
-            {
-                string query = "SELECT * FROM Person AS A LEFT JOIN Territory AS B ON A.IdTerritory = B.Id";
-                con.Open();
-                var result = con.Query<Person, Territory, Person>(query,
-                    (person, territory) =>
-                    {
-                        person.Territory = territory;
-                        return person;
-                    });
-                return result;
-            }
-
+            return _context.Person.ToList();
         }
         public Person GetPersonWithTerritory(int idTerritory)
         {
-            using (IDbConnection con = Connection)
-            {
-                string query = @"SELECT * FROM Person AS A LEFT JOIN Territory AS B ON A.IdTerritory = B.Id WHERE A.idTerritory = @idTerritory";
-                con.Open();
-                var result = con.Query<Person, Territory, Person>(query,
-                    (person, territory) =>
-                    {
-                        person.Territory = territory;
-                        return person;
-                    }, 
-                    new { idTerritory });
-
-                return result?.FirstOrDefault();
-            }
-
+            return _context.Territory.Find(idTerritory).Person;
         }
 
         public void AddNewPerson(Person person)
         {
-            using (IDbConnection con = Connection)
+            if (person.Id == 0)
             {
-                string query = @"INSERT INTO Person (Name, IdTerritory) VALUES (@name, @idTerritory); SELECT LAST_INSERT_ROWID()";
-                con.Open();
-                con.Query<long>(query, new { name = person.Name, idTerritory = person.IdTerritory });
+                _context.Person.Add(person);
+                _context.SaveChanges();
             }
+            else
+                _logger.LogError("Error add person entity. Entity to add shouldnt have an ID");
         }
 
         public void EditPerson(Person person)
         {
-            using (IDbConnection con = Connection)
+            if (person.Id != 0)
             {
-                string query = @"UPDATE Person SET Name = @name, IdTerritory = @idTerritory WHERE Id = @id; SELECT LAST_INSERT_ROWID()";
-                con.Open();
-                con.Query<long>(query, new { id = person.Id, name = person.Name, idTerritory = person.IdTerritory});
+                _context.Person.Update(person);
+                _context.SaveChanges();
             }
-
+            else
+                _logger.LogError("Error updating person entity. Entity to update should have an ID");
+           
         }
 
-        public void DeletePerson(int idPerson)
+        public void DeletePerson(Person person)
         {
-            using (IDbConnection con = Connection)
-            {
-                string query = @"DELETE FROM Person WHERE Id = @idPerson; SELECT LAST_INSERT_ROWID()";
-                con.Open();
-                con.Query<long>(query, new { idPerson });
-            }
-
+            _context.Person.Remove(person);
+            _context.SaveChanges();
         }
     }
 }

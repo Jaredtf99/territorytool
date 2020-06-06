@@ -64,7 +64,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             if (personToDelete == null)
                 _logger.LogError($"Cannot found person to delete. Name: {name}");
             else
-                _personRepo.DeletePerson(personToDelete.Id);
+                _personRepo.DeletePerson(personToDelete);
 
             _actionLog.AddNewActionLog(ActionType.DeletePerson, $"Deleting person {name}", loggedUserId, personToDelete != null);
         }
@@ -79,8 +79,9 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
                 PersonInfo personInfo = new PersonInfo();
 
                 personInfo.Name = person.Name;
-                personInfo.TerritoryCode = person.Territory?.Code;
-                personInfo.TerritoryName = person.Territory?.Name;
+                //TODO: Revisar esto, estaba mal planteado. Podemos sacar una lista de territorios activos, y ver como mostrarlo por pantalla.
+                //personInfo.TerritoryCode = person.Te?.Code;
+                //personInfo.TerritoryName = person.Territory?.Name;
 
                 retval.Add(personInfo);
             }

@@ -1,8 +1,7 @@
-﻿using Dapper;
-using Microsoft.Data.Sqlite;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using TerritoryTool.ServerSide.Persistence.Entities;
 using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
 
@@ -10,104 +9,75 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
 {
     public class TerritoryRepository : ITerritoryRepository
     {
-        private readonly IConfiguration _config;
+        private readonly TerritoryToolDbContext _context;
+        private readonly ILogger _logger;
 
-        private IDbConnection Connection
+        public TerritoryRepository(TerritoryToolDbContext context, ILogger<TerritoryRepository> logger)
         {
-            get
-            {
-                return new SqliteConnection(_config.GetConnectionString("SQLite"));
-            }
-        }
-
-        public TerritoryRepository(IConfiguration config)
-        {
-            _config = config;
+            _context = context;
+            _logger = logger;
         }
 
         public IEnumerable<Territory> GetAllTerritories()
         {
-            using (IDbConnection con = Connection)
-            {
-                string query = "SELECT * FROM Territory";
-                con.Open();
-                var result = con.Query<Territory>(query);
-                return result;
-            }
+            return _context.Territory.ToList();
         }
 
         public Territory GetTerritoryById(int id)
         {
-            using (IDbConnection con = Connection)
-            {
-                string query = @"SELECT * FROM Territory WHERE Id = @id";
-                con.Open();
-                var result = con.QueryFirstOrDefault<Territory>(query, new { id });
-                return result;
-            }
+            return _context.Territory.Find(id);
         }
 
         public Territory GetTerritoryByName(string name)
         {
-            using (IDbConnection con = Connection)
-            {
-                string query = @"SELECT * FROM Territory WHERE Name = @name";
-                con.Open();
-                var result = con.QueryFirstOrDefault<Territory>(query, new { name });
-                return result;
-            }
+            return _context.Territory.Where(x => x.Name.ToLower() == name.ToLower()).FirstOrDefault();
         }
 
         public void AddNewTerritory(string code, string name, string mapUrl)
         {
-            using (IDbConnection con = Connection)
+            Territory newTerritory = new Territory
             {
-                string query = @"INSERT INTO Territory (Code, Name, MapUrl) VALUES (@code, @name, @mapUrl); SELECT LAST_INSERT_ROWID()";
-                con.Open();
-                con.Query<long>(query, new { code, name, mapUrl});
-            }
+                Code = code,
+                Name = name,
+                MapUrl = mapUrl
+            };
+
+            _context.Territory.Add(newTerritory);
+            _context.SaveChanges();
+
         }
 
-        public void EditTerritory(int id, string code, string name, string mapUrl)
+        public void EditTerritory(Territory territory)
         {
-            using (IDbConnection con = Connection)
+            if (territory.Id != 0)
             {
-                string query = @"UPDATE Territory SET Name = @name, Code = @code, MapUrl = @mapUrl WHERE Id = @id; SELECT LAST_INSERT_ROWID()";
-                con.Open();
-                con.Query<long>(query, new { id, code, name, mapUrl });
+                _context.Territory.Update(territory);
+                _context.SaveChanges();
             }
+            else
+                _logger.LogError("Error updating territory entity. Entity to update dont have an ID");
         }
 
-        public void DeleteTerritory(int id)
+        public void DeleteTerritory(Territory territory)
         {
-            using (IDbConnection con = Connection)
+            if (territory.Id != 0)
             {
-                string query = @"DELETE FROM Territory WHERE Id = @id; SELECT LAST_INSERT_ROWID()";
-                con.Open();
-                con.Query<long>(query, new { id });
+                _context.Territory.Remove(territory);
+                _context.SaveChanges();
             }
+            else
+                _logger.LogError("Error deleting territory entity. Entity to update dont have an ID");
+            
         }
 
         public Territory GetTerritoryByCode(string code)
         {
-            using (IDbConnection con = Connection)
-            {
-                string query = @"SELECT * FROM Territory WHERE Code = @code";
-                con.Open();
-                var result = con.QueryFirstOrDefault<Territory>(query, new { code });
-                return result;
-            }
+            return _context.Territory.Where(x => x.Code.ToLower() == code.ToLower()).FirstOrDefault();
         }
 
         public Territory GetTerritoryByMapUrl(string mapUrl)
         {
-            using (IDbConnection con = Connection)
-            {
-                string query = @"SELECT * FROM Territory WHERE MapUrl = @mapUrl";
-                con.Open();
-                var result = con.QueryFirstOrDefault<Territory>(query, new { mapUrl });
-                return result;
-            }
+            return _context.Territory.Where(x => x.MapUrl.ToLower() == mapUrl.ToLower()).FirstOrDefault();
         }
     }
 }

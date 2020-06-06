@@ -13,8 +13,8 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Interfaces
 
         void AddNewTerritory(string code, string name, string mapUrl);
 
-        void EditTerritory(int idToEdit, string code, string name, string mapUrl);
+        void EditTerritory(Territory territory);
 
-        void DeleteTerritory(int id);
+        void DeleteTerritory(Territory territory);
     }
 }

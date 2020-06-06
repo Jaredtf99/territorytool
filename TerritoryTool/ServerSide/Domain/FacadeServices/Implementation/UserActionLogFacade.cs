@@ -40,7 +40,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             ActionLog actionLog = new ActionLog
             {
                 ActionType = (int)actionType,
-                DateTimeUTC = DateTime.UtcNow,
+                DateTimeUtc = DateTime.UtcNow,
                 Message = message,
                 UserId = loggedUserId,
                 Successful = successful
@@ -96,7 +96,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
                     ActionLogInfo actionInfo = new ActionLogInfo
                     {
                         ActionType = (ActionType)action.ActionType,
-                        DateUtc = action.DateTimeUTC,
+                        DateUtc = action.DateTimeUtc,
                         Message = action.Message,
                         UserName = userNameFinded,
                         Successful = action.Successful

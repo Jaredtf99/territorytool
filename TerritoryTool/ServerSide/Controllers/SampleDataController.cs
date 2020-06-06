@@ -89,8 +89,11 @@ namespace TerritoryTool.ServerSide.Controllers
             if (territory.MapUrl != mapUrl && _territoryRepository.GetTerritoryByMapUrl(mapUrl) != null)
                 return BadRequest("MAPURL_EXIST");
 
+            territory.Code = code;
+            territory.Name = name;
+            territory.MapUrl = mapUrl;
 
-            _territoryRepository.EditTerritory(id, code, name, mapUrl);
+            _territoryRepository.EditTerritory(territory);
 
             _userActionLogFacade.AddNewActionLog(ActionType.EditTerritory, string.Format("Edited territory ID {0} to: Code ({1}) Name ({2}) MapURL ({3})", id, code, name, mapUrl), userId, true);
 
@@ -103,13 +106,24 @@ namespace TerritoryTool.ServerSide.Controllers
         {
             var userId = SecurityHelper.GetLoggedUserId(User);
 
-            _logger.LogInformation("Delete territory...");
+            _logger.LogInformation("Deleting territory...");
 
-            _territoryRepository.DeleteTerritory(idToDelete);
+            string errorMessage = null;
 
-            _userActionLogFacade.AddNewActionLog(ActionType.DeleteTerritory, string.Format("Deleted territory id {0}", idToDelete), userId, true);
+            Territory territoryToDelete = _territoryRepository.GetTerritoryById(idToDelete);
 
-            return Ok();
+            if (territoryToDelete != null)
+                _territoryRepository.DeleteTerritory(territoryToDelete);
+            else
+                errorMessage = "TERRITORY_NOT_FOUND";
+
+            _userActionLogFacade.AddNewActionLog(ActionType.DeleteTerritory, string.Format("Deleted territory id {0}", idToDelete), userId, string.IsNullOrWhiteSpace(errorMessage));
+
+            if (string.IsNullOrWhiteSpace(errorMessage))
+                return Ok();
+            else
+                return BadRequest(errorMessage);
+
         }
 
         [HttpGet("[action]")]

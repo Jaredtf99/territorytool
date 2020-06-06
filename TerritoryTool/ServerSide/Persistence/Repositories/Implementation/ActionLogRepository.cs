@@ -1,11 +1,7 @@
-﻿using Dapper;
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
-using System;
+using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
-using System.Data;
-using System.Diagnostics.Contracts;
-using TerritoryTool.ServerSide.Domain.Enums;
 using TerritoryTool.ServerSide.Persistence.Entities;
 using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
 
@@ -13,49 +9,30 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
 {
     public class ActionLogRepository : IActionLogRepository
     {
-        private readonly IConfiguration _config;
+        private readonly TerritoryToolDbContext _context;
+        private readonly ILogger _logger;
 
-        private IDbConnection Connection
+        public ActionLogRepository(TerritoryToolDbContext context, ILogger<ActionLogRepository> logger)
         {
-            get
-            {
-                return new SqliteConnection(_config.GetConnectionString("SQLite"));
-            }
-        }
-
-        public ActionLogRepository(IConfiguration config)
-        {
-            _config = config;
+            _context = context;
+            _logger = logger;
         }
 
         public IEnumerable<ActionLog> GetActionLogs()
         {
-            using (IDbConnection con = Connection)
-            {
-                string query = "SELECT * FROM ActionLog";
-                con.Open();
-                var result = con.Query<ActionLog>(query);
-                return result;
-            }
+            //TODO: paginar
+            return _context.ActionLog;
         }
 
         public void AddNewActionLog(ActionLog actionLog)
         {
-            Contract.Requires(actionLog != null);
-
-            using (IDbConnection con = Connection)
+            if (actionLog.Id == 0)
             {
-                string query = @"INSERT INTO ActionLog (UserId, DateTimeUTC, Message, ActionType, Successful) VALUES (@userId, @dateTimeUtc, @message, @actionType, @successful); SELECT LAST_INSERT_ROWID()";
-                con.Open();
-                con.Query<long>(query, new 
-                { 
-                    userId = actionLog.UserId, 
-                    dateTimeUtc = actionLog.DateTimeUTC, 
-                    message = actionLog.Message, 
-                    actionType = actionLog.ActionType,
-                    successful = actionLog.Successful
-                });
+                _context.ActionLog.Add(actionLog);
+                _context.SaveChanges();
             }
+            else
+                _logger.LogError("Error adding new actionLog, id should be 0");
 
         }
     }

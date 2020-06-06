@@ -46,6 +46,9 @@ namespace TerritoryTool
             services.AddDbContext<AuthenticationContext>(options =>
             options.UseSqlite(Configuration.GetConnectionString("SQLite")));
 
+            services.AddDbContext<TerritoryToolDbContext>(options =>
+            options.UseSqlite(Configuration.GetConnectionString("SQLite")));
+
             services.AddDefaultIdentity<ApplicationUser>()
                 .AddRoles<IdentityRole>()
                 .AddEntityFrameworkStores<AuthenticationContext>();

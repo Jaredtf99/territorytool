@@ -1,9 +1,19 @@
-﻿namespace TerritoryTool.ServerSide.Persistence.Entities
+﻿using System;
+using System.Collections.Generic;
+
+namespace TerritoryTool.ServerSide.Persistence.Entities
 {
-    public class Person : Entity
+    public partial class Person : Entity
     {
+        public Person()
+        {
+            TerritoriesInUse = new HashSet<Territory>();
+            Transactions = new HashSet<Transaction>();
+        }
+
         public string Name { get; set; }
-        public int? IdTerritory { get; set; }
-        public Territory Territory { get; set; }
+
+        public ICollection<Territory> TerritoriesInUse { get; set; }
+        public ICollection<Transaction> Transactions { get; set; }
     }
 }
