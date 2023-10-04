@@ -1,0 +1,42 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <div class="container-fluid">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <a class="navbar-brand" [routerLink]="['/home']">TerritoryTool</a>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item" [routerLinkActive]="['link-active']">
+          <a class="nav-link" [routerLink]="['/territories']"> <i class="fas fa-address-card me-2"></i> Ver territorios </a>
+        </li>
+        <li *ngIf="userService.roleMatch(['SUPERADMIN', 'ADMIN'])" class="nav-item" [routerLinkActive]="['link-active']">
+          <a class="nav-link" [routerLink]="['/users']"> <i class="fas fa-user me-2"></i> Usuarios </a>
+        </li>
+        <li *ngIf="userService.roleMatch(['SUPERADMIN', 'ADMIN'])" class="nav-item" [routerLinkActive]="['link-active']">
+          <a class="nav-link" [routerLink]="['/registration']"> <i class="fas fa-user-plus me-2"></i> Registrar usuario </a>
+        </li>
+        <li class="nav-item" [routerLinkActive]="['link-active']">
+          <a class="nav-link" [routerLink]="['/add-person']"> <i class="fas fa-user-tie me-2"></i> Registrar hermano </a>
+        </li>
+        <li class="nav-item" [routerLinkActive]="['link-active']">
+          <a class="nav-link" [routerLink]="['/persons']"> <i class="fas fa-user-tie me-2"></i> Ver hermanos </a>
+        </li>
+        <li *ngIf="userService.roleMatch(['SUPERADMIN'])" class="nav-item" [routerLinkActive]="['link-active']">
+          <a class="nav-link" [routerLink]="['/action-logs']"> <i class="fas fa-file-contract me-2"></i> Action logs </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" (click)="logout()"> <i class="fas fa-sign-out-alt me-2"></i> Cerrar sesión </a>
+        </li>
+        <li class="nav-item">
+          <div class="navbar-user">
+            <span>{{ userService.getUserName() }}</span>
+            <button class="btn btn-link" [routerLink]="['/user-configuration']">
+              <i class="fas fa-user-cog"></i>
+            </button>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
