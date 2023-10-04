@@ -3,3 +3,4 @@ TerritoryTool/logs
 .vs
 webapi/bin
 webapi/obj
+angularapp/obj
