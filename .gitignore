@@ -1,3 +1,5 @@
 ﻿.vs
 TerritoryTool/logs
 .vs
+webapi/bin
+webapi/obj
