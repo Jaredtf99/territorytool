@@ -4,3 +4,5 @@ TerritoryTool/logs
 webapi/bin
 webapi/obj
 angularapp/obj
+webapi/logs
+webapi/Properties

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -24,6 +25,7 @@ namespace TerritoryTool.ServerSide.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class UserController : ControllerBase
     {
         private readonly ILogger _logger;
@@ -55,6 +57,7 @@ namespace TerritoryTool.ServerSide.Controllers
 
         [HttpPost]
         [Route("login")]
+        [AllowAnonymous]
         public ActionResult Login(LoginModel model)
         {
             _logger.LogInformation("Loging user...");
@@ -71,7 +74,6 @@ namespace TerritoryTool.ServerSide.Controllers
 
         [HttpPost]
         [Route("change-password")]
-        [Authorize]
         public ActionResult ChangePassword(ChangePasswordModel model)
         {
             var userId  = SecurityHelper.GetLoggedUserId(User);

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -16,6 +17,7 @@ namespace TerritoryTool.ServerSide.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class SampleDataController : ControllerBase
     {
 
@@ -34,7 +36,6 @@ namespace TerritoryTool.ServerSide.Controllers
         }
 
         [HttpGet("[action]")]
-        [Authorize]
         public IEnumerable<Territory> AllTerritories()
         {
             _logger.LogInformation("Returning all territories...");
@@ -147,7 +148,6 @@ namespace TerritoryTool.ServerSide.Controllers
         }
 
         [HttpGet("[action]")]
-        [Authorize]
         public ActionResult GetAllPersons()
         {
             IEnumerable<PersonInfo> persons = _personFacade.GetAllPersons();
