@@ -30,62 +30,69 @@
     <!-- ### $Sidebar Menu ### -->
     <ul class="sidebar-menu scrollable pos-r">
       <li class="nav-item mT-30 actived">
-        <a class="sidebar-link" href="index.html">
+        <a class="sidebar-link" [routerLink]="['/territories']">
           <span class="icon-holder">
             <i class="c-blue-500 ti-home"></i>
           </span>
-          <span class="title">Dashboard</span>
+          <span class="title">Ver territorios</span>
         </a>
       </li>
-      <li class="nav-item">
-        <a class='sidebar-link' href="email.html">
+
+      <li class="nav-item" *ngIf="userService.roleMatch(['SUPERADMIN', 'ADMIN'])">
+        <a class='sidebar-link' [routerLink]="['/registration']">
           <span class="icon-holder">
             <i class="c-brown-500 ti-email"></i>
           </span>
-          <span class="title">Email</span>
+          <span class="title">Usuarios</span>
         </a>
       </li>
+
       <li class="nav-item">
-        <a class='sidebar-link' href="compose.html">
+        <a class='sidebar-link' [routerLink]="['/add-person']">
           <span class="icon-holder">
             <i class="c-blue-500 ti-share"></i>
           </span>
-          <span class="title">Compose</span>
+          <span class="title">Registrar hermano</span>
         </a>
       </li>
-      <li class="nav-item">
-        <a class='sidebar-link' href="calendar.html">
+
+      <li class="nav-item" *ngIf="userService.roleMatch(['SUPERADMIN', 'ADMIN'])">
+        <a class='sidebar-link' [routerLink]="['/registration']">
           <span class="icon-holder">
             <i class="c-deep-orange-500 ti-calendar"></i>
           </span>
-          <span class="title">Calendar</span>
+          <span class="title">Registrar usuario</span>
         </a>
       </li>
+
       <li class="nav-item">
-        <a class='sidebar-link' href="chat.html">
+        <a class='sidebar-link' [routerLink]="['/persons']">
           <span class="icon-holder">
             <i class="c-deep-purple-500 ti-comment-alt"></i>
           </span>
-          <span class="title">Chat</span>
+          <span class="title">Ver hermanos</span>
         </a>
       </li>
-      <li class="nav-item">
-        <a class='sidebar-link' href="charts.html">
+
+      <li class="nav-item" *ngIf="userService.roleMatch(['SUPERADMIN'])">
+        <a class='sidebar-link' [routerLink]="['/action-logs']">
           <span class="icon-holder">
             <i class="c-indigo-500 ti-bar-chart"></i>
           </span>
-          <span class="title">Charts</span>
+          <span class="title">Action logs</span>
         </a>
       </li>
+
       <li class="nav-item">
-        <a class='sidebar-link' href="forms.html">
+        <a class='sidebar-link' (click)="logout()">
           <span class="icon-holder">
             <i class="c-light-blue-500 ti-pencil"></i>
           </span>
-          <span class="title">Forms</span>
+          <span class="title">Cerrar sesión</span>
         </a>
       </li>
-      <li class="nav-item dropdown">
+
+      <!--<li class="nav-item dropdown">
         <a class="sidebar-link" href="ui.html">
           <span class="icon-holder">
             <i class="c-pink-500 ti-palette"></i>
@@ -93,6 +100,7 @@
           <span class="title">UI Elements</span>
         </a>
       </li>
+
       <li class="nav-item dropdown">
         <a class="dropdown-toggle" href="javascript:void(0);">
           <span class="icon-holder">
@@ -192,7 +200,7 @@
             </ul>
           </li>
         </ul>
-      </li>
+      </li>-->
     </ul>
   </div>
 </div>

@@ -137,7 +137,7 @@ namespace TerritoryTool.ServerSide.Controllers
 
         [HttpPost("[action]")]
         [Authorize(Roles = "SUPERADMIN,ADMIN")]
-        public ActionResult AddPerson(string name)
+        public ActionResult AddPerson([FromBody]string name)
         {
             var userId = SecurityHelper.GetLoggedUserId(User);
             _logger.LogInformation("Adding person...");
