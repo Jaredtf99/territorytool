@@ -4,7 +4,7 @@ import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 import { AppModule } from './app/app.module';
 
 export function getBaseUrl() {
-  return 'https://localhost:7151/';
+  return 'https://territorytoolapi.azurewebsites.net/';
 }
 
 const providers = [
