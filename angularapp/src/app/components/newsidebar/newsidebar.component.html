@@ -42,7 +42,7 @@
         </a>
       </li>
       <li>
-        <a [routerLink]="['/persons']" [routerLinkActive]="['active']"  (click)="toggleSidebar()">
+        <a [routerLink]="['/persons']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
           <i class="fas fa-user-tie"></i>
           <span>Ver hermanos</span>
         </a>
@@ -53,6 +53,13 @@
           <span>Action logs</span>
         </a>
       </li>
+      <li *ngIf="userService.roleMatch(['SUPERADMIN'])">
+        <a [routerLink]="['/registration']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
+          <i class="fa fa-user"></i>
+          <span>Añadir usuario</span>
+        </a>
+      </li>
+
     </ul>
     <div class="view-source mt-3">
       <a (click)="logout()" class="btn btn-block btn-lightning rounded-0">Cerrar sesión</a>
