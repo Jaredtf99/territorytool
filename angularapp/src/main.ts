@@ -1,10 +1,10 @@
 import { enableProdMode } from '@angular/core';
 import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
-
+import { environment } from './environments/environment';
 import { AppModule } from './app/app.module';
 
 export function getBaseUrl() {
-  return 'https://territorytoolapi.azurewebsites.net/';
+  return environment.apiUrl;
 }
 
 const providers = [
