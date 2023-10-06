@@ -27,6 +27,7 @@ import { SelectorComponent } from './components/selector/selector.component';
 import { AddPersonComponent } from './components/add-person/add-person.component';
 import { PersonsComponent } from './components/persons/persons.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
+import { NewSidebarComponent } from './components/newsidebar/newsidebar.component';
 
 @NgModule({
   declarations: [
@@ -45,6 +46,7 @@ import { SidebarComponent } from './components/sidebar/sidebar.component';
     AddPersonComponent,
     PersonsComponent,
     SidebarComponent,
+    NewSidebarComponent,
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),

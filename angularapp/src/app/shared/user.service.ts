@@ -87,6 +87,19 @@ export class UserService {
     return RoleType[userRole as keyof typeof RoleType];
   }
 
+  getRoleString(role: RoleType): string {
+    switch (role) {
+      case RoleType.SUPERADMIN:
+        return 'SUPERADMIN';
+      case RoleType.ADMIN:
+        return 'ADMIN';
+      case RoleType.USER:
+        return 'USER';
+      default:
+        return 'Unknown';
+    }
+  }
+
   getUserName(): string {
     const payload = JSON.parse(window.atob(localStorage.getItem('token')!.split('.')[1]));
     return payload.UserName;

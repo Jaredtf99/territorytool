@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { AppService } from '../../shared/app.service';
 
 @Component({
   selector: 'app-logged',
@@ -8,7 +9,7 @@ import { Router } from '@angular/router';
 })
 export class LoggedComponent implements OnInit {
 
-  constructor(private router: Router) { }
+  constructor(private router: Router, private appService: AppService) { }
 
   ngOnInit() {
 
@@ -16,5 +17,17 @@ export class LoggedComponent implements OnInit {
         this.router.navigateByUrl('/home');
 
   }
+
+  getClasses() {
+    const classes = {
+      'pinned-sidebar': this.appService.getSidebarStat().isSidebarPinned,
+      'toggeled-sidebar': this.appService.getSidebarStat().isSidebarToggeled
+    }
+    return classes;
+  }
+  toggleSidebar() {
+    this.appService.toggleSidebar();
+  }
+
 
 }
