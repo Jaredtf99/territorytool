@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Globals } from '../../globals';
 import { UserService } from '../../shared/user.service';
 import { ToastrService } from 'ngx-toastr';
+import { PersonService } from '../../shared/person.service';
 
 declare var $: any;
 
@@ -11,31 +12,33 @@ declare var $: any;
   templateUrl: './persons.component.html',
   styleUrls: ['./persons.component.css']
 })
-export class PersonsComponent implements OnInit {
+export class PersonsComponent {
 
   persons: any[] = [];
   canDelete = false;
   public personNameToDelete = '';
 
-  constructor(public http: HttpClient, @Inject('BASE_URL') public baseUrl: string, private globals: Globals, public userService: UserService, private toastr: ToastrService) {
+  constructor(public http: HttpClient, @Inject('BASE_URL') public baseUrl: string, private globals: Globals, public userService: UserService, private toastr: ToastrService, private personService: PersonService) {
 
     this.canDelete = userService.isAdmin() || userService.isSuperAdmin();
     this.getPersons();
   }
 
-  ngOnInit() {
-  }
-
   getPersons() {
 
     this.globals.loading = true;
-    this.http.get<any[]>(this.baseUrl + 'api/SampleData/GetAllPersons').subscribe(result => {
-      this.globals.loading = false;
-      this.persons = result;
-    }, error => {
-      this.globals.loading = false;
-      console.error(error);
-    });
+
+    this.personService.getAllPersons()
+      .subscribe({
+        next: resp => {
+          this.globals.loading = false;
+          this.persons = resp;
+        },
+        error: err => {
+          this.globals.loading = false;
+          console.error(err);
+        }
+      });
 
   }
 

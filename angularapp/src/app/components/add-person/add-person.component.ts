@@ -3,25 +3,27 @@ import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ToastrService } from 'ngx-toastr';
 import { Globals } from '../../globals';
+import { PersonService } from '../../shared/person.service';
 
 @Component({
   selector: 'app-add-person',
   templateUrl: './add-person.component.html',
   styleUrls: ['./add-person.component.css']
 })
-export class AddPersonComponent implements OnInit {
+export class AddPersonComponent {
 
   addPersonForm!: FormGroup;
   submitted = false;
 
 
-  constructor(private formBuilder: FormBuilder, private http: HttpClient, @Inject('BASE_URL') private baseUrl: string, private toastr: ToastrService, private globals: Globals) { }
+  constructor(private fb: FormBuilder, private personService: PersonService, private toastr: ToastrService, private globals: Globals) {
 
-  ngOnInit() {
-    this.addPersonForm = this.formBuilder.group({
+    this.addPersonForm = this.fb.group({
       name: ['', Validators.required],
     });
+
   }
+
 
   get f() { return this.addPersonForm.controls; }
 
@@ -32,18 +34,19 @@ export class AddPersonComponent implements OnInit {
 
       this.globals.loading = true;
 
-      let formData = new FormData();
-      formData.append('name', this.f['name'].value);
-
-      this.http.post(this.baseUrl + 'api/SampleData/AddPerson', formData).subscribe(() => {
-        this.globals.loading = false;
-        this.toastr.success('Hermano añadido');
-        this.addPersonForm.reset();
-        this.submitted = false;
-      }, error => {
-        this.globals.loading = false;
-        this.toastr.error(error.error);
-      })
+      this.personService.addPerson(this.f['name'].value)
+        .subscribe({
+          next: resp => {
+            this.globals.loading = false;
+            this.toastr.success('Hermano añadido');
+            this.addPersonForm.reset();
+            this.submitted = false;
+          },
+          error: err => {
+            this.globals.loading = false;
+            this.toastr.error('Error inesperado');
+          }
+        });
     }
 
 

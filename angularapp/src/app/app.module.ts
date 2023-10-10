@@ -14,6 +14,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ToastrModule } from 'ngx-toastr';
 import { RegistrationComponent } from './components/registration/registration.component';
 import { UserService } from './shared/user.service';
+import { PersonService } from './shared/person.service';
 import { LoginComponent } from './components/login/login.component';
 import { LoggedComponent } from './components/logged/logged.component';
 import { AuthGuard } from './auth/auth.guard';
@@ -77,7 +78,7 @@ import { NewSidebarComponent } from './components/newsidebar/newsidebar.componen
       preventDuplicates: false,
     }),
   ],
-  providers: [UserService, AuthGuard, {
+  providers: [UserService, PersonService, AuthGuard, {
     provide: HTTP_INTERCEPTORS,
     useClass: AuthInterceptor,
     multi: true

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using TerritoryTool.ServerSide.Controllers.Models.Person;
 using TerritoryTool.ServerSide.Domain.Classes;
 using TerritoryTool.ServerSide.Domain.Enums;
 using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
@@ -137,12 +138,12 @@ namespace TerritoryTool.ServerSide.Controllers
 
         [HttpPost("[action]")]
         [Authorize(Roles = "SUPERADMIN,ADMIN")]
-        public ActionResult AddPerson([FromBody]string name)
+        public ActionResult AddPerson(AddPersonModel personInfo)
         {
             var userId = SecurityHelper.GetLoggedUserId(User);
             _logger.LogInformation("Adding person...");
 
-            _personFacade.AddNewPerson(name, userId);
+            _personFacade.AddNewPerson(personInfo.Name, userId);
 
             return Ok();
         }
