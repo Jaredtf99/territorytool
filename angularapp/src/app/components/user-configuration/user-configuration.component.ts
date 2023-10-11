@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { UserService } from '../../shared/user.service';
 import { ToastrService } from 'ngx-toastr';
-import { Globals } from '../../globals';
+import { NgxSpinnerService } from "ngx-spinner";
 
 @Component({
   selector: 'app-user-configuration',
@@ -10,22 +10,22 @@ import { Globals } from '../../globals';
 })
 export class UserConfigurationComponent implements OnInit {
 
-  constructor(public userService: UserService, private toastr: ToastrService, private globals: Globals) { }
+  constructor(public userService: UserService, private toastr: ToastrService, private spinner: NgxSpinnerService) { }
 
   ngOnInit() {
   }
 
   changePassword() {
-    this.globals.loading = true;
+    this.spinner.show();
 
     this.userService.changePassword().subscribe(
       (res: any) => {
-        this.globals.loading = false;
+        this.spinner.hide();
         this.userService.formModel.reset();
         this.toastr.success("Contraseña cambiada");
       },
       err => {
-        this.globals.loading = false;
+        this.spinner.hide();
         err.error.split(',').forEach((error: string) => {
           switch (error) {
             case 'PasswordMismatch':

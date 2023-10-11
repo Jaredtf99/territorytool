@@ -1,9 +1,9 @@
 import { Component, OnInit, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Globals } from '../../globals';
 import { UserService } from '../../shared/user.service';
 import { ToastrService } from 'ngx-toastr';
 import { PersonService } from '../../shared/person.service';
+import { NgxSpinnerService } from "ngx-spinner";
 
 declare var $: any;
 
@@ -18,7 +18,7 @@ export class PersonsComponent {
   canDelete = false;
   public personNameToDelete = '';
 
-  constructor(public http: HttpClient, @Inject('BASE_URL') public baseUrl: string, private globals: Globals, public userService: UserService, private toastr: ToastrService, private personService: PersonService) {
+  constructor(public http: HttpClient, @Inject('BASE_URL') public baseUrl: string, public userService: UserService, private toastr: ToastrService, private personService: PersonService, private spinner: NgxSpinnerService) {
 
     this.canDelete = userService.isAdmin() || userService.isSuperAdmin();
     this.getPersons();
@@ -26,34 +26,36 @@ export class PersonsComponent {
 
   getPersons() {
 
-    this.globals.loading = true;
+    this.spinner.show();
 
     this.personService.getAllPersons()
       .subscribe({
         next: resp => {
-          this.globals.loading = false;
           this.persons = resp;
         },
         error: err => {
-          this.globals.loading = false;
           console.error(err);
+        },
+        complete: () => {
+          this.spinner.hide();
         }
       });
 
   }
 
   deletePerson() {
-    this.globals.loading = true;
+    this.spinner.show();
 
     let formData = new FormData();
     formData.append('name', this.personNameToDelete.toString());
     $('#deletePerson').modal('hide');
 
     this.http.post(this.baseUrl + 'api/SampleData/DeletePerson', formData).subscribe(() => {
+      this.spinner.hide();
       this.getPersons();
       this.toastr.success('Hermano eliminado');
     }, error => {
-      this.globals.loading = false;
+      this.spinner.hide();
       this.toastr.error("Error desconocido");
       console.error(error.error);
     });

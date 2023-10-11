@@ -1,9 +1,8 @@
 import { Component, OnInit, Inject } from '@angular/core';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
 import { ToastrService } from 'ngx-toastr';
-import { Globals } from '../../globals';
 import { PersonService } from '../../shared/person.service';
+import { NgxSpinnerService } from "ngx-spinner";
 
 @Component({
   selector: 'app-add-person',
@@ -16,7 +15,7 @@ export class AddPersonComponent {
   submitted = false;
 
 
-  constructor(private fb: FormBuilder, private personService: PersonService, private toastr: ToastrService, private globals: Globals) {
+  constructor(private fb: FormBuilder, private personService: PersonService, private toastr: ToastrService, private spinner: NgxSpinnerService) {
 
     this.addPersonForm = this.fb.group({
       name: ['', Validators.required],
@@ -32,18 +31,18 @@ export class AddPersonComponent {
 
     if (!this.addPersonForm.invalid) {
 
-      this.globals.loading = true;
+      this.spinner.show();
 
       this.personService.addPerson(this.f['name'].value)
         .subscribe({
           next: resp => {
-            this.globals.loading = false;
+            this.spinner.hide();
             this.toastr.success('Hermano añadido');
             this.addPersonForm.reset();
             this.submitted = false;
           },
           error: err => {
-            this.globals.loading = false;
+            this.spinner.hide();
             this.toastr.error('Error inesperado');
           }
         });

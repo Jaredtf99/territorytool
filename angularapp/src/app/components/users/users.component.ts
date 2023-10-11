@@ -1,10 +1,10 @@
 import { Component, OnInit, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Globals } from '../../globals';
 import { UserService } from '../../shared/user.service';
 import { RoleType } from '../../enums/RoleType';
 import { User } from '../../classes/User';
 import { ToastrService } from 'ngx-toastr';
+import { NgxSpinnerService } from "ngx-spinner";
 
 declare var $: any;
 
@@ -22,10 +22,10 @@ export class UsersComponent implements OnInit {
   public rolesCanIChange: string[] = [];
   public defaultRoleIndex = 0;
 
-  constructor(public http: HttpClient, @Inject('BASE_URL') public baseUrl: string, private globals: Globals, public userService: UserService, private toastr: ToastrService) {
+  constructor(public http: HttpClient, @Inject('BASE_URL') public baseUrl: string, public userService: UserService, private toastr: ToastrService, private spinner: NgxSpinnerService) {
 
     this.role = userService.getRole();
-    this.globals.loading = true;
+    this.spinner.show();
 
     this.setRolesCanIChange();
 
@@ -35,10 +35,10 @@ export class UsersComponent implements OnInit {
   getUsersData() {
 
     this.http.get<User[]>(this.baseUrl + 'api/user/get-users').subscribe(result => {
-      this.globals.loading = false;
+      this.spinner.hide();
       this.users = result;
     }, error => {
-      this.globals.loading = false;
+      this.spinner.hide();
       console.error(error);
     });
 
@@ -90,7 +90,7 @@ export class UsersComponent implements OnInit {
   }
 
   editTerritory() {
-    this.globals.loading = true;
+    this.spinner.show();
 
     let body = {
       userID: this.userToEdit.UserID,
@@ -99,13 +99,13 @@ export class UsersComponent implements OnInit {
     };
 
     this.http.post(this.baseUrl + 'api/user/edit-user', body).subscribe(() => {
-      this.globals.loading = false;
+      this.spinner.hide();
       this.toastr.success('Usuario editado');
       Object.assign(this.users.filter(user => user.UserID === this.userToEdit.UserID)[0], this.userToEdit);
 
       $('#editUser').modal('hide');
     }, error => {
-      this.globals.loading = false;
+      this.spinner.hide();
         if (error.error === "INVALID_PARAMETERS")
         this.toastr.error("Datos invalidos, vuelva a intentarlo");
         else if (error.error === "USER_NOT_EXISTS")
@@ -124,7 +124,7 @@ export class UsersComponent implements OnInit {
   }
 
   deleteUser() {
-    this.globals.loading = true;
+    this.spinner.show();
 
     let body = {
       idToDelete: this.idUserToDelete
@@ -136,7 +136,7 @@ export class UsersComponent implements OnInit {
       this.toastr.success('Usuario eliminado');
       this.getUsersData();
     }, error => {
-      this.globals.loading = false;
+      this.spinner.hide();
       this.toastr.error("Error desconocido");
       console.error(error.error);
     });
