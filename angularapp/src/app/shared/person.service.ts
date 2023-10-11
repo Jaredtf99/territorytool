@@ -22,5 +22,11 @@ export class PersonService {
     return this.http.get(this.baseUrl + 'api/SampleData/GetAllPersons').pipe()
   }
 
+  deletePerson(name: string): Observable<any> {
+    const body = { name };
+
+    return this.http.post(this.baseUrl + 'api/SampleData/DeletePerson', body).pipe()
+  }
+
 
 }

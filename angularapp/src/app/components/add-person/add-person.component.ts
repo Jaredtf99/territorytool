@@ -36,14 +36,15 @@ export class AddPersonComponent {
       this.personService.addPerson(this.f['name'].value)
         .subscribe({
           next: resp => {
-            this.spinner.hide();
             this.toastr.success('Hermano añadido');
             this.addPersonForm.reset();
             this.submitted = false;
           },
           error: err => {
-            this.spinner.hide();
             this.toastr.error('Error inesperado');
+          },
+          complete: () => {
+            this.spinner.hide();
           }
         });
     }

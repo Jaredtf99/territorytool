@@ -23,7 +23,7 @@ export class LoginComponent implements OnInit {
     if (localStorage.getItem('token') != null) {
       this.router.navigateByUrl('/home');
     }
-    
+
   }
 
   login(form: NgForm) {
@@ -31,18 +31,22 @@ export class LoginComponent implements OnInit {
     this.spinner.show();
 
     this.userService.login(form.value).subscribe(
-      (res: any) => {
-        this.spinner.hide();
-        localStorage.setItem('token', res.token);
-        this.router.navigateByUrl('/home');
-      },
-      err => {
-        this.spinner.hide();
-        if (err.status == 400) {
-          this.toastr.error('Usuario o contraseña incorrecta');
+      {
+        next: (resp: any) => {
+          localStorage.setItem('token', resp.token);
+          this.router.navigateByUrl('/home');
+        },
+        error: err => {
+          if (err.status == 400) {
+            this.toastr.error('Usuario o contraseña incorrecta');
+          }
+          else {
+            console.log(err);
+          }
+        },
+        complete: () => {
+          this.spinner.hide();
         }
-        else
-          console.log(err);
       }
     );
   }

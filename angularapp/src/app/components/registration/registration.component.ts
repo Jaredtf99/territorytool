@@ -19,29 +19,31 @@ export class RegistrationComponent implements OnInit {
     this.spinner.show();
 
     this.userService.register().subscribe(
-      (res: any) => {
-        this.spinner.hide();
-        if (res.succeeded) {
-          this.userService.formModel.reset();
-          this.toastr.success("Registro con éxito");
-        } else if (res.errors != null) {
-          res.errors.forEach((element: any) => {
-            switch (element.code) {
-              case 'DuplicateUserName':
-                this.toastr.error("El usuario ya existe");
-                break;
-              default:
-                this.toastr.error(element.descript, 'Registration failed');
-                break;
-            }
-          });
+      {
+        next: (res: any) => {
+          if (res.succeeded) {
+            this.userService.formModel.reset();
+            this.toastr.success("Registro con éxito");
+          } else if (res.errors != null) {
+            res.errors.forEach((element: any) => {
+              switch (element.code) {
+                case 'DuplicateUserName':
+                  this.toastr.error("El usuario ya existe");
+                  break;
+                default:
+                  this.toastr.error(element.descript, 'Registration failed');
+                  break;
+              }
+            });
+          }
+        },
+        error: err => {
+          console.error(err);
+        },
+        complete: () => {
+          this.spinner.hide();
         }
-      },
-      err => {
-        this.spinner.hide();
-        console.log(err);
-      }
-    )
+      });
   }
 
 }

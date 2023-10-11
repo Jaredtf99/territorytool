@@ -1,5 +1,4 @@
 import { Component, OnInit, Inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { UserService } from '../../shared/user.service';
 import { ToastrService } from 'ngx-toastr';
 import { PersonService } from '../../shared/person.service';
@@ -18,7 +17,7 @@ export class PersonsComponent {
   canDelete = false;
   public personNameToDelete = '';
 
-  constructor(public http: HttpClient, @Inject('BASE_URL') public baseUrl: string, public userService: UserService, private toastr: ToastrService, private personService: PersonService, private spinner: NgxSpinnerService) {
+  constructor(public userService: UserService, private toastr: ToastrService, private personService: PersonService, private spinner: NgxSpinnerService) {
 
     this.canDelete = userService.isAdmin() || userService.isSuperAdmin();
     this.getPersons();
@@ -46,19 +45,21 @@ export class PersonsComponent {
   deletePerson() {
     this.spinner.show();
 
-    let formData = new FormData();
-    formData.append('name', this.personNameToDelete.toString());
     $('#deletePerson').modal('hide');
 
-    this.http.post(this.baseUrl + 'api/SampleData/DeletePerson', formData).subscribe(() => {
-      this.spinner.hide();
-      this.getPersons();
-      this.toastr.success('Hermano eliminado');
-    }, error => {
-      this.spinner.hide();
-      this.toastr.error("Error desconocido");
-      console.error(error.error);
-    });
+    this.personService.deletePerson(this.personNameToDelete).subscribe(
+      {
+        next: resp => {
+          this.getPersons();
+          this.toastr.success('Hermano eliminado');
+        },
+        error: err => {
+          this.toastr.error("Error desconocido");
+        },
+        complete: () => {
+          this.spinner.hide();
+        }
+      });
 
   }
 

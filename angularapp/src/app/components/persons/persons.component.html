@@ -10,7 +10,8 @@
     <tr *ngFor="let person of persons">
       <td>
         <div *ngIf="canDelete">
-          <i class="fas fa-trash-alt" data-toggle="modal" href="#deletePerson" (click)="(personNameToDelete = person.Name)"></i>
+          <i class="fas fa-trash-alt" data-bs-toggle="modal" data-bs-target="#deletePerson" (click)="(personNameToDelete = person.Name)"></i>
+
         </div>
       </td>
       <td>{{ person.Name }}</td>
@@ -21,17 +22,15 @@
 </table>
 
 
-<div class="modal fade" id="deletePerson" tabindex="-1" role="dialog" aria-labelledby="deletePerson" aria-hidden="true">
-  <div class="modal-dialog" role="document">
+<div class="modal fade" id="deletePerson" tabindex="-1" aria-labelledby="deletePersonLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-body">
-        <h4 class="col-xs-12 text-center">¿Seguro que quieres elminar este hermano?</h4>
-        <div class="row">
-          <button type="button" class="btn btn-secondary col-xs-3 col-xs-offset-2" data-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-danger col-xs-3 col-xs-offset-2" (click)="deletePerson()">Eliminar</button>
-
+        <h4 class="col-12 text-center">¿Seguro que quieres eliminar a esta persona?</h4>
+        <div class="row justify-content-center mt-3">
+          <button type="button" class="btn btn-secondary col-3 me-2" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger col-3" (click)="deletePerson()">Eliminar</button>
         </div>
-
       </div>
     </div>
   </div>
