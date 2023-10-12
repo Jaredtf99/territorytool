@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { UserService } from '../../shared/user.service';
+import { AppService } from '../../shared/app.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -10,14 +11,18 @@ import { UserService } from '../../shared/user.service';
 export class SidebarComponent {
   isExpanded = false;
 
-  constructor(private router:Router, public userService: UserService) { }
+  constructor(private router: Router, public userService: UserService, private appService: AppService) { }
 
   collapse() {
     this.isExpanded = false;
   }
 
-  toggle() {
-    this.isExpanded = !this.isExpanded;
+  toggleSidebar() {
+    this.appService.toggleSidebar();
+  }
+
+  toggleSidebarPin() {
+    this.appService.toggleSidebarPin();
   }
 
   logout()

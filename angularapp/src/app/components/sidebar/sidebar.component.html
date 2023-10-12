@@ -1,283 +1,68 @@
-<div class="sidebar">
-  <div class="sidebar-inner">
-    <!-- ### $Sidebar Header ### -->
-    <div class="sidebar-logo">
-      <div class="peers ai-c fxw-nw">
-        <div class="peer peer-greed">
-          <a class="sidebar-link td-n" href="index.html">
-            <div class="peers ai-c fxw-nw">
-              <div class="peer">
-                <div class="logo">
-                  <img src="assets/static/images/logo.png" alt="">
-                </div>
-              </div>
-              <div class="peer peer-greed">
-                <h5 class="lh-1 mB-0 logo-text">Adminator</h5>
-              </div>
-            </div>
-          </a>
-        </div>
-        <div class="peer">
-          <div class="mobile-toggle sidebar-toggle">
-            <a href="" class="td-n">
-              <i class="ti-arrow-circle-left"></i>
-            </a>
-          </div>
-        </div>
+<aside class="sidebar shadow-sm">
+
+  <div class="sidebar-toggler-inside ml-auto mr-3">
+    <a class="btn nav-link" (click)="toggleSidebarPin()"><i class="fa fa-bars"></i></a>
+  </div>
+
+  <div class="sidebar-profile d-flex flex-column justify-content-center pt-5 pb-3">
+    <div class="picture-wrapper mb-4">
+      <div class="user-initial">
+        {{ userService.getUserName()[0].toUpperCase() }}
       </div>
     </div>
-
-    <!-- ### $Sidebar Menu ### -->
-    <ul class="sidebar-menu scrollable pos-r">
-      <li class="nav-item mT-30 actived">
-        <a class="sidebar-link" [routerLink]="['/territories']">
-          <span class="icon-holder">
-            <i class="c-blue-500 ti-home"></i>
-          </span>
-          <span class="title">Ver territorios</span>
-        </a>
-      </li>
-
-      <li class="nav-item" *ngIf="userService.roleMatch(['SUPERADMIN', 'ADMIN'])">
-        <a class='sidebar-link' [routerLink]="['/registration']">
-          <span class="icon-holder">
-            <i class="c-brown-500 ti-email"></i>
-          </span>
-          <span class="title">Usuarios</span>
-        </a>
-      </li>
-
-      <li class="nav-item">
-        <a class='sidebar-link' [routerLink]="['/add-person']">
-          <span class="icon-holder">
-            <i class="c-blue-500 ti-share"></i>
-          </span>
-          <span class="title">Registrar hermano</span>
-        </a>
-      </li>
-
-      <li class="nav-item" *ngIf="userService.roleMatch(['SUPERADMIN', 'ADMIN'])">
-        <a class='sidebar-link' [routerLink]="['/registration']">
-          <span class="icon-holder">
-            <i class="c-deep-orange-500 ti-calendar"></i>
-          </span>
-          <span class="title">Registrar usuario</span>
-        </a>
-      </li>
-
-      <li class="nav-item">
-        <a class='sidebar-link' [routerLink]="['/persons']">
-          <span class="icon-holder">
-            <i class="c-deep-purple-500 ti-comment-alt"></i>
-          </span>
-          <span class="title">Ver hermanos</span>
-        </a>
-      </li>
-
-      <li class="nav-item" *ngIf="userService.roleMatch(['SUPERADMIN'])">
-        <a class='sidebar-link' [routerLink]="['/action-logs']">
-          <span class="icon-holder">
-            <i class="c-indigo-500 ti-bar-chart"></i>
-          </span>
-          <span class="title">Action logs</span>
-        </a>
-      </li>
-
-      <li class="nav-item">
-        <a class='sidebar-link' (click)="logout()">
-          <span class="icon-holder">
-            <i class="c-light-blue-500 ti-pencil"></i>
-          </span>
-          <span class="title">Cerrar sesión</span>
-        </a>
-      </li>
-
-      <!--<li class="nav-item dropdown">
-        <a class="sidebar-link" href="ui.html">
-          <span class="icon-holder">
-            <i class="c-pink-500 ti-palette"></i>
-          </span>
-          <span class="title">UI Elements</span>
-        </a>
-      </li>
-
-      <li class="nav-item dropdown">
-        <a class="dropdown-toggle" href="javascript:void(0);">
-          <span class="icon-holder">
-            <i class="c-orange-500 ti-layout-list-thumb"></i>
-          </span>
-          <span class="title">Tables</span>
-          <span class="arrow">
-            <i class="ti-angle-right"></i>
-          </span>
-        </a>
-        <ul class="dropdown-menu">
-          <li>
-            <a class='sidebar-link' href="basic-table.html">Basic Table</a>
-          </li>
-          <li>
-            <a class='sidebar-link' href="datatable.html">Data Table</a>
-          </li>
-        </ul>
-      </li>
-      <li class="nav-item dropdown">
-        <a class="dropdown-toggle" href="javascript:void(0);">
-          <span class="icon-holder">
-            <i class="c-purple-500 ti-map"></i>
-          </span>
-          <span class="title">Maps</span>
-          <span class="arrow">
-            <i class="ti-angle-right"></i>
-          </span>
-        </a>
-        <ul class="dropdown-menu">
-          <li>
-            <a href="google-maps.html">Google Map</a>
-          </li>
-          <li>
-            <a href="vector-maps.html">Vector Map</a>
-          </li>
-        </ul>
-      </li>
-      <li class="nav-item dropdown">
-        <a class="dropdown-toggle" href="javascript:void(0);">
-          <span class="icon-holder">
-            <i class="c-red-500 ti-files"></i>
-          </span>
-          <span class="title">Pages</span>
-          <span class="arrow">
-            <i class="ti-angle-right"></i>
-          </span>
-        </a>
-        <ul class="dropdown-menu">
-          <li>
-            <a class='sidebar-link' href="blank.html">Blank</a>
-          </li>
-          <li>
-            <a class='sidebar-link' href="404.html">404</a>
-          </li>
-          <li>
-            <a class='sidebar-link' href="500.html">500</a>
-          </li>
-          <li>
-            <a class='sidebar-link' href="signin.html">Sign In</a>
-          </li>
-          <li>
-            <a class='sidebar-link' href="signup.html">Sign Up</a>
-          </li>
-        </ul>
-      </li>
-      <li class="nav-item dropdown">
-        <a class="dropdown-toggle" href="javascript:void(0);">
-          <span class="icon-holder">
-            <i class="c-teal-500 ti-view-list-alt"></i>
-          </span>
-          <span class="title">Multiple Levels</span>
-          <span class="arrow">
-            <i class="ti-angle-right"></i>
-          </span>
-        </a>
-        <ul class="dropdown-menu">
-          <li class="nav-item dropdown">
-            <a href="javascript:void(0);">
-              <span>Menu Item</span>
-            </a>
-          </li>
-          <li class="nav-item dropdown">
-            <a href="javascript:void(0);">
-              <span>Menu Item</span>
-              <span class="arrow">
-                <i class="ti-angle-right"></i>
-              </span>
-            </a>
-            <ul class="dropdown-menu">
-              <li>
-                <a href="javascript:void(0);">Menu Item</a>
-              </li>
-              <li>
-                <a href="javascript:void(0);">Menu Item</a>
-              </li>
-            </ul>
-          </li>
-        </ul>
-      </li>-->
-    </ul>
+    <div class="profile-details text-center pb-4">
+      <p class="mb-0 text-uppercase name">{{ userService.getUserName() }}</p>
+      <small class="text-uppercase role">{{ userService.getRoleString(userService.getRole())}}</small>
+    </div>
   </div>
-</div>
+  <div class="sidebar-search pt-1 pb-1 pl-3 pr-3">
+    <input type="search" class="form-control rounded-pill" name="search" placeholder="Search ...">
+  </div>
+  <nav class="sidebar-menu pt-3 pb-3">
+    <div class="menu-header mt-3 mb-2">
+      Components
+    </div>
+    <ul class="menu-items">
+      <li>
+        <a [routerLink]="['/territories']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
+          <i class="fas fa-address-card"></i>
+          <span>Ver territorios</span>
+        </a>
+      </li>
+      <li *ngIf="userService.roleMatch(['SUPERADMIN', 'ADMIN'])">
+        <a [routerLink]="['/users']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
+          <i class="fas fa-user"></i>
+          <span>Usuarios</span>
+        </a>
+      </li>
+      <li>
+        <a [routerLink]="['/add-person']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
+          <i class="fas fa-user-tie"></i>
+          <span>Registrar hermano</span>
+        </a>
+      </li>
+      <li>
+        <a [routerLink]="['/persons']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
+          <i class="fas fa-user-tie"></i>
+          <span>Ver hermanos</span>
+        </a>
+      </li>
+      <li *ngIf="userService.roleMatch(['SUPERADMIN'])">
+        <a [routerLink]="['/action-logs']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
+          <i class="fa fa-globe"></i>
+          <span>Action logs</span>
+        </a>
+      </li>
+      <li *ngIf="userService.roleMatch(['SUPERADMIN'])">
+        <a [routerLink]="['/registration']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
+          <i class="fa fa-user"></i>
+          <span>Añadir usuario</span>
+        </a>
+      </li>
 
-<script>
-  export default (function () {
-    // Sidebar links
-    $('.sidebar .sidebar-menu li a').on('click', function () {
-      const $this = $(this);
-
-      if ($this.parent().hasClass('open')) {
-        $this
-          .parent()
-          .children('.dropdown-menu')
-          .slideUp(200, () => {
-            $this.parent().removeClass('open');
-          });
-      } else {
-        $this
-          .parent()
-          .parent()
-          .children('li.open')
-          .children('.dropdown-menu')
-          .slideUp(200);
-
-        $this
-          .parent()
-          .parent()
-          .children('li.open')
-          .children('a')
-          .removeClass('open');
-
-        $this
-          .parent()
-          .parent()
-          .children('li.open')
-          .removeClass('open');
-
-        $this
-          .parent()
-          .children('.dropdown-menu')
-          .slideDown(200, () => {
-            $this.parent().addClass('open');
-          });
-      }
-    });
-
-    // Sidebar Activity Class
-    const sidebarLinks = $('.sidebar').find('.sidebar-link');
-
-    sidebarLinks
-      .each((index, el) => {
-        $(el).removeClass('active');
-      })
-      .filter(function () {
-        const href = $(this).attr('href');
-        const pattern = href[0] === '/' ? href.substr(1) : href;
-        return pattern === (window.location.pathname).substr(1);
-      })
-      .addClass('active');
-
-    // ٍSidebar Toggle
-    $('.sidebar-toggle').on('click', e => {
-      $('.app').toggleClass('is-collapsed');
-      e.preventDefault();
-    });
-
-    /**
-     * Wait untill sidebar fully toggled (animated in/out)
-     * then trigger window resize event in order to recalculate
-     * masonry layout widths and gutters.
-     */
-    $('#sidebar-toggle').click(e => {
-      e.preventDefault();
-      setTimeout(() => {
-        window.dispatchEvent(window.EVENT);
-      }, 300);
-    });
-  }());
-</script>
+    </ul>
+    <div class="view-source mt-3">
+      <a (click)="logout()" class="btn btn-block btn-lightning rounded-0">Cerrar sesión</a>
+    </div>
+  </nav>
+</aside>

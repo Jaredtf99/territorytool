@@ -10,7 +10,6 @@ import { PersonService } from './shared/person.service';
 import { TerritoryService } from './shared/territory.service';
 
 import { AppComponent } from './app.component';
-import { NavMenuComponent } from './components/nav-menu/nav-menu.component';
 import { HomeComponent } from './components/home/home.component';
 import { TerritoriesComponent } from './components/territories/territories.component';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -30,12 +29,10 @@ import { SelectorComponent } from './components/selector/selector.component';
 import { AddPersonComponent } from './components/add-person/add-person.component';
 import { PersonsComponent } from './components/persons/persons.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
-import { NewSidebarComponent } from './components/newsidebar/newsidebar.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    NavMenuComponent,
     HomeComponent,
     TerritoriesComponent,
     RegistrationComponent,
@@ -49,7 +46,6 @@ import { NewSidebarComponent } from './components/newsidebar/newsidebar.componen
     AddPersonComponent,
     PersonsComponent,
     SidebarComponent,
-    NewSidebarComponent,
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
