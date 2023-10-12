@@ -90,16 +90,7 @@ export class UserService {
   }
 
   getRoleString(role: RoleType): string {
-    switch (role) {
-      case RoleType.SUPERADMIN:
-        return 'SUPERADMIN';
-      case RoleType.ADMIN:
-        return 'ADMIN';
-      case RoleType.USER:
-        return 'USER';
-      default:
-        return 'Unknown';
-    }
+    return RoleType[role];
   }
 
   getUserName(): string {
@@ -116,13 +107,13 @@ export class UserService {
     let body = {
       userId,
       userName,
-      role: RoleType[parseInt(role!)]
+      role: RoleType[role as keyof typeof RoleType]
     };
 
     return this.http.post(this.baseUrl + 'api/user/edit-user', body).pipe()
   }
 
-  deleteUser(id: number): Observable<any> {
+  deleteUser(id: string): Observable<any> {
     return this.http.get(this.baseUrl + 'api/user/delete-user?idToDelete=' + id).pipe()
   }
 

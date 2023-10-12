@@ -69,21 +69,14 @@ export class UsersComponent implements OnInit {
       case RoleType.SUPERADMIN:
         this.rolesCanIChange = [RoleType[RoleType.ADMIN], RoleType[RoleType.USER]];
         break;
+      case RoleType.ADMIN:
+        this.rolesCanIChange = [RoleType[RoleType.USER]];
     }
 
   }
 
-  setDefaultRoleIndex() {
-    let defaultRoleIndex = this.rolesCanIChange.indexOf(this.userToEdit.Role!.toString());
-    if (defaultRoleIndex === -1)
-      defaultRoleIndex = 0;
-
-    this.defaultRoleIndex = defaultRoleIndex;
-  }
-
   openEditModal(idToEdit: any) {
     Object.assign(this.userToEdit, this.users.filter(user => user.UserID === idToEdit)[0]);
-    this.setDefaultRoleIndex();
   }
 
   selectedRoleEventHandler(roleIndex: number) {
@@ -101,6 +94,7 @@ export class UsersComponent implements OnInit {
         Object.assign(this.users.filter(user => user.UserID === this.userToEdit.UserID)[0], this.userToEdit);
 
         $('#editUser').modal('hide');
+        this.spinner.hide();
       },
       error: error => {
         if (error.error === "INVALID_PARAMETERS")
@@ -113,8 +107,7 @@ export class UsersComponent implements OnInit {
           this.toastr.error("Error desconocido");
           console.error(error.error);
         }
-      },
-      complete: () => {
+
         this.spinner.hide();
       }
     });
@@ -129,7 +122,7 @@ export class UsersComponent implements OnInit {
 
     $('#deleteUser').modal('hide');
 
-    this.userService.deleteUser(parseInt(this.idUserToDelete)).subscribe({
+    this.userService.deleteUser(this.idUserToDelete).subscribe({
       next: res => {
         this.toastr.success('Usuario eliminado');
         this.getUsersData();
