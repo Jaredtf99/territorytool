@@ -25,7 +25,6 @@ import { ViewActionlogsComponent } from './components/view-actionlogs/view-actio
 import { UserConfigurationComponent } from './components/user-configuration/user-configuration.component';
 import { Globals } from './globals';
 import { UsersComponent } from './components/users/users.component';
-import { SelectorComponent } from './components/selector/selector.component';
 import { AddPersonComponent } from './components/add-person/add-person.component';
 import { PersonsComponent } from './components/persons/persons.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
@@ -42,7 +41,6 @@ import { SidebarComponent } from './components/sidebar/sidebar.component';
     ViewActionlogsComponent,
     UserConfigurationComponent,
     UsersComponent,
-    SelectorComponent,
     AddPersonComponent,
     PersonsComponent,
     SidebarComponent,
