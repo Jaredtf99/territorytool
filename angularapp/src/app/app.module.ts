@@ -5,6 +5,10 @@ import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 import { NgxSpinnerModule } from "ngx-spinner";
 
+import { UserService } from './shared/user.service';
+import { PersonService } from './shared/person.service';
+import { TerritoryService } from './shared/territory.service';
+
 import { AppComponent } from './app.component';
 import { NavMenuComponent } from './components/nav-menu/nav-menu.component';
 import { HomeComponent } from './components/home/home.component';
@@ -13,8 +17,6 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ToastrModule } from 'ngx-toastr';
 import { RegistrationComponent } from './components/registration/registration.component';
-import { UserService } from './shared/user.service';
-import { PersonService } from './shared/person.service';
 import { LoginComponent } from './components/login/login.component';
 import { LoggedComponent } from './components/logged/logged.component';
 import { AuthGuard } from './auth/auth.guard';
@@ -78,7 +80,7 @@ import { NewSidebarComponent } from './components/newsidebar/newsidebar.componen
       preventDuplicates: false,
     }),
   ],
-  providers: [UserService, PersonService, AuthGuard, {
+  providers: [UserService, PersonService, TerritoryService, AuthGuard, {
     provide: HTTP_INTERCEPTORS,
     useClass: AuthInterceptor,
     multi: true

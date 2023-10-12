@@ -2,6 +2,8 @@ import { Injectable, Inject } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { HttpClient } from '@angular/common/http'
 import { RoleType } from '../enums/RoleType';
+import { User } from '../classes/User';
+import { Observable } from 'rxjs';
 
 @Injectable()
 export class UserService {
@@ -105,5 +107,24 @@ export class UserService {
     return payload.UserName;
 
   }
+
+  getAllUsers(): Observable<User[]> {
+    return this.http.get<User[]>(this.baseUrl + 'api/user/get-users').pipe()
+  }
+
+  editUser(userId: string, userName: string, role: string): Observable<any> {
+    let body = {
+      userId,
+      userName,
+      role: RoleType[parseInt(role!)]
+    };
+
+    return this.http.post(this.baseUrl + 'api/user/edit-user', body).pipe()
+  }
+
+  deleteUser(id: number): Observable<any> {
+    return this.http.get(this.baseUrl + 'api/user/delete-user?idToDelete=' + id).pipe()
+  }
+
 
 }

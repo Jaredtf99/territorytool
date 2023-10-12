@@ -19,29 +19,32 @@ export class UserConfigurationComponent implements OnInit {
     this.spinner.show();
 
     this.userService.changePassword().subscribe(
-      (res: any) => {
-        this.spinner.hide();
-        this.userService.formModel.reset();
-        this.toastr.success("Contraseña cambiada");
-      },
-      err => {
-        this.spinner.hide();
-        err.error.split(',').forEach((error: string) => {
-          switch (error) {
-            case 'PasswordMismatch':
-              this.toastr.error("La contraseña no es correcta");
-              break;
-            case 'PasswordTooShort':
-              this.toastr.error("La contraseña debe tener al menos 4 caracteres");
-              break;
-            default:
-              this.toastr.error('Error cambiando la contraseña');
-              console.log(err);
-              break;
-          }
-        });
-      }
-    )
+      {
+        next: res => {
+          this.userService.formModel.reset();
+          this.toastr.success("Contraseña cambiada");
+        },
+        error: err => {
+          err.error.split(',').forEach((error: string) => {
+            switch (error) {
+              case 'PasswordMismatch':
+                this.toastr.error("La contraseña no es correcta");
+                break;
+              case 'PasswordTooShort':
+                this.toastr.error("La contraseña debe tener al menos 4 caracteres");
+                break;
+              default:
+                this.toastr.error('Error cambiando la contraseña');
+                console.log(err);
+                break;
+            }
+          });
+        },
+        complete: () => {
+          this.spinner.hide();
+        }
+
+      });
   }
 
 }

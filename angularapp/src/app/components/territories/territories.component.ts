@@ -4,6 +4,7 @@ import { UserService } from '../../shared/user.service';
 import { ToastrService } from 'ngx-toastr';
 import { Territory } from '../../classes/Territory';
 import { NgxSpinnerService } from "ngx-spinner";
+import { TerritoryService } from '../../shared/territory.service';
 
 declare var $: any;
 
@@ -20,16 +21,22 @@ export class TerritoriesComponent {
   filterName = '';
 
 
-  constructor(public http: HttpClient, @Inject('BASE_URL') public baseUrl: string, public userService: UserService, private toastr: ToastrService, private spinner: NgxSpinnerService) {
+  constructor(public http: HttpClient, @Inject('BASE_URL') public baseUrl: string, public userService: UserService, private toastr: ToastrService, private spinner: NgxSpinnerService, public territoryService: TerritoryService) {
     this.spinner.show();
-    http.get<Territory[]>(baseUrl + 'api/SampleData/AllTerritories').subscribe(result => {
-      this.territories = result;
-      this.territoriesFiltered = result;
-      this.spinner.hide();
-    }, error => {
-      this.spinner.hide();
-        console.error(error);
-    })
+    territoryService.getAllTerritories().subscribe(
+      {
+        next: res => {
+          this.territories = res;
+          this.territoriesFiltered = res;
+          this.spinner.hide();
+        },
+        error: err => {
+          console.error(err);
+        },
+        complete: () => {
+          this.spinner.hide();
+        }
+      });
   }
 
   filter()
@@ -45,32 +52,31 @@ export class TerritoriesComponent {
   editTerritory() {
     this.spinner.show();
 
-    let formData = new FormData();
-    formData.append('code', this.territoryToEdit.code!);
-    formData.append('name', this.territoryToEdit.name!);
-    formData.append('mapUrl', this.territoryToEdit.mapUrl!);
-    formData.append('id', this.territoryToEdit.id!.toString());
-    
-    this.http.post(this.baseUrl + 'api/SampleData/editTerritory', formData).subscribe(() => {
-      this.spinner.hide();
-      this.toastr.success('Territorio editado');
-      Object.assign(this.territories.filter(territory => territory.id === this.territoryToEdit.id)[0], this.territoryToEdit);
-      this.filter();
-
-      $('#editTerritory').modal('hide');
-    }, error => {
-        this.spinner.hide();
-        if (error.error === "CODE_EXIST")
-          this.toastr.error("El código ya existe");
-        else if (error.error === "NAME_EXIST")
-          this.toastr.error("El nombre ya existe");
-        else if (error.error === "MAPURL_EXIST")
-          this.toastr.error("La URL del mapa ya existe");
-        else {
-          this.toastr.error("Error desconocido");
-          console.error(error.error);
+    let tEdit = this.territoryToEdit;
+    this.territoryService.editTerritory(tEdit.id!, tEdit.mapUrl!, tEdit.name!, tEdit.code!).subscribe(
+      {
+        next: res => {
+          this.toastr.success('Territorio editado');
+          Object.assign(this.territories.filter(territory => territory.id === this.territoryToEdit.id)[0], this.territoryToEdit);
+          this.filter();
+          $('#editTerritory').modal('hide');
+        },
+        error: err => {
+          if (err.error === "CODE_EXIST")
+            this.toastr.error("El código ya existe");
+          else if (err.error === "NAME_EXIST")
+            this.toastr.error("El nombre ya existe");
+          else if (err.error === "MAPURL_EXIST")
+            this.toastr.error("La URL del mapa ya existe");
+          else {
+            this.toastr.error("Error desconocido");
+          }
+        },
+        complete: () => {
+          this.spinner.hide();
         }
-    });
+      }
+    );
   }
 
   assignIdToDelete(idToDelete: number) {
@@ -80,20 +86,22 @@ export class TerritoriesComponent {
   deleteTerritory() {
     this.spinner.show();
 
-    let formData = new FormData();
-    formData.append('idToDelete', this.idTerritoryToDelete.toString());
     $('#deleteTerritory').modal('hide');
 
-    this.http.post(this.baseUrl + 'api/SampleData/deleteTerritory', formData).subscribe(() => {
-      this.spinner.show();
-      this.toastr.success('Territorio eliminado');
-      this.territories.splice(this.territories.indexOf(this.territoriesFiltered.filter(territory => territory.id === this.idTerritoryToDelete)[0]), 1);
-      this.filter();
-    }, error => {
-        this.spinner.hide();
-        this.toastr.error("Error desconocido");
-        console.error(error.error);
-    });
+    this.territoryService.deleteTerritory(this.idTerritoryToDelete).subscribe(
+      {
+        next: res => {
+          this.toastr.success('Territorio eliminado');
+          this.territories.splice(this.territories.indexOf(this.territoriesFiltered.filter(territory => territory.id === this.idTerritoryToDelete)[0]), 1);
+          this.filter();
+        },
+        error: err => {
+          this.toastr.error("Error desconocido");
+        },
+        complete: () => {
+          this.spinner.hide();
+        }
+      });
 
   }
 }

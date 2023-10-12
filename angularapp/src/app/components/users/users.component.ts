@@ -34,19 +34,21 @@ export class UsersComponent implements OnInit {
 
   getUsersData() {
 
-    this.http.get<User[]>(this.baseUrl + 'api/user/get-users').subscribe(result => {
-      this.spinner.hide();
-      this.users = result;
-    }, error => {
-      this.spinner.hide();
-      console.error(error);
+    this.userService.getAllUsers().subscribe({
+      next: res => {
+        this.users = res;
+      },
+      error: err => {
+        console.error(err);
+      },
+      complete: () => {
+        this.spinner.hide();
+      }
     });
-
 
   }
 
-  canConfigurate(userRoleToConfigurate: string)
-  {
+  canConfigurate(userRoleToConfigurate: string) {
     let userRoleToConfigurateParsed = RoleType[userRoleToConfigurate as keyof typeof RoleType];
 
     switch (userRoleToConfigurateParsed) {
@@ -59,7 +61,7 @@ export class UsersComponent implements OnInit {
     }
   }
 
-  setRolesCanIChange(){
+  setRolesCanIChange() {
 
     this.rolesCanIChange = [];
 
@@ -76,7 +78,7 @@ export class UsersComponent implements OnInit {
     if (defaultRoleIndex === -1)
       defaultRoleIndex = 0;
 
-      this.defaultRoleIndex = defaultRoleIndex;
+    this.defaultRoleIndex = defaultRoleIndex;
   }
 
   openEditModal(idToEdit: any) {
@@ -84,37 +86,36 @@ export class UsersComponent implements OnInit {
     this.setDefaultRoleIndex();
   }
 
-  selectedRoleEventHandler(roleIndex: number)
-  {
+  selectedRoleEventHandler(roleIndex: number) {
     this.userToEdit.Role = this.rolesCanIChange[roleIndex];
   }
 
-  editTerritory() {
+  editUser() {
     this.spinner.show();
 
-    let body = {
-      userID: this.userToEdit.UserID,
-      userName: this.userToEdit.UserName,
-      role: RoleType[parseInt(this.userToEdit.Role!)]
-    };
+    let uEdit = this.userToEdit;
 
-    this.http.post(this.baseUrl + 'api/user/edit-user', body).subscribe(() => {
-      this.spinner.hide();
-      this.toastr.success('Usuario editado');
-      Object.assign(this.users.filter(user => user.UserID === this.userToEdit.UserID)[0], this.userToEdit);
+    this.userService.editUser(uEdit.UserID!, uEdit.UserName!, uEdit.Role!).subscribe({
+      next: res => {
+        this.toastr.success('Usuario editado');
+        Object.assign(this.users.filter(user => user.UserID === this.userToEdit.UserID)[0], this.userToEdit);
 
-      $('#editUser').modal('hide');
-    }, error => {
-      this.spinner.hide();
+        $('#editUser').modal('hide');
+      },
+      error: error => {
         if (error.error === "INVALID_PARAMETERS")
-        this.toastr.error("Datos invalidos, vuelva a intentarlo");
+          this.toastr.error("Datos invalidos, vuelva a intentarlo");
         else if (error.error === "USER_NOT_EXISTS")
-        this.toastr.error("No hemos encontrado el usuario que quieres editar...");
+          this.toastr.error("No hemos encontrado el usuario que quieres editar...");
         else if (error.error === "USERNAME_IN_USE")
-        this.toastr.error("El nombre de usuario ya esta en uso");
-      else {
-        this.toastr.error("Error desconocido");
-        console.error(error.error);
+          this.toastr.error("El nombre de usuario ya esta en uso");
+        else {
+          this.toastr.error("Error desconocido");
+          console.error(error.error);
+        }
+      },
+      complete: () => {
+        this.spinner.hide();
       }
     });
   }
@@ -126,19 +127,19 @@ export class UsersComponent implements OnInit {
   deleteUser() {
     this.spinner.show();
 
-    let body = {
-      idToDelete: this.idUserToDelete
-    };
-
     $('#deleteUser').modal('hide');
 
-    this.http.get(this.baseUrl + 'api/user/delete-user?idToDelete=' + this.idUserToDelete).subscribe(() => {
-      this.toastr.success('Usuario eliminado');
-      this.getUsersData();
-    }, error => {
-      this.spinner.hide();
-      this.toastr.error("Error desconocido");
-      console.error(error.error);
+    this.userService.deleteUser(parseInt(this.idUserToDelete)).subscribe({
+      next: res => {
+        this.toastr.success('Usuario eliminado');
+        this.getUsersData();
+      },
+      error: error => {
+        this.toastr.error("Error desconocido");
+      },
+      complete: () => {
+        this.spinner.hide();
+      }
     });
 
   }

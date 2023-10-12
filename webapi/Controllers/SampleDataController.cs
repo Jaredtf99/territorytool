@@ -103,7 +103,7 @@ namespace TerritoryTool.ServerSide.Controllers
 
         [HttpPost("[action]")]
         [Authorize(Roles = "SUPERADMIN,ADMIN")]
-        public ActionResult DeleteTerritory(int idToDelete)
+        public ActionResult DeleteTerritory(int id)
         {
             var userId = SecurityHelper.GetLoggedUserId(User);
 
@@ -111,14 +111,14 @@ namespace TerritoryTool.ServerSide.Controllers
 
             string errorMessage = null;
 
-            Territory territoryToDelete = _territoryRepository.GetTerritoryById(idToDelete);
+            Territory territoryToDelete = _territoryRepository.GetTerritoryById(id);
 
             if (territoryToDelete != null)
                 _territoryRepository.DeleteTerritory(territoryToDelete);
             else
                 errorMessage = "TERRITORY_NOT_FOUND";
 
-            _userActionLogFacade.AddNewActionLog(ActionType.DeleteTerritory, string.Format("Deleted territory id {0}", idToDelete), userId, string.IsNullOrWhiteSpace(errorMessage));
+            _userActionLogFacade.AddNewActionLog(ActionType.DeleteTerritory, string.Format("Deleted territory id {0}", id), userId, string.IsNullOrWhiteSpace(errorMessage));
 
             if (string.IsNullOrWhiteSpace(errorMessage))
                 return Ok();
