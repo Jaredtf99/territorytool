@@ -1,23 +1,18 @@
 <aside class="sidebar shadow-sm">
 
-  <div class="sidebar-toggler-inside ml-auto mr-3">
-    <a class="btn nav-link" (click)="toggleSidebarPin()"><i class="fa fa-bars"></i></a>
-  </div>
 
-  <div class="sidebar-profile d-flex flex-column justify-content-center pt-5 pb-3">
-    <div class="picture-wrapper mb-4">
+  <div class="sidebar-profile d-flex flex-row justify-content-start align-items-center p-3">
+    <div class="picture-wrapper">
       <div class="user-initial">
         {{ userService.getUserName()[0].toUpperCase() }}
       </div>
     </div>
-    <div class="profile-details text-center pb-4">
+    <div class="profile-details ms-3">
       <p class="mb-0 text-uppercase name">{{ userService.getUserName() }}</p>
       <small class="text-uppercase role">{{ userService.getRoleString(userService.getRole())}}</small>
     </div>
   </div>
-  <div class="sidebar-search pt-1 pb-1 pl-3 pr-3">
-    <input type="search" class="form-control rounded-pill" name="search" placeholder="Search ...">
-  </div>
+
   <nav class="sidebar-menu pt-3 pb-3">
     <div class="menu-header mt-3 mb-2">
       Components

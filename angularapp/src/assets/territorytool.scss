@@ -1,6 +1,7 @@
 @import "./partials/variables";
 @import "./partials/sidebar";
 @import "./partials/themes";
+@import "./partials/navbar";
 
 .icon-style {
   width: 35px;
@@ -19,6 +20,7 @@ body {
 
 .wrapper {
   height: 100%;
+  margin-top: $navbar-height;
 
   main {
     display: flex;
@@ -63,4 +65,17 @@ body {
 
 .toast {
   opacity: 1;
+}
+
+.user-initial {
+  width: 35px; /* Ajusta el tamaño según tus necesidades */
+  height: 35px; /* Ajusta el tamaño según tus necesidades */
+  border-radius: 50%; /* Esto crea un círculo */
+  background: linear-gradient(to bottom right, #ff9966, #ff5e62); /* Cambia los colores según tus preferencias */
+  color: white;
+  font-size: 18px; /* Ajusta el tamaño de la letra según tus necesidades */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
 }

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 import { NgxSpinnerModule } from "ngx-spinner";
+import { CollapseModule } from 'ngx-bootstrap/collapse';
 
 import { UserService } from './shared/user.service';
 import { PersonService } from './shared/person.service';
@@ -28,6 +29,7 @@ import { UsersComponent } from './components/users/users.component';
 import { AddPersonComponent } from './components/add-person/add-person.component';
 import { PersonsComponent } from './components/persons/persons.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
+import { NavbarComponent } from './components/navbar/navbar.component';
 
 @NgModule({
   declarations: [
@@ -44,6 +46,7 @@ import { SidebarComponent } from './components/sidebar/sidebar.component';
     AddPersonComponent,
     PersonsComponent,
     SidebarComponent,
+    NavbarComponent,
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -73,6 +76,7 @@ import { SidebarComponent } from './components/sidebar/sidebar.component';
       timeOut: 2000,
       preventDuplicates: false,
     }),
+    CollapseModule.forRoot(),
   ],
   providers: [UserService, PersonService, TerritoryService, AuthGuard, {
     provide: HTTP_INTERCEPTORS,
