@@ -9,10 +9,10 @@
   <tbody>
     <tr *ngFor="let person of persons">
       <td>
-        <div *ngIf="canDelete">
-          <i class="fas fa-trash-alt" data-bs-toggle="modal" data-bs-target="#deletePerson" (click)="(personNameToDelete = person.Name)"></i>
+        <button class="btn" *ngIf="canDelete">
+          <i class="fa-solid fa-trash-can" style="color: red" data-bs-toggle="modal" data-bs-target="#deletePerson" (click)="(personNameToDelete = person.Name)"></i>
 
-        </div>
+        </button>
       </td>
       <td>{{ person.Name }}</td>
       <td *ngIf="person.TerritoryName != null">{{person.TerritoryName}} ({{ person.TerritoryCode }})</td>

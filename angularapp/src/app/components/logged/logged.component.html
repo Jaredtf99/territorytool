@@ -1,13 +1,12 @@
 <!--The content below is only a placeholder and can be replaced.-->
 <div class="wrapper default-theme" [ngClass]="getClasses()">
   <main>
-    <div class="sidebar-toggler ml-auto m-2">
+    <div class="sidebar-toggler d-flex-justify-content-end m-2">
       <a class="btn nav-link p-2 bg-white" (click)="toggleSidebar()"><i class="fa fa-bars"></i></a>
     </div>
     <app-sidebar></app-sidebar>
     <div class="pages container-fluid pt-4 pb-4 pl-4 pr-4 ">
       <router-outlet></router-outlet>
-      <hr>
     </div>
     <div class="overlay" (click)="toggleSidebar()"></div>
   </main>
