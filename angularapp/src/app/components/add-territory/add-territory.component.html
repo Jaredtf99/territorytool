@@ -23,11 +23,9 @@
       <div *ngIf="f['name'].errors['required']">Introduce el nombre del territorio</div>
     </div>
 
-    <div class="form-group input-group">
+    <div class="input-group input-group">
       <input type="text" class="form-control item" placeholder="URL del mapa" style="border-radius:20px 0px 0px 20px" formControlName="mapUrl" [ngClass]="{ 'is-invalid': f['mapUrl'].errors }">
-      <span class="input-group-btn" style="vertical-align: top;">
-        <button class="btn btn-default" type="button" style="border-radius:0px 20px 20px 0px" data-bs-toggle="modal" data-bs-target="#modalScanner" (click)="startQrScanner()"><i class="fa fa-qrcode"></i></button>
-      </span>
+       <button class="btn btn-outline-secondary item" type="button" style="border-radius:0px 20px 20px 0px" data-bs-toggle="modal" data-bs-target="#modalScanner" (click)="startQrScanner()"><i class="fa fa-qrcode"></i></button>
     </div>
 
     <div *ngIf="(submitted || f['mapUrl'].dirty || f['mapUrl'].touched) && f['mapUrl'].errors" class="alert alert-danger">
