@@ -69,39 +69,39 @@ namespace TerritoryTool.ServerSide.Controllers
 
         [HttpPost("[action]")]
         [Authorize(Roles = "SUPERADMIN,ADMIN")]
-        public ActionResult EditTerritory(int id, string code, string name, string mapUrl)
+        public ActionResult EditTerritory(EditTerritoryModel info)
         {
             var userId = SecurityHelper.GetLoggedUserId(User);
 
             _logger.LogInformation("Editing territory...");
 
-            if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(mapUrl))
+            if (string.IsNullOrWhiteSpace(info.Code) || string.IsNullOrWhiteSpace(info.Name) || string.IsNullOrWhiteSpace(info.MapUrl))
                 return BadRequest("INVALID_PARAMETERS");
 
-            Territory territory = _territoryRepository.GetTerritoryById(id);
+            Territory territory = _territoryRepository.GetTerritoryById(info.Id);
 
 
-            if (territory.Code != code &&_territoryRepository.GetTerritoryByCode(code) != null)
+            if (territory.Code != info.Code && _territoryRepository.GetTerritoryByCode(info.Code) != null)
                 return BadRequest("CODE_EXIST");
 
-            if (territory.Name != name && _territoryRepository.GetTerritoryByName(name) != null)
+            if (territory.Name != info.Name && _territoryRepository.GetTerritoryByName(info.Name) != null)
                 return BadRequest("NAME_EXIST");
 
-            if (territory.MapUrl != mapUrl && _territoryRepository.GetTerritoryByMapUrl(mapUrl) != null)
+            if (territory.MapUrl != info.MapUrl && _territoryRepository.GetTerritoryByMapUrl(info.MapUrl) != null)
                 return BadRequest("MAPURL_EXIST");
 
-            territory.Code = code;
-            territory.Name = name;
-            territory.MapUrl = mapUrl;
+            territory.Code = info.Code;
+            territory.Name = info.Name;
+            territory.MapUrl = info.MapUrl;
 
             _territoryRepository.EditTerritory(territory);
 
-            _userActionLogFacade.AddNewActionLog(ActionType.EditTerritory, string.Format("Edited territory ID {0} to: Code ({1}) Name ({2}) MapURL ({3})", id, code, name, mapUrl), userId, true);
+            _userActionLogFacade.AddNewActionLog(ActionType.EditTerritory, string.Format("Edited territory ID {0} to: Code ({1}) Name ({2}) MapURL ({3})", info.Id, info.Code, info.Name, info.MapUrl), userId, true);
 
             return Ok();
         }
 
-        [HttpPost("[action]")]
+        [HttpDelete("[action]")]
         [Authorize(Roles = "SUPERADMIN,ADMIN")]
         public ActionResult DeleteTerritory(int id)
         {
@@ -156,7 +156,7 @@ namespace TerritoryTool.ServerSide.Controllers
             return Content(JsonConvert.SerializeObject(persons), ConfigurationHelper.JsonMime);
         }
 
-        [HttpPost("[action]")]
+        [HttpDelete("[action]")]
         [Authorize(Roles = "SUPERADMIN,ADMIN")]
         public ActionResult DeletePerson(string name)
         {

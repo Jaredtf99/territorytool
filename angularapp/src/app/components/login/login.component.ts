@@ -33,19 +33,18 @@ export class LoginComponent implements OnInit {
     this.userService.login(form.value).subscribe(
       {
         next: (resp: any) => {
+          this.spinner.hide();
           localStorage.setItem('token', resp.token);
           this.router.navigateByUrl('/home');
         },
         error: err => {
+          this.spinner.hide();
           if (err.status == 400) {
             this.toastr.error('Usuario o contraseña incorrecta');
           }
           else {
             console.log(err);
           }
-        },
-        complete: () => {
-          this.spinner.hide();
         }
       }
     );

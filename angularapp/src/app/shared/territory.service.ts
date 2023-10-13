@@ -10,7 +10,7 @@ export class TerritoryService {
   constructor(private http: HttpClient, @Inject('BASE_URL') private baseUrl: string) { }
 
   editTerritory(id: number, mapUrl:string, name: string, code: string): Observable<any> {
-    const body = { id, name, mapUrl, code };
+    const body = { id, mapUrl, name, code };
 
     return this.http.post(this.baseUrl + 'api/SampleData/editTerritory', body).pipe()
   }
@@ -20,9 +20,9 @@ export class TerritoryService {
   }
 
   deleteTerritory(id: number): Observable<any> {
-    const body = { id };
+    const url = `${this.baseUrl}api/SampleData/deleteTerritory?id=${id}`;
 
-    return this.http.post(this.baseUrl + 'api/SampleData/deleteTerritory', body).pipe()
+    return this.http.delete(url).pipe()
   }
 
 

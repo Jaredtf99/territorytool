@@ -31,10 +31,8 @@ export class TerritoriesComponent {
           this.spinner.hide();
         },
         error: err => {
-          console.error(err);
-        },
-        complete: () => {
           this.spinner.hide();
+          console.error(err);
         }
       });
   }
@@ -56,12 +54,14 @@ export class TerritoriesComponent {
     this.territoryService.editTerritory(tEdit.id!, tEdit.mapUrl!, tEdit.name!, tEdit.code!).subscribe(
       {
         next: res => {
+          this.spinner.hide();
           this.toastr.success('Territorio editado');
           Object.assign(this.territories.filter(territory => territory.id === this.territoryToEdit.id)[0], this.territoryToEdit);
           this.filter();
           $('#editTerritory').modal('hide');
         },
         error: err => {
+          this.spinner.hide();
           if (err.error === "CODE_EXIST")
             this.toastr.error("El código ya existe");
           else if (err.error === "NAME_EXIST")
@@ -71,9 +71,6 @@ export class TerritoriesComponent {
           else {
             this.toastr.error("Error desconocido");
           }
-        },
-        complete: () => {
-          this.spinner.hide();
         }
       }
     );
@@ -91,15 +88,14 @@ export class TerritoriesComponent {
     this.territoryService.deleteTerritory(this.idTerritoryToDelete).subscribe(
       {
         next: res => {
+          this.spinner.hide();
           this.toastr.success('Territorio eliminado');
           this.territories.splice(this.territories.indexOf(this.territoriesFiltered.filter(territory => territory.id === this.idTerritoryToDelete)[0]), 1);
           this.filter();
         },
         error: err => {
-          this.toastr.error("Error desconocido");
-        },
-        complete: () => {
           this.spinner.hide();
+          this.toastr.error("Error desconocido");
         }
       });
 

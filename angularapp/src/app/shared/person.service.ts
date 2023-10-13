@@ -14,15 +14,13 @@ export class PersonService {
   }
 
   getAllPersons(): Observable<any> {
-    const body = { name };
-
     return this.http.get(this.baseUrl + 'api/SampleData/GetAllPersons').pipe()
   }
 
   deletePerson(name: string): Observable<any> {
-    const body = { name };
+    const url = `${this.baseUrl}api/SampleData/DeletePerson?name=${name}`;
 
-    return this.http.post(this.baseUrl + 'api/SampleData/DeletePerson', body).pipe()
+    return this.http.delete(url).pipe()
   }
 
 

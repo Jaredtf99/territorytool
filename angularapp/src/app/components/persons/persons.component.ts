@@ -30,13 +30,12 @@ export class PersonsComponent {
     this.personService.getAllPersons()
       .subscribe({
         next: resp => {
+          this.spinner.hide();
           this.persons = resp;
         },
         error: err => {
-          console.error(err);
-        },
-        complete: () => {
           this.spinner.hide();
+          console.error(err);
         }
       });
 
@@ -54,10 +53,8 @@ export class PersonsComponent {
           this.toastr.success('Hermano eliminado');
         },
         error: err => {
-          this.toastr.error("Error desconocido");
-        },
-        complete: () => {
           this.spinner.hide();
+          this.toastr.error("Error desconocido");
         }
       });
 

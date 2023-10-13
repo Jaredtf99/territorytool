@@ -21,6 +21,7 @@ export class RegistrationComponent implements OnInit {
     this.userService.register().subscribe(
       {
         next: (res: any) => {
+          this.spinner.hide();
           if (res.succeeded) {
             this.userService.formModel.reset();
             this.toastr.success("Registro con éxito");
@@ -38,10 +39,8 @@ export class RegistrationComponent implements OnInit {
           }
         },
         error: err => {
-          console.error(err);
-        },
-        complete: () => {
           this.spinner.hide();
+          console.error(err);
         }
       });
   }

@@ -14,18 +14,21 @@ export class ViewActionlogsComponent implements OnInit {
 
   constructor(public http: HttpClient, @Inject('BASE_URL') public baseUrl: string, private spinner: NgxSpinnerService) {
     this.spinner.show();
-    http.get<any[]>(baseUrl + 'api/SampleData/GetAllActionLogs').subscribe(result => {
-      this.spinner.hide();
-      this.actionlogs = result;
-    }, error => {
-      this.spinner.hide();
+    http.get<any[]>(baseUrl + 'api/SampleData/GetAllActionLogs').subscribe({
+      next: res => {
+        this.spinner.hide();
+        this.actionlogs = res;
+      },
+      error: error => {
+        this.spinner.hide();
         console.error(error);
+      }
     });
 
   }
 
   ngOnInit() {
-    
+
   }
 
 

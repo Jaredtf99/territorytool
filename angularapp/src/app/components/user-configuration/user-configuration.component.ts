@@ -21,10 +21,12 @@ export class UserConfigurationComponent implements OnInit {
     this.userService.changePassword().subscribe(
       {
         next: res => {
+          this.spinner.hide();
           this.userService.formModel.reset();
           this.toastr.success("Contraseña cambiada");
         },
         error: err => {
+          this.spinner.hide();
           err.error.split(',').forEach((error: string) => {
             switch (error) {
               case 'PasswordMismatch':
@@ -39,9 +41,6 @@ export class UserConfigurationComponent implements OnInit {
                 break;
             }
           });
-        },
-        complete: () => {
-          this.spinner.hide();
         }
 
       });
