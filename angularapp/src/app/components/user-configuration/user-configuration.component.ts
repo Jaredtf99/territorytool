@@ -9,6 +9,7 @@ import { NgxSpinnerService } from "ngx-spinner";
   styleUrls: ['./user-configuration.component.css']
 })
 export class UserConfigurationComponent implements OnInit {
+  submitted = false;
 
   constructor(public userService: UserService, private toastr: ToastrService, private spinner: NgxSpinnerService) { }
 
@@ -16,34 +17,37 @@ export class UserConfigurationComponent implements OnInit {
   }
 
   changePassword() {
-    this.spinner.show();
+    this.submitted = true;
 
-    this.userService.changePassword().subscribe(
-      {
-        next: res => {
-          this.spinner.hide();
-          this.userService.formModel.reset();
-          this.toastr.success("Contraseña cambiada");
-        },
-        error: err => {
-          this.spinner.hide();
-          err.error.split(',').forEach((error: string) => {
-            switch (error) {
-              case 'PasswordMismatch':
-                this.toastr.error("La contraseña no es correcta");
-                break;
-              case 'PasswordTooShort':
-                this.toastr.error("La contraseña debe tener al menos 4 caracteres");
-                break;
-              default:
-                this.toastr.error('Error cambiando la contraseña');
-                console.log(err);
-                break;
-            }
-          });
-        }
+    if (this.userService.changePasswordForm.valid) {
+      this.spinner.show();
+      this.userService.changePassword().subscribe(
+        {
+          next: res => {
+            this.spinner.hide();
+            this.userService.changePasswordForm.reset();
+            this.toastr.success("Contraseña cambiada");
+          },
+          error: err => {
+            this.spinner.hide();
+            err.error.split(',').forEach((error: string) => {
+              switch (error) {
+                case 'PasswordMismatch':
+                  this.toastr.error("La contraseña no es correcta");
+                  break;
+                case 'PasswordTooShort':
+                  this.toastr.error("La contraseña debe tener al menos 4 caracteres");
+                  break;
+                default:
+                  this.toastr.error('Error cambiando la contraseña');
+                  console.log(err);
+                  break;
+              }
+            });
+          }
 
-      });
+        });
+    }
   }
 
 }

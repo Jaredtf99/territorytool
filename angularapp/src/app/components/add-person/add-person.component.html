@@ -7,15 +7,15 @@
     </div>
 
     <div class="input-group">
-      <input type="text" class="form-control item" placeholder="Nombre" formControlName="name">
+      <input type="text" class="form-control item" placeholder="Nombre" formControlName="name" [ngClass]="{ 'is-invalid': (f['name'].dirty || f['name'].touched) && f['name'].errors && submitted}">
     </div>
 
-    <div *ngIf="(submitted || f['name'].dirty || f['name'].touched) && f['name'].errors" class="alert alert-danger">
+    <div *ngIf="(f['name'].dirty || f['name'].touched) && f['name'].errors && submitted" class="alert alert-danger">
       <div *ngIf="f['name'].errors['required']">Introduce el nombre del hermano</div>
     </div>
 
     <div class="input-group">
-      <button type="submit" class="btn btn-block create-account" [disabled]="!addPersonForm.valid">Registrar</button>
+      <button type="submit" class="btn btn-block create-account">Registrar</button>
     </div>
 
   </form>

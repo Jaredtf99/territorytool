@@ -7,28 +7,28 @@
     </div>
 
     <div class="form-group">
-      <input type="text" class="form-control item" placeholder="Código de territorio" formControlName="code">
+      <input type="text" class="form-control item" placeholder="Código de territorio" formControlName="code" [ngClass]="{ 'is-invalid': (f['code'].dirty || f['code'].touched) && f['code'].errors && submitted}">
     </div>
 
-    <div *ngIf="(submitted || f['code'].dirty || f['code'].touched) && f['code'].errors" class="alert alert-danger">
+    <div *ngIf="(f['code'].dirty || f['code'].touched) && f['code'].errors && submitted" class="alert alert-danger">
       <div *ngIf="f['code'].errors['required']">Introduce el código de territorio</div>
     </div>
 
 
     <div class="form-group">
-      <input type="text" class="form-control item" placeholder="Nombre" formControlName="name" [ngClass]="{ 'is-invalid': f['name'].errors }">
+      <input type="text" class="form-control item" placeholder="Nombre" formControlName="name" [ngClass]="{ 'is-invalid': (f['name'].dirty || f['name'].touched) && f['name'].errors && submitted}">
     </div>
 
-    <div *ngIf="(submitted || f['name'].dirty || f['name'].touched) && f['name'].errors" class="alert alert-danger">
+    <div *ngIf="(f['name'].dirty || f['name'].touched) && f['name'].errors && submitted" class="alert alert-danger">
       <div *ngIf="f['name'].errors['required']">Introduce el nombre del territorio</div>
     </div>
 
     <div class="input-group input-group">
-      <input type="text" class="form-control item" placeholder="URL del mapa" style="border-radius:20px 0px 0px 20px" formControlName="mapUrl" [ngClass]="{ 'is-invalid': f['mapUrl'].errors }">
+      <input type="text" class="form-control item" placeholder="URL del mapa" style="border-radius:20px 0px 0px 20px" formControlName="mapUrl" [ngClass]="{ 'is-invalid': (f['mapUrl'].dirty || f['mapUrl'].touched) && f['mapUrl'].errors && submitted}">
        <button class="btn btn-outline-secondary item" type="button" style="border-radius:0px 20px 20px 0px" data-bs-toggle="modal" data-bs-target="#modalScanner" (click)="startQrScanner()"><i class="fa fa-qrcode"></i></button>
     </div>
 
-    <div *ngIf="(submitted || f['mapUrl'].dirty || f['mapUrl'].touched) && f['mapUrl'].errors" class="alert alert-danger">
+    <div *ngIf="(f['mapUrl'].dirty || f['mapUrl'].touched) && f['mapUrl'].errors && submitted" class="alert alert-danger">
       <div *ngIf="f['mapUrl'].errors['required']">Introduce la URL del mapa del territorio</div>
     </div>
 

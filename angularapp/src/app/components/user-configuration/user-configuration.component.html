@@ -7,10 +7,10 @@
     </div>
     <h3 class="text-center">Cambiar contraseña</h3>
     <div class="form-group">
-      <input type="password" class="form-control item" placeholder="Contraseña actual" formControlName="OldPassword">
+      <input type="password" class="form-control item" placeholder="Contraseña actual" formControlName="OldPassword" [ngClass]="{ 'is-invalid': (userService.changePasswordForm.get('OldPassword')!.dirty || userService.changePasswordForm.get('OldPassword')!.touched) && userService.changePasswordForm.get('OldPassword')!.errors && submitted}">
     </div>
 
-    <div *ngIf="(userService.changePasswordForm.get('OldPassword')!.dirty || userService.changePasswordForm.get('OldPassword')!.touched) && userService.changePasswordForm.get('OldPassword')!.errors" class="alert alert-danger">
+    <div *ngIf="(userService.changePasswordForm.get('OldPassword')!.dirty || userService.changePasswordForm.get('OldPassword')!.touched) && userService.changePasswordForm.get('OldPassword')!.errors && submitted" class="alert alert-danger">
       <div *ngIf="userService.changePasswordForm.get('OldPassword')!.errors!['required']">Introduce una contraseña</div>
       <div *ngIf="userService.changePasswordForm.get('OldPassword')!.errors!['minlength']">La contraseña debe tener minimo 4 caracteres</div>
     </div>
@@ -18,26 +18,26 @@
 
     <div formGroupName="NewPasswords">
       <div class="form-group">
-        <input type="password" class="form-control item" placeholder="Nueva contraseña" formControlName="Password">
+        <input type="password" class="form-control item" placeholder="Nueva contraseña" formControlName="Password" [ngClass]="{ 'is-invalid': (userService.changePasswordForm.get('NewPasswords.Password')!.dirty || userService.changePasswordForm.get('NewPasswords.Password')!.touched) && userService.changePasswordForm.get('NewPasswords.Password')!.errors && submitted}">
       </div>
 
-      <div *ngIf="(userService.changePasswordForm.get('NewPasswords.Password')!.dirty || userService.changePasswordForm.get('NewPasswords.Password')!.touched) && userService.changePasswordForm.get('NewPasswords.Password')!.errors" class="alert alert-danger">
+      <div *ngIf="(userService.changePasswordForm.get('NewPasswords.Password')!.dirty || userService.changePasswordForm.get('NewPasswords.Password')!.touched) && userService.changePasswordForm.get('NewPasswords.Password')!.errors && submitted" class="alert alert-danger">
         <div *ngIf="userService.changePasswordForm.get('NewPasswords.Password')!.errors!['required']">Introduce una contraseña</div>
         <div *ngIf="userService.changePasswordForm.get('NewPasswords.Password')!.errors!['minlength']">La contraseña debe tener minimo 4 caracteres</div>
       </div>
 
       <div class="form-group">
-        <input type="password" class="form-control item" placeholder="Repite la contraseña" formControlName="ConfirmPassword">
+        <input type="password" class="form-control item" placeholder="Repite la contraseña" formControlName="ConfirmPassword" [ngClass]="{ 'is-invalid': (userService.changePasswordForm.get('NewPasswords.ConfirmPassword')!.dirty || userService.changePasswordForm.get('NewPasswords.ConfirmPassword')!.touched) && userService.changePasswordForm.get('NewPasswords.ConfirmPassword')!.errors && submitted}">
       </div>
 
-      <div *ngIf="(userService.changePasswordForm.get('NewPasswords.ConfirmPassword')!.dirty || userService.changePasswordForm.get('NewPasswords.ConfirmPassword')!.touched) && userService.changePasswordForm.get('NewPasswords.ConfirmPassword')!.errors" class="alert alert-danger">
+      <div *ngIf="(userService.changePasswordForm.get('NewPasswords.ConfirmPassword')!.dirty || userService.changePasswordForm.get('NewPasswords.ConfirmPassword')!.touched) && userService.changePasswordForm.get('NewPasswords.ConfirmPassword')!.errors && submitted" class="alert alert-danger">
         <div *ngIf="userService.changePasswordForm.get('NewPasswords.ConfirmPassword')!.errors!['required']">Repite la contraseña</div>
         <div *ngIf="userService.changePasswordForm.get('NewPasswords.ConfirmPassword')!.errors!['passwordMismatch']">Las contraseñas no coinciden</div>
       </div>
     </div>
 
     <div class="form-group">
-      <button type="submit" class="btn btn-block create-account" [disabled]="!userService.changePasswordForm.valid">Enviar</button>
+      <button type="submit" class="btn btn-block create-account">Enviar</button>
     </div>
 
   </form>
