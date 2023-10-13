@@ -28,6 +28,7 @@
     "jest-editor-support": "*",
     "jquery": "^3.7.0",
     "ngx-bootstrap": "^11.0.2",
+    "ngx-scanner-qrcode": "^1.6.4",
     "ngx-spinner": "^16.0.2",
     "ngx-toastr": "^17.0.2",
     "rxjs": "~7.8.0",

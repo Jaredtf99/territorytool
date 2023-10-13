@@ -5,6 +5,7 @@ import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 import { NgxSpinnerModule } from "ngx-spinner";
 import { CollapseModule } from 'ngx-bootstrap/collapse';
+import { NgxScannerQrcodeModule, LOAD_WASM } from 'ngx-scanner-qrcode';
 
 import { UserService } from './shared/user.service';
 import { PersonService } from './shared/person.service';
@@ -30,6 +31,9 @@ import { AddPersonComponent } from './components/add-person/add-person.component
 import { PersonsComponent } from './components/persons/persons.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { NavbarComponent } from './components/navbar/navbar.component';
+import { AddTerritoryComponent } from './components/add-territory/add-territory.component';
+
+LOAD_WASM().subscribe((res: any) => console.log('LOAD_WASM', res));
 
 @NgModule({
   declarations: [
@@ -47,6 +51,7 @@ import { NavbarComponent } from './components/navbar/navbar.component';
     PersonsComponent,
     SidebarComponent,
     NavbarComponent,
+    AddTerritoryComponent,
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -60,6 +65,7 @@ import { NavbarComponent } from './components/navbar/navbar.component';
         path: '', component: LoggedComponent, canActivateChild: [AuthGuard], children: [
           { path: 'home', component: HomeComponent, },
           { path: 'territories', component: TerritoriesComponent },
+          { path: 'add-territory', component: AddTerritoryComponent, data: { permittedRoles: ['SUPERADMIN', 'ADMIN'] } },
           { path: 'registration', component: RegistrationComponent, data: { permittedRoles: ['SUPERADMIN', 'ADMIN'] } },
           { path: 'user-configuration', component: UserConfigurationComponent },
           { path: 'action-logs', component: ViewActionlogsComponent, data: { permittedRoles: ['SUPERADMIN'] } },
@@ -77,6 +83,7 @@ import { NavbarComponent } from './components/navbar/navbar.component';
       preventDuplicates: false,
     }),
     CollapseModule.forRoot(),
+    NgxScannerQrcodeModule,
   ],
   providers: [UserService, PersonService, TerritoryService, AuthGuard, {
     provide: HTTP_INTERCEPTORS,

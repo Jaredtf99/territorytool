@@ -24,6 +24,12 @@
           <span>Ver territorios</span>
         </a>
       </li>
+      <li>
+        <a [routerLink]="['/add-territory']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
+          <i class="fas fa-address-card"></i>
+          <span>Añadir territorio</span>
+        </a>
+      </li>
       <li *ngIf="userService.roleMatch(['SUPERADMIN', 'ADMIN'])">
         <a [routerLink]="['/users']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
           <i class="fas fa-user"></i>

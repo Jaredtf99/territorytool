@@ -25,5 +25,11 @@ export class TerritoryService {
     return this.http.delete(url).pipe()
   }
 
+  addTerritory(mapUrl: string, name: string, code: string): Observable<any> {
+    const body = { mapUrl, name, code };
+
+    return this.http.post(this.baseUrl + 'api/SampleData/AddTerritory', body).pipe()
+  }
+
 
 }

@@ -46,23 +46,23 @@ namespace TerritoryTool.ServerSide.Controllers
 
         [HttpPost("[action]")]
         [Authorize(Roles = "SUPERADMIN,ADMIN")]
-        public ActionResult AddTerritory(string code, string name, string mapUrl)
+        public ActionResult AddTerritory(AddTerritoryModel territoryInfo)
         {
             var userId = SecurityHelper.GetLoggedUserId(User);
             _logger.LogInformation("Adding territory...");
             
-            if (_territoryRepository.GetTerritoryByCode(code) != null)
+            if (_territoryRepository.GetTerritoryByCode(territoryInfo.Code) != null)
                 return BadRequest("Ya existe un territorio con el mismo código");
 
-            if (_territoryRepository.GetTerritoryByName(name) != null)
+            if (_territoryRepository.GetTerritoryByName(territoryInfo.Name) != null)
                 return BadRequest("Ya existe un territorio con el mismo nombre");
 
-            if (_territoryRepository.GetTerritoryByMapUrl(mapUrl) != null)
+            if (_territoryRepository.GetTerritoryByMapUrl(territoryInfo.MapUrl) != null)
                 return BadRequest("Ya existe un territorio con la misma URL del mapa");
 
-            _territoryRepository.AddNewTerritory(code, name, mapUrl);
+            _territoryRepository.AddNewTerritory(territoryInfo.Code, territoryInfo.Name, territoryInfo.MapUrl);
 
-            _userActionLogFacade.AddNewActionLog(ActionType.AddTerritory, string.Format("Added territory {0} {1}", code, name), userId, true);
+            _userActionLogFacade.AddNewActionLog(ActionType.AddTerritory, string.Format("Added territory {0} {1}", territoryInfo.Code, territoryInfo.Name), userId, true);
 
             return Ok();
         }
