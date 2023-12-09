@@ -14,9 +14,15 @@
                  [loading]="territoriesLoading"
                  typeToSearchText="Introduce 2 o más caracteres"
                  [typeahead]="territoriesInput$"
-                 bindLabel="name"
                  bindValue="code"
                  formControlName="selectedTerritory">
+        <ng-template ng-label-tmp let-item="item">
+          <span>{{item.name}}</span>
+        </ng-template>
+        <ng-template ng-option-tmp let-item="item" let-index="index" let-search="searchTerm">
+          <span>({{item.code}}) {{item.name}}</span>
+          <!--Aqui se podria utilizar un badge para el code-->
+        </ng-template>
       </ng-select>
     </div>
 
