@@ -19,6 +19,7 @@ namespace TerritoryTool.ServerSide.Domain.Enums
         EditPerson = 9,
         DeletePerson = 10,
         GiveTerritory = 11,
+        PickTerritory = 12,
 
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -21,15 +22,16 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
 
         public IEnumerable<Territory> GetAllTerritories()
         {
-            return _context.Territory.ToList();
+            return _context.Territory.Include(x => x.Person).ToList();
         }
 
-        public IEnumerable<Territory> SearchTerritories(string search, bool onlyFreeTerritories)
+        public IEnumerable<Territory> SearchTerritories(string search, bool onlyFreeTerritories, bool onlyGivenTerritories)
         {
             search = search.ToLower();
             //TODO: hacer una busqueda por proximidad, en vez de un contains
             return _context.Territory.Where(x => (x.Name.ToLower().Contains(search) || search.Contains(x.Name.ToLower()) || x.Code.ToLower().Contains(search)) &&
-                                                 (onlyFreeTerritories ? x.Person == null : true));
+                                                 (onlyFreeTerritories ? x.PersonId == null : true) &&
+                                                 (onlyGivenTerritories ? x.PersonId != null : true));
         }
 
 
@@ -93,13 +95,30 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
         public void GiveTerritory(Transaction giveTransaction)
         {
 
-            var test = _context.Transaction.Add(giveTransaction);
+            var transactionTracking = _context.Transaction.Add(giveTransaction);
 
-            test.Entity.Territory.IdPerson = giveTransaction.PersonId;
+            transactionTracking.Entity.Territory.PersonId = giveTransaction.PersonId;
 
             _context.SaveChanges();
 
         }
+
+        public void PickTerritory(int territoryId, string pickedBy, bool isAutomaticPickedDate, DateTime pickedDateUtc)
+        {
+            Transaction transactionToPick = _context.Transaction.Single(x => x.TerritoryId == territoryId && x.PickedBy == null);
+
+            transactionToPick.PickedBy = pickedBy;
+            transactionToPick.IsAutomaticPickedDate = isAutomaticPickedDate;
+            transactionToPick.PickedDateUtc = pickedDateUtc;
+
+            var transactionTracking = _context.Transaction.Update(transactionToPick);
+
+            transactionTracking.Entity.Territory.PersonId = null;
+
+            _context.SaveChanges();
+
+        }
+
 
     }
 }

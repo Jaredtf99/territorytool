@@ -36,11 +36,13 @@ namespace TerritoryTool.ServerSide.Controllers
         }
 
         [HttpGet("all")]
-        public IEnumerable<Territory> AllTerritories()
+        public IEnumerable<TerritoryInfo> AllTerritories()
         {
             _logger.LogInformation("Returning all territories...");
 
-            return _territoryRepository.GetAllTerritories();
+            var territories = _territoryRepository.GetAllTerritories();
+
+            return ConvertTerritoryToTerritoryInfoList(territories);
         }
 
         /// <summary>
@@ -50,11 +52,13 @@ namespace TerritoryTool.ServerSide.Controllers
         /// <param name="onlyFreeTerritories">Flag para obtener solo los territorios libres</param>
         /// <returns></returns>
         [HttpGet]
-        public IEnumerable<Territory> SearchTerritories(string search, bool onlyFreeTerritories = false)
+        public IEnumerable<TerritoryInfo> SearchTerritories(string search, bool onlyFreeTerritories = false, bool onlyGivenTerritories = false)
         {
             _logger.LogInformation("Searching territories");
 
-            return _territoryRepository.SearchTerritories(search, onlyFreeTerritories);
+            var territories = _territoryRepository.SearchTerritories(search, onlyFreeTerritories, onlyGivenTerritories);
+
+            return ConvertTerritoryToTerritoryInfoList(territories);
         }
 
 
@@ -172,11 +176,70 @@ namespace TerritoryTool.ServerSide.Controllers
                 TerritoryId = territoryToGive.Id
             };
 
+            //TODO: validaciones. No se puede dar un territorio para una fecha en la que ya estaba asignado a alguien 
             _territoryRepository.GiveTerritory(giveTransaction);
 
             _userActionLogFacade.AddNewActionLog(ActionType.GiveTerritory, $"Given territory ({territoryToGive.Code}) {territoryToGive.Name} to {personToGive.Name}. IsCustomDate: {info.IsCustomDate}", userId, true);
 
             return Ok();
+        }
+
+        [HttpPost("pick-territory")]
+        public ActionResult PickTerritory(PickTerritoryModel info)
+        {
+            var userId = SecurityHelper.GetLoggedUserId(User);
+            _logger.LogInformation("Picking territory...");
+
+            if (info.IsCustomDate && info.CustomDate == null)
+                return BadRequest("Fecha invalida");
+
+            Territory? territoryToPick = _territoryRepository.GetTerritoryByCode(info.TerritoryCode);
+
+            if (territoryToPick == null)
+                return BadRequest("No existe el territorio a recoger");
+
+            if (territoryToPick.PersonId == null)
+                return BadRequest("El territorio no esta asignado a nadie");
+
+            DateTime pickedDate = info.IsCustomDate ? info.CustomDate!.Value : DateTime.UtcNow;
+            //TODO: validaciones. No se puede recoger un territorio con una fecha ANTERIOR a la de entrega 
+            _territoryRepository.PickTerritory(territoryToPick.Id, userId, !info.IsCustomDate, pickedDate);
+
+            _userActionLogFacade.AddNewActionLog(ActionType.GiveTerritory, $"Picked territory ({territoryToPick.Code}) {territoryToPick.Name}. IsCustomDate: {info.IsCustomDate}", userId, true);
+
+            return Ok();
+        }
+
+
+        private IEnumerable<TerritoryInfo> ConvertTerritoryToTerritoryInfoList(IEnumerable<Territory> territories)
+        {
+            List<TerritoryInfo> retval = new List<TerritoryInfo>();
+
+            foreach (Territory territory in territories)
+            {
+                TerritoryInfo territoryInfo = ConvertTerritoryToTerritoryInfo(territory)!;
+
+                retval.Add(territoryInfo);
+            }
+
+            return retval;
+
+        }
+
+        private TerritoryInfo? ConvertTerritoryToTerritoryInfo(Territory? territory)
+        {
+
+            if (territory == null) return null;
+
+            TerritoryInfo territoryInfo = new TerritoryInfo();
+
+            territoryInfo.MapUrl = territory.MapUrl;
+            territoryInfo.PersonName = territory.Person?.Name;
+            territoryInfo.Code = territory.Code;
+            territoryInfo.Name = territory.Name;
+
+            return territoryInfo;
+
         }
 
     }

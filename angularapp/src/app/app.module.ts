@@ -33,6 +33,7 @@ import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { AddTerritoryComponent } from './components/add-territory/add-territory.component';
 import { ChangeTerritoryComponent } from './components/change-territory/change-territory.component';
+import { PickTerritoryComponent } from './components/pick-territory/pick-territory.component';
 import { NgSelectModule } from '@ng-select/ng-select';
 
 LOAD_WASM().subscribe((res: any) => console.log('LOAD_WASM', res));
@@ -55,6 +56,7 @@ LOAD_WASM().subscribe((res: any) => console.log('LOAD_WASM', res));
     NavbarComponent,
     AddTerritoryComponent,
     ChangeTerritoryComponent,
+    PickTerritoryComponent,
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -71,6 +73,7 @@ LOAD_WASM().subscribe((res: any) => console.log('LOAD_WASM', res));
           { path: 'territories', component: TerritoriesComponent },
           { path: 'add-territory', component: AddTerritoryComponent, data: { permittedRoles: ['SUPERADMIN', 'ADMIN'] } },
           { path: 'change-territory', component: ChangeTerritoryComponent },
+          { path: 'pick-territory', component: PickTerritoryComponent },
           { path: 'registration', component: RegistrationComponent, data: { permittedRoles: ['SUPERADMIN', 'ADMIN'] } },
           { path: 'user-configuration', component: UserConfigurationComponent },
           { path: 'action-logs', component: ViewActionlogsComponent, data: { permittedRoles: ['SUPERADMIN'] } },

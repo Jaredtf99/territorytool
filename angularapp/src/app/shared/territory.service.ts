@@ -38,11 +38,21 @@ export class TerritoryService {
   searchFreeTerritories(term: string): Observable<Territory[]> {
     return this.http.get<Territory[]>(`${this.baseUrl}/territories?search=${term}&onlyFreeTerritories=true`).pipe()
   }
+  searchGivenTerritories(term: string): Observable<Territory[]> {
+    return this.http.get<Territory[]>(`${this.baseUrl}/territories?search=${term}&onlyGivenTerritories=true`).pipe()
+  }
+
 
   giveTerritory(territoryCode: string, personName: string, isCustomDate: boolean, customDate: Date | undefined): Observable<any> {
     const body = { territoryCode, personName, isCustomDate, customDate };
 
     return this.http.post(`${this.baseUrl}/territories/give-territory`, body).pipe()
+  }
+
+  pickTerritory(territoryCode: string, isCustomDate: boolean, customDate: Date | undefined): Observable<any> {
+    const body = { territoryCode, isCustomDate, customDate };
+
+    return this.http.post(`${this.baseUrl}/territories/pick-territory`, body).pipe()
   }
 
 

@@ -20,7 +20,7 @@
       <div class="card__info">
         <span class="card__category">{{ territory.code }}</span>
         <h3 class="card__title"><a href="{{ territory.mapUrl }}" target="_blank">{{ territory.name }}</a></h3>
-        <span class="card__by">Asignado a <a href="#" class="card__author">Juanin</a></span>
+        <span *ngIf="territory.personName" class="card__by">Asignado a <a href="#" class="card__author">{{ territory.personName}}</a></span>
       </div>
     
   </div>
