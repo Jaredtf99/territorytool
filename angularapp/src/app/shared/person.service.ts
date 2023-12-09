@@ -10,18 +10,20 @@ export class PersonService {
   addPerson(name: string): Observable<any> {
     const body = { name };
 
-    return this.http.post(this.baseUrl + 'api/SampleData/AddPerson', body).pipe()
+    return this.http.post(this.baseUrl + '/persons', body).pipe()
   }
 
   getAllPersons(): Observable<any> {
-    return this.http.get(this.baseUrl + 'api/SampleData/GetAllPersons').pipe()
+    return this.http.get(this.baseUrl + '/persons').pipe()
   }
 
   deletePerson(name: string): Observable<any> {
-    const url = `${this.baseUrl}api/SampleData/DeletePerson?name=${name}`;
+    const url = `${this.baseUrl}/persons/${name}`;
 
     return this.http.delete(url).pipe()
   }
 
-
+  searchPersons(term: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/persons/${term}`).pipe()
+  }
 }

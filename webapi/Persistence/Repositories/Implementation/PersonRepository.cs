@@ -16,23 +16,32 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             _logger = logger;
         }
 
-        public Person GetPersonById(int id)
+        public Person? GetPersonById(int id)
         {
             return _context.Person.Find(id);
         }
 
+        public Person? GetPersonByName(string name)
+        {
+            name = name.ToLower();
+
+            return _context.Person.FirstOrDefault(x => x.Name.ToLower() == name);
+        }
+
         public IEnumerable<Person> SearchPersonsByName(string name)
         {
-            return _context.Person.Where(x => x.Name.Contains(name)).ToList();
+            name = name.ToLower();
+            //TODO: hacer una busqueda por proximidad, en vez de un contains
+            return _context.Person.Where(x => x.Name.ToLower().Contains(name) || name.Contains(x.Name.ToLower()));
         }
 
         public IEnumerable<Person> GetAllPersons()
         {
             return _context.Person.ToList();
         }
-        public Person GetPersonWithTerritory(int idTerritory)
+        public Person? GetPersonWithTerritory(int idTerritory)
         {
-            return _context.Territory.Find(idTerritory).Person;
+            return _context.Territory.Find(idTerritory)?.Person;
         }
 
         public void AddNewPerson(Person person)
@@ -63,5 +72,6 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             _context.Person.Remove(person);
             _context.SaveChanges();
         }
+
     }
 }

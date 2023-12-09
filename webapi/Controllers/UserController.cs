@@ -1,29 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using TerritoryTool.ServerSide.Controllers.Models.User;
-using TerritoryTool.ServerSide.Domain;
 using TerritoryTool.ServerSide.Domain.Classes;
 using TerritoryTool.ServerSide.Domain.Enums;
 using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
 using TerritoryTool.ServerSide.Domain.Helpers;
-using TerritoryTool.ServerSide.Persistence;
 
 namespace TerritoryTool.ServerSide.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v1/users")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class UserController : ControllerBase
@@ -32,7 +20,7 @@ namespace TerritoryTool.ServerSide.Controllers
 
         private readonly IUserConfigurationFacade _userConfigurationFacade;
 
-        public UserController(ILogger<SampleDataController> logger, IUserConfigurationFacade userConfigurationFacade)
+        public UserController(ILogger<ActionLogController> logger, IUserConfigurationFacade userConfigurationFacade)
         {
             _logger = logger;
             _userConfigurationFacade = userConfigurationFacade;
@@ -95,7 +83,6 @@ namespace TerritoryTool.ServerSide.Controllers
 
 
         [HttpGet]
-        [Route("get-users")]
         [Authorize(Roles = "SUPERADMIN,ADMIN")]
         public ActionResult GetUsers()
         {
@@ -104,12 +91,11 @@ namespace TerritoryTool.ServerSide.Controllers
             return Content(JsonConvert.SerializeObject(users), ConfigurationHelper.JsonMime);
         }
 
-        [HttpPost]
-        [Route("edit-user")]
+        [HttpPost("{userId}")]
         [Authorize(Roles = "SUPERADMIN,ADMIN")]
-        public ActionResult EditUser(EditUserModel model)
+        public ActionResult EditUser(string userId, EditUserModel model)
         {
-            if (string.IsNullOrWhiteSpace(model.UserID) || string.IsNullOrWhiteSpace(model.UserName) || model.Role == RoleType.Unknown || model.Role == RoleType.SUPERADMIN)
+            if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(model.UserName) || model.Role == RoleType.Unknown || model.Role == RoleType.SUPERADMIN)
                 return BadRequest("INVALID_PARAMETERS");
 
             if (model.Role == RoleType.ADMIN && !User.IsInRole(RoleType.SUPERADMIN.ToString()))
@@ -117,7 +103,7 @@ namespace TerritoryTool.ServerSide.Controllers
 
             var loggedUserId = SecurityHelper.GetLoggedUserId(User);
 
-            bool successful = _userConfigurationFacade.EditUser(model.UserID, model.UserName, model.Role, loggedUserId, out string errorMsg);
+            bool successful = _userConfigurationFacade.EditUser(userId, model.UserName, model.Role, loggedUserId, out string errorMsg);
 
             if (successful)
                 return Ok();
@@ -126,17 +112,16 @@ namespace TerritoryTool.ServerSide.Controllers
 
         }
 
-        [HttpGet]
-        [Route("delete-user")]
+        [HttpDelete("{userId}")]
         [Authorize(Roles = "SUPERADMIN,ADMIN")]
-        public ActionResult DeleteUser(string idToDelete)
+        public ActionResult DeleteUser(string userId)
         {
-            if (string.IsNullOrWhiteSpace(idToDelete))
+            if (string.IsNullOrWhiteSpace(userId))
                 return BadRequest("INVALID_PARAMETERS");
 
             var loggedUserId = SecurityHelper.GetLoggedUserId(User);
 
-            _userConfigurationFacade.DeleteUser(idToDelete, loggedUserId);
+            _userConfigurationFacade.DeleteUser(userId, loggedUserId);
 
             return Ok();
 

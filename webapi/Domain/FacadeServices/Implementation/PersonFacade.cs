@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -52,14 +53,26 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
             var persons = _personRepo.GetAllPersons();
 
-            var retval = ConvertPersonToPersonInfo(persons);
+            var retval = ConvertPersonToPersonInfoList(persons);
 
             return retval;
         }
 
+        public IEnumerable<PersonInfo> SearchPersonsByName(string name)
+        {
+            IEnumerable<PersonInfo> personsInfo = new List<PersonInfo>();
+
+            var persons = _personRepo.SearchPersonsByName(name);
+
+            var retval = ConvertPersonToPersonInfoList(persons);
+
+            return retval;
+        }
+
+
         public void DeletePerson(string name, string loggedUserId)
         {
-            var personToDelete = _personRepo.SearchPersonsByName(name).FirstOrDefault(x => x.Name == name);
+            var personToDelete = _personRepo.GetPersonByName(name);
 
             if (personToDelete == null)
                 _logger.LogError($"Cannot found person to delete. Name: {name}");
@@ -69,24 +82,43 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             _actionLog.AddNewActionLog(ActionType.DeletePerson, $"Deleting person {name}", loggedUserId, personToDelete != null);
         }
 
+        public PersonInfo? GetPersonByName(string name)
+        {
+            var person = _personRepo.GetPersonByName(name);
 
-        private IEnumerable<PersonInfo> ConvertPersonToPersonInfo(IEnumerable<Person> persons)
+            return ConvertPersonToPersonInfo(person);
+        }
+
+
+        private IEnumerable<PersonInfo> ConvertPersonToPersonInfoList(IEnumerable<Person> persons)
         {
             List<PersonInfo> retval = new List<PersonInfo>();
 
             foreach (Person person in persons)
             {
-                PersonInfo personInfo = new PersonInfo();
-
-                personInfo.Name = person.Name;
-                //TODO: Revisar esto, estaba mal planteado. Podemos sacar una lista de territorios activos, y ver como mostrarlo por pantalla.
-                //personInfo.TerritoryCode = person.Te?.Code;
-                //personInfo.TerritoryName = person.Territory?.Name;
+                PersonInfo personInfo = ConvertPersonToPersonInfo(person)!;
 
                 retval.Add(personInfo);
             }
 
             return retval;
         }
+
+        private PersonInfo? ConvertPersonToPersonInfo(Person? person) {
+
+            if (person == null) return null;
+
+            PersonInfo personInfo = new PersonInfo();
+
+            personInfo.Name = person.Name;
+            //TODO: Revisar esto, estaba mal planteado. Podemos sacar una lista de territorios activos, y ver como mostrarlo por pantalla.
+            //personInfo.TerritoryCode = person.Te?.Code;
+            //personInfo.TerritoryName = person.Territory?.Name;
+
+            return personInfo;
+
+        }
+
+
     }
 }

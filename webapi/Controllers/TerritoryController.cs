@@ -16,27 +16,26 @@ using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
 
 namespace TerritoryTool.ServerSide.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v1/territories")]
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    public class SampleDataController : ControllerBase
+    public class TerritoryController : ControllerBase
     {
-
         private readonly ILogger _logger;
 
         private readonly ITerritoryRepository _territoryRepository;
+        private readonly IPersonRepository _personRepository;
         private readonly IUserActionLogFacade _userActionLogFacade;
-        private readonly IPersonFacade _personFacade;
 
-        public SampleDataController(ITerritoryRepository territoryRepository, ILogger<SampleDataController> logger, IUserActionLogFacade userActionLogFacade, IPersonFacade personFacade)
+        public TerritoryController(ITerritoryRepository territoryRepository, ILogger<ActionLogController> logger, IUserActionLogFacade userActionLogFacade, IPersonRepository personRepository)
         {
             _territoryRepository = territoryRepository;
             _logger = logger;
             _userActionLogFacade = userActionLogFacade;
-            _personFacade = personFacade;
+            _personRepository = personRepository;
         }
 
-        [HttpGet("[action]")]
+        [HttpGet("all")]
         public IEnumerable<Territory> AllTerritories()
         {
             _logger.LogInformation("Returning all territories...");
@@ -44,7 +43,22 @@ namespace TerritoryTool.ServerSide.Controllers
             return _territoryRepository.GetAllTerritories();
         }
 
-        [HttpPost("[action]")]
+        /// <summary>
+        /// Devuelve una lista de territorios en base al filtro de busqueda por texto
+        /// </summary>
+        /// <param name="search">Termino de búsqueda</param>
+        /// <param name="onlyFreeTerritories">Flag para obtener solo los territorios libres</param>
+        /// <returns></returns>
+        [HttpGet]
+        public IEnumerable<Territory> SearchTerritories(string search, bool onlyFreeTerritories = false)
+        {
+            _logger.LogInformation("Searching territories");
+
+            return _territoryRepository.SearchTerritories(search, onlyFreeTerritories);
+        }
+
+
+        [HttpPost]
         [Authorize(Roles = "SUPERADMIN,ADMIN")]
         public ActionResult AddTerritory(AddTerritoryModel territoryInfo)
         {
@@ -67,9 +81,9 @@ namespace TerritoryTool.ServerSide.Controllers
             return Ok();
         }
 
-        [HttpPost("[action]")]
+        [HttpPost("{idTerritory}")] //TODO: cambiar a patch
         [Authorize(Roles = "SUPERADMIN,ADMIN")]
-        public ActionResult EditTerritory(EditTerritoryModel info)
+        public ActionResult EditTerritory([FromRoute] int idTerritory, EditTerritoryModel info)
         {
             var userId = SecurityHelper.GetLoggedUserId(User);
 
@@ -78,8 +92,10 @@ namespace TerritoryTool.ServerSide.Controllers
             if (string.IsNullOrWhiteSpace(info.Code) || string.IsNullOrWhiteSpace(info.Name) || string.IsNullOrWhiteSpace(info.MapUrl))
                 return BadRequest("INVALID_PARAMETERS");
 
-            Territory territory = _territoryRepository.GetTerritoryById(info.Id);
+            Territory? territory = _territoryRepository.GetTerritoryById(idTerritory);
 
+            if (territory == null) 
+                return BadRequest("TERRITORY_NOT_FOUND");
 
             if (territory.Code != info.Code && _territoryRepository.GetTerritoryByCode(info.Code) != null)
                 return BadRequest("CODE_EXIST");
@@ -96,14 +112,14 @@ namespace TerritoryTool.ServerSide.Controllers
 
             _territoryRepository.EditTerritory(territory);
 
-            _userActionLogFacade.AddNewActionLog(ActionType.EditTerritory, string.Format("Edited territory ID {0} to: Code ({1}) Name ({2}) MapURL ({3})", info.Id, info.Code, info.Name, info.MapUrl), userId, true);
+            _userActionLogFacade.AddNewActionLog(ActionType.EditTerritory, string.Format("Edited territory ID {0} to: Code ({1}) Name ({2}) MapURL ({3})", idTerritory, info.Code, info.Name, info.MapUrl), userId, true);
 
             return Ok();
         }
 
-        [HttpDelete("[action]")]
+        [HttpDelete("{idTerritory}")]
         [Authorize(Roles = "SUPERADMIN,ADMIN")]
-        public ActionResult DeleteTerritory(int id)
+        public ActionResult DeleteTerritory(int idTerritory)
         {
             var userId = SecurityHelper.GetLoggedUserId(User);
 
@@ -111,14 +127,14 @@ namespace TerritoryTool.ServerSide.Controllers
 
             string errorMessage = null;
 
-            Territory territoryToDelete = _territoryRepository.GetTerritoryById(id);
+            Territory territoryToDelete = _territoryRepository.GetTerritoryById(idTerritory);
 
             if (territoryToDelete != null)
                 _territoryRepository.DeleteTerritory(territoryToDelete);
             else
                 errorMessage = "TERRITORY_NOT_FOUND";
 
-            _userActionLogFacade.AddNewActionLog(ActionType.DeleteTerritory, string.Format("Deleted territory id {0}", id), userId, string.IsNullOrWhiteSpace(errorMessage));
+            _userActionLogFacade.AddNewActionLog(ActionType.DeleteTerritory, string.Format("Deleted territory id {0}", idTerritory), userId, string.IsNullOrWhiteSpace(errorMessage));
 
             if (string.IsNullOrWhiteSpace(errorMessage))
                 return Ok();
@@ -127,46 +143,41 @@ namespace TerritoryTool.ServerSide.Controllers
 
         }
 
-        [HttpGet("[action]")]
-        [Authorize(Roles = "SUPERADMIN")]
-        public ActionResult GetAllActionLogs()
-        {
-            IEnumerable<ActionLogInfo> actionLogs = _userActionLogFacade.GetAllActionLogs();
 
-            return Content(JsonConvert.SerializeObject(actionLogs), ConfigurationHelper.JsonMime);
-        }
-
-        [HttpPost("[action]")]
-        [Authorize(Roles = "SUPERADMIN,ADMIN")]
-        public ActionResult AddPerson(AddPersonModel personInfo)
+        [HttpPost("give-territory")]
+        public ActionResult GiveTerritory(GiveTerritoryModel info)
         {
             var userId = SecurityHelper.GetLoggedUserId(User);
-            _logger.LogInformation("Adding person...");
+            _logger.LogInformation("Giving territory...");
 
-            _personFacade.AddNewPerson(personInfo.Name, userId);
+            if (info.IsCustomDate && info.CustomDate == null)
+                return BadRequest("Fecha invalida");
+
+            Territory? territoryToGive = _territoryRepository.GetTerritoryByCode(info.TerritoryCode);
+
+            if (territoryToGive == null)
+                return BadRequest("No existe el territorio a entregar");
+
+            Person? personToGive = _personRepository.GetPersonByName(info.PersonName);
+
+            if (personToGive == null)
+                return BadRequest("No existe la persona a la que entregar el territorio");
+
+            Transaction giveTransaction = new Transaction
+            {
+                GivenBy = userId,
+                GivenDateUtc = info.IsCustomDate ? info.CustomDate!.Value : DateTime.UtcNow,
+                IsAutomaticGivenDate = !info.IsCustomDate,
+                PersonId = personToGive.Id,
+                TerritoryId = territoryToGive.Id
+            };
+
+            _territoryRepository.GiveTerritory(giveTransaction);
+
+            _userActionLogFacade.AddNewActionLog(ActionType.GiveTerritory, $"Given territory ({territoryToGive.Code}) {territoryToGive.Name} to {personToGive.Name}. IsCustomDate: {info.IsCustomDate}", userId, true);
 
             return Ok();
         }
-
-        [HttpGet("[action]")]
-        public ActionResult GetAllPersons()
-        {
-            IEnumerable<PersonInfo> persons = _personFacade.GetAllPersons();
-
-            return Content(JsonConvert.SerializeObject(persons), ConfigurationHelper.JsonMime);
-        }
-
-        [HttpDelete("[action]")]
-        [Authorize(Roles = "SUPERADMIN,ADMIN")]
-        public ActionResult DeletePerson(string name)
-        {
-            var userId = SecurityHelper.GetLoggedUserId(User);
-
-            _personFacade.DeletePerson(name, userId);
-
-            return Ok();
-        }
-
 
     }
 }

@@ -46,11 +46,11 @@ export class UserService {
       UserName: this.formModel.value.UserName,
       Password: this.formModel.value.Passwords.Password
     };
-    return this.http.post(this.baseUrl + 'api/user/register', body);
+    return this.http.post(this.baseUrl + '/users/register', body);
   }
 
   login(formData: any) {
-    return this.http.post(this.baseUrl + 'api/user/login', formData);
+    return this.http.post(this.baseUrl + '/users/login', formData);
   }
 
   changePassword() {
@@ -58,7 +58,7 @@ export class UserService {
       OldPassword: this.changePasswordForm.value.OldPassword,
       NewPassword: this.changePasswordForm.value.NewPasswords.Password
     };
-    return this.http.post(this.baseUrl + 'api/user/change-password', body);
+    return this.http.post(this.baseUrl + '/users/change-password', body);
   }
 
 
@@ -100,21 +100,20 @@ export class UserService {
   }
 
   getAllUsers(): Observable<User[]> {
-    return this.http.get<User[]>(this.baseUrl + 'api/user/get-users').pipe()
+    return this.http.get<User[]>(this.baseUrl + '/users').pipe()
   }
 
   editUser(userId: string, userName: string, role: string): Observable<any> {
     let body = {
-      userId,
       userName,
       role: RoleType[role as keyof typeof RoleType]
     };
 
-    return this.http.post(this.baseUrl + 'api/user/edit-user', body).pipe()
+    return this.http.post(`${this.baseUrl}/users/${userId}`, body).pipe()
   }
 
   deleteUser(id: string): Observable<any> {
-    return this.http.get(this.baseUrl + 'api/user/delete-user?idToDelete=' + id).pipe()
+    return this.http.delete(`${this.baseUrl}/users/${id}`).pipe()
   }
 
 

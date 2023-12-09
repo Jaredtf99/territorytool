@@ -48,7 +48,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             else
                 retval = _userManager.ChangePasswordAsync(user, currentPassword, newPassword).Result;
 
-            _userActionLogFacade.AddNewActionLog(ActionType.ChangeUserPassword, string.Format("Changued password for user {0}", user.UserName), userId, user != null && retval.Succeeded);
+            _userActionLogFacade.AddNewActionLog(ActionType.ChangeUserPassword, string.Format("Changed password for user {0}", user.UserName), userId, user != null && retval.Succeeded);
 
             return retval;
         }

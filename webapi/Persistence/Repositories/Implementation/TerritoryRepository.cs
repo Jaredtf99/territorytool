@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Xml.Linq;
 using TerritoryTool.ServerSide.Persistence.Entities;
 using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
 
@@ -23,12 +24,21 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             return _context.Territory.ToList();
         }
 
-        public Territory GetTerritoryById(int id)
+        public IEnumerable<Territory> SearchTerritories(string search, bool onlyFreeTerritories)
+        {
+            search = search.ToLower();
+            //TODO: hacer una busqueda por proximidad, en vez de un contains
+            return _context.Territory.Where(x => (x.Name.ToLower().Contains(search) || search.Contains(x.Name.ToLower()) || x.Code.ToLower().Contains(search)) &&
+                                                 (onlyFreeTerritories ? x.Person == null : true));
+        }
+
+
+        public Territory? GetTerritoryById(int id)
         {
             return _context.Territory.Find(id);
         }
 
-        public Territory GetTerritoryByName(string name)
+        public Territory? GetTerritoryByName(string name)
         {
             return _context.Territory.Where(x => x.Name.ToLower() == name.ToLower()).FirstOrDefault();
         }
@@ -70,14 +80,26 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             
         }
 
-        public Territory GetTerritoryByCode(string code)
+        public Territory? GetTerritoryByCode(string code)
         {
-            return _context.Territory.Where(x => x.Code.ToLower() == code.ToLower()).FirstOrDefault();
+            return _context.Territory.FirstOrDefault(x => x.Code.ToLower() == code.ToLower());
         }
 
-        public Territory GetTerritoryByMapUrl(string mapUrl)
+        public Territory? GetTerritoryByMapUrl(string mapUrl)
         {
-            return _context.Territory.Where(x => x.MapUrl.ToLower() == mapUrl.ToLower()).FirstOrDefault();
+            return _context.Territory.FirstOrDefault(x => x.MapUrl.ToLower() == mapUrl.ToLower());
         }
+
+        public void GiveTerritory(Transaction giveTransaction)
+        {
+
+            var test = _context.Transaction.Add(giveTransaction);
+
+            test.Entity.Territory.IdPerson = giveTransaction.PersonId;
+
+            _context.SaveChanges();
+
+        }
+
     }
 }
