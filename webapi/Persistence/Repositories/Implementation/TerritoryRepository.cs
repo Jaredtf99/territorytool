@@ -1,7 +1,9 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Xml.Linq;
 using TerritoryTool.ServerSide.Persistence.Entities;
 using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
 
@@ -20,15 +22,25 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
 
         public IEnumerable<Territory> GetAllTerritories()
         {
-            return _context.Territory.ToList();
+            return _context.Territory.Include(x => x.Person).ToList();
         }
 
-        public Territory GetTerritoryById(int id)
+        public IEnumerable<Territory> SearchTerritories(string search, bool onlyFreeTerritories, bool onlyGivenTerritories)
+        {
+            search = search.ToLower();
+            //TODO: hacer una busqueda por proximidad, en vez de un contains
+            return _context.Territory.Where(x => (x.Name.ToLower().Contains(search) || search.Contains(x.Name.ToLower()) || x.Code.ToLower().Contains(search)) &&
+                                                 (onlyFreeTerritories ? x.PersonId == null : true) &&
+                                                 (onlyGivenTerritories ? x.PersonId != null : true));
+        }
+
+
+        public Territory? GetTerritoryById(int id)
         {
             return _context.Territory.Find(id);
         }
 
-        public Territory GetTerritoryByName(string name)
+        public Territory? GetTerritoryByName(string name)
         {
             return _context.Territory.Where(x => x.Name.ToLower() == name.ToLower()).FirstOrDefault();
         }
@@ -70,14 +82,43 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             
         }
 
-        public Territory GetTerritoryByCode(string code)
+        public Territory? GetTerritoryByCode(string code)
         {
-            return _context.Territory.Where(x => x.Code.ToLower() == code.ToLower()).FirstOrDefault();
+            return _context.Territory.FirstOrDefault(x => x.Code.ToLower() == code.ToLower());
         }
 
-        public Territory GetTerritoryByMapUrl(string mapUrl)
+        public Territory? GetTerritoryByMapUrl(string mapUrl)
         {
-            return _context.Territory.Where(x => x.MapUrl.ToLower() == mapUrl.ToLower()).FirstOrDefault();
+            return _context.Territory.FirstOrDefault(x => x.MapUrl.ToLower() == mapUrl.ToLower());
         }
+
+        public void GiveTerritory(Transaction giveTransaction)
+        {
+
+            var transactionTracking = _context.Transaction.Add(giveTransaction);
+
+            transactionTracking.Entity.Territory.PersonId = giveTransaction.PersonId;
+
+            _context.SaveChanges();
+
+        }
+
+        public void PickTerritory(int territoryId, string pickedBy, bool isAutomaticPickedDate, DateTime pickedDateUtc)
+        {
+            Transaction transactionToPick = _context.Transaction.Single(x => x.TerritoryId == territoryId && x.PickedBy == null);
+
+            transactionToPick.PickedBy = pickedBy;
+            transactionToPick.IsAutomaticPickedDate = isAutomaticPickedDate;
+            transactionToPick.PickedDateUtc = pickedDateUtc;
+
+            var transactionTracking = _context.Transaction.Update(transactionToPick);
+
+            transactionTracking.Entity.Territory.PersonId = null;
+
+            _context.SaveChanges();
+
+        }
+
+
     }
 }

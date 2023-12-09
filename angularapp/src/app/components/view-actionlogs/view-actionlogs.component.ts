@@ -14,7 +14,7 @@ export class ViewActionlogsComponent implements OnInit {
 
   constructor(public http: HttpClient, @Inject('BASE_URL') public baseUrl: string, private spinner: NgxSpinnerService) {
     this.spinner.show();
-    http.get<any[]>(baseUrl + 'api/SampleData/GetAllActionLogs').subscribe({
+    http.get<any[]>(`${baseUrl}/actionlogs`).subscribe({
       next: res => {
         this.spinner.hide();
         this.actionlogs = res;

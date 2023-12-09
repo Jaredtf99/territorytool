@@ -163,7 +163,7 @@ namespace TerritoryTool.ServerSide.Persistence
 
                 entity.Property(e => e.Code).IsRequired();
 
-                entity.Property(e => e.IdPerson).HasColumnType("INT");
+                entity.Property(e => e.PersonId).HasColumnType("INT");
 
                 entity.Property(e => e.MapUrl).IsRequired();
 
@@ -171,7 +171,7 @@ namespace TerritoryTool.ServerSide.Persistence
 
                 entity.HasOne(d => d.Person)
                     .WithMany(p => p.TerritoriesInUse)
-                    .HasForeignKey(d => d.IdPerson);
+                    .HasForeignKey(d => d.PersonId);
             });
 
             modelBuilder.Entity<Transaction>(entity =>

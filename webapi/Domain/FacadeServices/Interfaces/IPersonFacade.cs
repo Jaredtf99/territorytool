@@ -11,6 +11,9 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces
     {
         bool AddNewPerson(string name, string idLoggedUser);
         IEnumerable<PersonInfo> GetAllPersons();
+        PersonInfo? GetPersonByName(string name);
         void DeletePerson(string name, string loggedUserId);
+        IEnumerable<PersonInfo> SearchPersonsByName(string name);
+
     }
 }

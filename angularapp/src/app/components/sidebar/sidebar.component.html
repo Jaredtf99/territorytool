@@ -25,6 +25,19 @@
         </a>
       </li>
       <li>
+        <a [routerLink]="['/change-territory']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
+          <i class="fa-solid fa-elevator"></i>
+          <span>Entregar territorio</span>
+        </a>
+      </li>
+      <li>
+        <a [routerLink]="['/pick-territory']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
+          <i class="fa-solid fa-elevator"></i>
+          <span>Recoger territorio</span>
+        </a>
+      </li>
+
+      <li>
         <a [routerLink]="['/add-territory']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
           <i class="fas fa-address-card"></i>
           <span>Añadir territorio</span>

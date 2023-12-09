@@ -1,0 +1,41 @@
+<div class="registration-form">
+
+  <form [formGroup]="pickTerritoryForm" (ngSubmit)="pickTerritory()">
+
+    <div class="form-icon">
+      <i class="fa-solid fa-elevator"></i>
+    </div>
+
+    <div class="form-group">
+      <label>Territorio</label>
+
+      <ng-select [items]="territories$ | async"
+                 [minTermLength]="3"
+                 [loading]="territoriesLoading"
+                 typeToSearchText="Introduce 2 o más caracteres"
+                 [typeahead]="territoriesInput$"
+                 bindLabel="name"
+                 bindValue="code"
+                 formControlName="selectedTerritory">
+      </ng-select>
+    </div>
+
+    <div class="form-group">
+      <label>Fecha manual</label>
+      <div class="checkbox-wrapper-2 ms-1">
+        <input type="checkbox" class="ikxBAC" formControlName="customDate">
+      </div>
+
+      <input *ngIf="f['customDate'].value" type="date" class="form-control item" formControlName="date" />
+
+    </div>
+
+
+    <div class="form-group">
+      <button type="submit" class="btn btn-block create-account">Añadir territorio</button>
+    </div>
+
+  </form>
+
+</div>
+

@@ -8,7 +8,6 @@ namespace TerritoryTool.ServerSide.Controllers.Models.User
 {
     public class EditUserModel
     {
-        public string UserID { get; set; }
         public string UserName { get; set; }
         public RoleType Role { get; set; }
     }

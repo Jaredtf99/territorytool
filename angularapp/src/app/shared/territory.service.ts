@@ -12,15 +12,15 @@ export class TerritoryService {
   editTerritory(id: number, mapUrl:string, name: string, code: string): Observable<any> {
     const body = { id, mapUrl, name, code };
 
-    return this.http.post(this.baseUrl + 'api/SampleData/editTerritory', body).pipe()
+    return this.http.post(`${this.baseUrl}/territories/${id}`, body).pipe()
   }
 
   getAllTerritories(): Observable<Territory[]> {
-    return this.http.get<Territory[]>(this.baseUrl + 'api/SampleData/AllTerritories').pipe()
+    return this.http.get<Territory[]>(`${this.baseUrl}/territories/all`).pipe()
   }
 
   deleteTerritory(id: number): Observable<any> {
-    const url = `${this.baseUrl}api/SampleData/deleteTerritory?id=${id}`;
+    const url = `${this.baseUrl}/territories/${id}`;
 
     return this.http.delete(url).pipe()
   }
@@ -28,7 +28,31 @@ export class TerritoryService {
   addTerritory(mapUrl: string, name: string, code: string): Observable<any> {
     const body = { mapUrl, name, code };
 
-    return this.http.post(this.baseUrl + 'api/SampleData/AddTerritory', body).pipe()
+    return this.http.post(`${this.baseUrl}/territories`, body).pipe()
+  }
+
+  searchTerritories(term: string): Observable<Territory[]> {
+    return this.http.get<Territory[]>(`${this.baseUrl}/territories?search=${term}`).pipe()
+  }
+
+  searchFreeTerritories(term: string): Observable<Territory[]> {
+    return this.http.get<Territory[]>(`${this.baseUrl}/territories?search=${term}&onlyFreeTerritories=true`).pipe()
+  }
+  searchGivenTerritories(term: string): Observable<Territory[]> {
+    return this.http.get<Territory[]>(`${this.baseUrl}/territories?search=${term}&onlyGivenTerritories=true`).pipe()
+  }
+
+
+  giveTerritory(territoryCode: string, personName: string, isCustomDate: boolean, customDate: Date | undefined): Observable<any> {
+    const body = { territoryCode, personName, isCustomDate, customDate };
+
+    return this.http.post(`${this.baseUrl}/territories/give-territory`, body).pipe()
+  }
+
+  pickTerritory(territoryCode: string, isCustomDate: boolean, customDate: Date | undefined): Observable<any> {
+    const body = { territoryCode, isCustomDate, customDate };
+
+    return this.http.post(`${this.baseUrl}/territories/pick-territory`, body).pipe()
   }
 
 
