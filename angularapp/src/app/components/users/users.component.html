@@ -31,15 +31,24 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body row">
-        <div class="col-12 col-sm-6 mb-3">
-          <input type="text" class="form-control" placeholder="Nombre del usuario" [(ngModel)]="userToEdit.UserName">
+
+        <div class="col-12 col-sm-6 mb-3 form-group">
+          <label>Nombre del usuario</label>
+          <input type="text" class="form-control item" [(ngModel)]="userToEdit.UserName">
+
           <div *ngIf="!userToEdit.UserName" class="alert alert-danger mt-2">Introduce el nombre del usuario</div>
         </div>
-        <div class="col-12 col-sm-6">
-          <select class="form-select" [(ngModel)]="userToEdit.Role">
+
+
+
+        <div class="col-12 col-sm-6 mb-3 form-group">
+          <label>Rol</label>
+
+          <select class="form-select item" [(ngModel)]="userToEdit.Role">
             <option [value]="role" *ngFor="let role of rolesCanIChange">{{role}}</option>
           </select>
         </div>
+
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>

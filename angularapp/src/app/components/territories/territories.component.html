@@ -38,29 +38,35 @@
       </div>
       <div class="modal-body">
 
-        <div class="form-group">
-          <input type="text" class="form-control item" placeholder="Nombre del territorio" #ctrl="ngModel" [(ngModel)]="territoryToEdit.name">
+        <div class="form-group mb-4">
+          <label>Nombre</label>
+          <input type="text" class="form-control item" #ctrl="ngModel" [(ngModel)]="territoryToEdit.name">
+
+          <div *ngIf="territoryToEdit.name === null || territoryToEdit.name === ''" class="alert alert-danger mt-2">
+            Introduce el nombre del territorio
+          </div>
         </div>
 
-        <div *ngIf="territoryToEdit.name === null || territoryToEdit.name === ''" class="alert alert-danger">
-          Introduce el nombre del territorio
+
+        <div class="form-group mb-4">
+          <label>Código</label>
+          <input type="text" class="form-control item" #ctrl="ngModel" [(ngModel)]="territoryToEdit.code">
+
+          <div *ngIf="territoryToEdit.code === null || territoryToEdit.code === ''" class="alert alert-danger mt-2">
+            Introduce el código del territorio
+          </div>
         </div>
 
-        <div class="form-group">
-          <input type="text" class="form-control item" placeholder="Código del territorio" #ctrl="ngModel" [(ngModel)]="territoryToEdit.code">
+
+        <div class="form-group mb-4">
+          <label>URL del mapa</label>
+          <input type="text" class="form-control item" #ctrl="ngModel" [(ngModel)]="territoryToEdit.mapUrl">
+
+          <div *ngIf="territoryToEdit.mapUrl === null || territoryToEdit.mapUrl === ''" class="alert alert-danger mt-2">
+            Introduce la URL del mapa
+          </div>
         </div>
 
-        <div *ngIf="territoryToEdit.code === null || territoryToEdit.code === ''" class="alert alert-danger">
-          Introduce el código del territorio
-        </div>
-
-        <div class="form-group">
-          <input type="text" class="form-control item" placeholder="URL del mapa" #ctrl="ngModel" [(ngModel)]="territoryToEdit.mapUrl">
-        </div>
-
-        <div *ngIf="territoryToEdit.mapUrl === null || territoryToEdit.mapUrl === ''" class="alert alert-danger">
-          Introduce la URL del mapa
-        </div>
 
       </div>
       <div class="modal-footer">
