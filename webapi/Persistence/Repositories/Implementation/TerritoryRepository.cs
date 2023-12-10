@@ -25,6 +25,13 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             return _context.Territory.Include(x => x.Person).ToList();
         }
 
+        public IEnumerable<Transaction> GetAllTransactionsForReport(DateTime start, DateTime end)
+        {
+            return _context.Transaction.Where(tr => tr.GivenDateUtc >= start && end >= tr.GivenDateUtc).Include(tr => tr.Territory).Include(tr => tr.Person).ToList();
+        }
+
+
+
         public IEnumerable<Territory> SearchTerritories(string search, bool onlyFreeTerritories, bool onlyGivenTerritories)
         {
             search = search.ToLower();

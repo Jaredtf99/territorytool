@@ -19,6 +19,15 @@ export class TerritoryService {
     return this.http.get<Territory[]>(`${this.baseUrl}/territories/all`).pipe()
   }
 
+  generateExcel(start: Date, end: Date): Observable<Blob> {
+    const body = { start, end };
+
+    return this.http.post(`${this.baseUrl}/territories/generate-excel`, body, {
+      responseType: 'blob'
+    }).pipe()
+  }
+
+
   deleteTerritory(id: number): Observable<any> {
     const url = `${this.baseUrl}/territories/${id}`;
 

@@ -5,7 +5,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using OfficeOpenXml;
+using OfficeOpenXml.Style;
 using TerritoryTool.ServerSide.Controllers.Models.Person;
 using TerritoryTool.ServerSide.Domain.Classes;
 using TerritoryTool.ServerSide.Domain.Enums;
@@ -210,6 +213,60 @@ namespace TerritoryTool.ServerSide.Controllers
             return Ok();
         }
 
+        [HttpPost("generate-excel")]
+        public IActionResult GenerateExcel(GenerateTerritoryModel info)
+        {
+            var transactions = _territoryRepository.GetAllTransactionsForReport(info.Start, info.End);
+
+            var transactionsGroupedByTerritory = transactions.GroupBy(x => new { x.Territory.Name, x.Territory.Code });
+
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("TerritoryTransactions");
+               
+                var firstColumnTerritory = 1;
+
+                foreach (var territoryTransactions in transactionsGroupedByTerritory)
+                {
+                    var row = 1;
+
+                    worksheet.Cells[row, firstColumnTerritory].Value = territoryTransactions.Key.Name;
+                    worksheet.Cells[row, firstColumnTerritory + 1].Value = territoryTransactions.Key.Code;
+
+                    foreach (var transaction in territoryTransactions)
+                    {
+                        row++;
+                        worksheet.Cells[row, firstColumnTerritory].Value = transaction.GivenDateUtc;
+                        worksheet.Cells[row, firstColumnTerritory + 1].Value = transaction.PickedDateUtc;
+                        
+                        // Formatear las celdas de fecha
+                        worksheet.Cells[row, firstColumnTerritory].Style.Numberformat.Format = "yyyy-MM-dd";
+                        worksheet.Cells[row, firstColumnTerritory + 1].Style.Numberformat.Format = "yyyy-MM-dd";
+
+                        row++;
+
+                        worksheet.Cells[row, firstColumnTerritory, row, firstColumnTerritory + 1].Merge = true;
+                        worksheet.Cells[row, firstColumnTerritory].Value = transaction.Person?.Name;
+                    }
+                    firstColumnTerritory += 2;
+
+                }
+
+                if (worksheet.Dimension != null)
+                {
+                    worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+                    worksheet.Cells[worksheet.Dimension.Address].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                }
+
+                var stream = new MemoryStream();
+                package.SaveAs(stream);
+
+                var fileName = $"TerritoryTransactions_{DateTime.Now.ToString("yyyyMMddHHmmss")}.xlsx";
+                var contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+                return File(stream.ToArray(), contentType, fileName);
+            }
+        }
 
         private IEnumerable<TerritoryInfo> ConvertTerritoryToTerritoryInfoList(IEnumerable<Territory> territories)
         {

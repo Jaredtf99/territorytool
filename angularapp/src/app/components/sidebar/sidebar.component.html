@@ -43,6 +43,13 @@
           <span>Añadir territorio</span>
         </a>
       </li>
+      <li>
+        <a [routerLink]="['/generate-report']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
+          <i class="fa-solid fa-table"></i>
+          <span>Generar reporte</span>
+        </a>
+      </li>
+
       <li *ngIf="userService.roleMatch(['SUPERADMIN', 'ADMIN'])">
         <a [routerLink]="['/users']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
           <i class="fas fa-user"></i>

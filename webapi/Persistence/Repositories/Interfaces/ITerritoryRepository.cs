@@ -20,6 +20,6 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Interfaces
 
         void GiveTerritory(Transaction giveTransaction);
         void PickTerritory(int territoryId, string pickedBy, bool isAutomaticPickedDate, DateTime pickedDateUtc);
-
+        IEnumerable<Transaction> GetAllTransactionsForReport(DateTime start, DateTime end);
     }
 }
