@@ -39,11 +39,11 @@ namespace TerritoryTool.ServerSide.Controllers
         }
 
         [HttpGet("all")]
-        public IEnumerable<TerritoryInfo> AllTerritories()
+        public IEnumerable<TerritoryInfo> AllTerritories([FromQuery] FilterTerritoriesModel filter)
         {
             _logger.LogInformation("Returning all territories...");
 
-            var territories = _territoryRepository.GetAllTerritories();
+            var territories = _territoryRepository.GetAllTerritories(filter.Term, filter.InUse, filter.OrderBy, filter.OrderByAscending);
 
             return ConvertTerritoryToTerritoryInfoList(territories);
         }

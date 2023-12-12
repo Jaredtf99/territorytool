@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http'
+import { HttpClient, HttpParams } from '@angular/common/http'
 import { Observable } from 'rxjs';
 import { Territory } from '../classes/Territory';
 
@@ -15,9 +15,32 @@ export class TerritoryService {
     return this.http.post(`${this.baseUrl}/territories/${id}`, body).pipe()
   }
 
-  getAllTerritories(): Observable<Territory[]> {
-    return this.http.get<Territory[]>(`${this.baseUrl}/territories/all`).pipe()
-  }
+  getAllTerritories(
+    term: string | undefined,
+    inUse: boolean | undefined,
+    orderByEnum: number | undefined,
+    orderAscending: boolean | undefined
+  ): Observable<Territory[]> {
+
+    let params = new HttpParams();
+
+    if (term !== undefined) {
+      params = params.set('term', term);
+    }
+
+    if (inUse !== undefined) {
+      params = params.set('inUse', String(inUse));
+    }
+
+    if (orderByEnum !== undefined) {
+      params = params.set('orderBy', String(orderByEnum));
+    }
+
+    if (orderAscending !== undefined) {
+      params = params.set('orderByAscending', String(orderAscending));
+    }
+
+    return this.http.get<Territory[]>(`${this.baseUrl}/territories/all`, { params });  }
 
   generateExcel(start: Date, end: Date): Observable<Blob> {
     const body = { start, end };

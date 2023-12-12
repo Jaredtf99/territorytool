@@ -18,12 +18,24 @@ export class TerritoriesComponent {
   public territoryToEdit: Territory = new Territory();
   public idTerritoryToDelete = 0;
 
-  filterName = '';
+  filterName = undefined;
+  inUse = false;
+  free = false;
 
 
   constructor(public http: HttpClient, @Inject('BASE_URL') public baseUrl: string, public userService: UserService, private toastr: ToastrService, private spinner: NgxSpinnerService, public territoryService: TerritoryService) {
+    this.getTerritories();
+  }
+
+  getTerritories()
+  {
+    let apiFilterInUse: boolean | undefined;
+
+    if (this.inUse) apiFilterInUse = true;
+    if (this.free) apiFilterInUse = false;
+
     this.spinner.show();
-    territoryService.getAllTerritories().subscribe(
+    this.territoryService.getAllTerritories(this.filterName, apiFilterInUse, undefined, false).subscribe(
       {
         next: res => {
           this.territories = res;
@@ -37,9 +49,14 @@ export class TerritoriesComponent {
       });
   }
 
-  filter()
-  {
-    this.territoriesFiltered = this.territories.filter(territory => territory.name!.toLowerCase().includes(this.filterName.toLowerCase()));
+  onChangeFree() {
+    if (this.free) this.inUse = false;
+    this.getTerritories();
+  }
+
+  onChangeInUse() {
+    if (this.inUse) this.free = false;
+    this.getTerritories();
   }
 
   openEditModal(idToEdit: number)
@@ -57,7 +74,7 @@ export class TerritoriesComponent {
           this.spinner.hide();
           this.toastr.success('Territorio editado');
           Object.assign(this.territories.filter(territory => territory.id === this.territoryToEdit.id)[0], this.territoryToEdit);
-          this.filter();
+          this.getTerritories();
           $('#editTerritory').modal('hide');
         },
         error: err => {
@@ -91,7 +108,7 @@ export class TerritoriesComponent {
           this.spinner.hide();
           this.toastr.success('Territorio eliminado');
           this.territories.splice(this.territories.indexOf(this.territoriesFiltered.filter(territory => territory.id === this.idTerritoryToDelete)[0]), 1);
-          this.filter();
+          this.getTerritories();
         },
         error: err => {
           this.spinner.hide();

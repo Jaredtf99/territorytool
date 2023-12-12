@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Xml.Linq;
+using TerritoryTool.ServerSide.Controllers.Models.Person;
 using TerritoryTool.ServerSide.Persistence.Entities;
 using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
 
@@ -20,9 +21,44 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             _logger = logger;
         }
 
-        public IEnumerable<Territory> GetAllTerritories()
+        public IEnumerable<Territory> GetAllTerritories(string? term, bool? inUse, FilterTerritoriesOrderByEnum? orderBy, bool orderAscending)
         {
-            return _context.Territory.Include(x => x.Person).ToList();
+            var query = _context.Territory.AsQueryable();
+
+            if (term != null)
+            {
+                term = term.ToLower();
+                query = query.Where(x => x.Name.ToLower().Contains(term) || term.Contains(x.Name.ToLower()) || x.Code.ToLower().Contains(term));
+            }
+
+            if (inUse != null)
+            {
+                if (inUse.Value)
+                    query = query.Where(x => x.PersonId != null);
+                else
+                    query = query.Where(x => x.PersonId == null);
+            }
+
+            if (orderBy != null)
+            {
+                switch (orderBy)
+                {
+                    case FilterTerritoriesOrderByEnum.Name:
+                        query = orderAscending ? query.OrderBy(x => x.Name) : query.OrderByDescending(x => x.Name);
+                        break;
+                    case FilterTerritoriesOrderByEnum.Code:
+                        query = orderAscending ? query.OrderBy(x => x.Code) : query.OrderByDescending(x => x.Code);
+                        break;
+                    case FilterTerritoriesOrderByEnum.GivenDate:
+                        query = orderAscending ? query.OrderBy(t => t.Transactions.Max(tr => (DateTime?)tr.GivenDateUtc) ?? DateTime.MinValue) : query.OrderByDescending(t => t.Transactions.Max(tr => (DateTime?)tr.GivenDateUtc) ?? DateTime.MinValue);
+                        break;
+                    default:
+                        _logger.LogError("FilterTerritoriesOrderByEnum type not supported for filter territories");
+                        break;
+                }
+            }
+
+            return query.Include(x => x.Person).ToList();
         }
 
         public IEnumerable<Transaction> GetAllTransactionsForReport(DateTime start, DateTime end)
@@ -86,7 +122,7 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             }
             else
                 _logger.LogError("Error deleting territory entity. Entity to update dont have an ID");
-            
+
         }
 
         public Territory? GetTerritoryByCode(string code)

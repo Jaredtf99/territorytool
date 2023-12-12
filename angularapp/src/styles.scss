@@ -80,10 +80,9 @@ body {
 }
 
 .svg-icon {
-
-    width: 2em;
-    height: 2em;
-    vertical-align: -0.125em;
+  width: 2em;
+  height: 2em;
+  vertical-align: -0.125em;
 }
 
 /* Cards territorios */
@@ -173,138 +172,210 @@ body {
   transform: scale(1.1);
   transition: transform 0.3s ease;
 }
-  /*FILTROS*/
+/*FILTROS*/
 
-  .filters {
-    margin-bottom: 10px;
+.filters {
+  font-family: roboto;
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.filters input {
+  border: 0;
+  border-radius: 40px;
+  box-shadow: 0px 13px 10px -7px rgba(0, 0, 0,0.1);
+  padding: 4px 10px 4px 10px;
+}
+
+.filters input:focus {
+  border: 0;
+  outline: none;
+}
+
+
+
+.ng-select .ng-select-container {
+  border-radius: 10px !important;
+  border: var(--bs-border-width) solid var(--bs-border-color) !important;
+}
+
+.ng-select.ng-select-opened .ng-select-container {
+  border-radius: 10px 10px 0px 0px !important;
+  border: var(--bs-border-width) solid var(--bs-border-color) !important;
+}
+
+.ng-dropdown-panel.ng-select-bottom {
+  border-radius: 0px 0px 10px 10px !important;
+  border: var(--bs-border-width) solid var(--bs-border-color) !important;
+}
+
+.ng-dropdown-panel .ng-dropdown-panel-items {
+  border-radius: 0px 0px 10px 10px !important;
+}
+
+.ng-select.ng-select-single .ng-select-container {
+  height: 42px !important;
+  padding: 10px 0px 0px 15px;
+}
+
+.ng-select .ng-select-container .ng-value-container .ng-input > input {
+  padding: 10px 15px !important;
+}
+
+.ng-select.ng-select-single .ng-select-container .ng-value-container .ng-input {
+  padding-left: 0 !important;
+}
+
+.ng-select .ng-select-container .ng-value-container {
+  padding-left: 0 !important;
+}
+/* Checkbox estilos */
+
+.checkbox-wrapper-2 .ikxBAC {
+  appearance: none;
+  background-color: #dfe1e4;
+  border-radius: 72px;
+  border-style: none;
+  flex-shrink: 0;
+  height: 20px;
+  margin: 0;
+  position: relative;
+  width: 30px;
+}
+
+.checkbox-wrapper-2 .ikxBAC::before {
+  bottom: -6px;
+  content: "";
+  left: -6px;
+  position: absolute;
+  right: -6px;
+  top: -6px;
+}
+
+.checkbox-wrapper-2 .ikxBAC,
+.checkbox-wrapper-2 .ikxBAC::after {
+  transition: all 100ms ease-out;
+}
+
+.checkbox-wrapper-2 .ikxBAC::after {
+  background-color: #fff;
+  border-radius: 50%;
+  content: "";
+  height: 14px;
+  left: 3px;
+  position: absolute;
+  top: 3px;
+  width: 14px;
+}
+
+.checkbox-wrapper-2 input[type=checkbox] {
+  cursor: default;
+}
+
+.checkbox-wrapper-2 .ikxBAC:hover {
+  background-color: #c9cbcd;
+  transition-duration: 0s;
+}
+
+.checkbox-wrapper-2 .ikxBAC:checked {
+  background-color: #5891ff;
+}
+
+.checkbox-wrapper-2 .ikxBAC:checked::after {
+  background-color: #fff;
+  left: 13px;
+}
+
+.checkbox-wrapper-2 :focus:not(.focus-visible) {
+  outline: 0;
+}
+
+.checkbox-wrapper-2 .ikxBAC:checked:hover {
+  background-color: #535db3;
+}
+
+
+/* Checkboxes filtros territorios */
+.filter-checkbox {
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+
+  & input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
   }
 
-  .filters input {
-    border: 0;
+  & :checked ~ .filter-checkbox_text {
+    background-color: RGBA(var(--bs-primary-rgb),var(--bs-bg-opacity,1)) !important;
+    animation: popEffect 0.2s ease;
+  }
+
+  & :not(:checked) ~ .filter-checkbox_text {
+    background-color: RGBA(var(--bs-secondary-rgb),var(--bs-bg-opacity,1)) !important;
+    animation: popEffectInverse 0.2s ease;
+  }
+
+
+  & .filter-checkbox_text {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     border-radius: 40px;
-    box-shadow: 0px 13px 10px -7px rgba(0, 0, 0,0.1);
     padding: 4px 10px 4px 10px;
+    background-color: RGBA(var(--bs-secondary-rgb),var(--bs-bg-opacity,1)) !important;
+    box-shadow: 0px 13px 10px -7px rgba(0, 0, 0, 0.1);
+    color: #fff !important;
+
+    & .fa {
+      font-size: 30px;
+      color: #6a9bd8;
+    }
+  }
+}
+
+@keyframes popEffect {
+  0% {
+    transform: scale(1);
   }
 
-  .filters input:focus {
-    border: 0;
-    outline: none;
+  50% {
+    transform: scale(1.05);
   }
 
+  100% {
+    transform: scale(1);
+  }
+}
 
-
-  .ng-select .ng-select-container {
-    border-radius: 10px !important;
-    border: var(--bs-border-width) solid var(--bs-border-color) !important;
+@keyframes popEffectInverse {
+  0% {
+    transform: scale(1);
   }
 
-  .ng-select.ng-select-opened .ng-select-container {
-    border-radius: 10px 10px 0px 0px !important;
-    border: var(--bs-border-width) solid var(--bs-border-color) !important;
+  50% {
+    transform: scale(0.95);
   }
 
-  .ng-dropdown-panel.ng-select-bottom {
-    border-radius: 0px 0px 10px 10px !important;
-    border: var(--bs-border-width) solid var(--bs-border-color) !important;
+  100% {
+    transform: scale(1);
   }
-
-  .ng-dropdown-panel .ng-dropdown-panel-items {
-    border-radius: 0px 0px 10px 10px !important;
-  }
-
-  .ng-select.ng-select-single .ng-select-container {
-    height: 42px !important;
-    padding: 10px 0px 0px 15px;
-  }
-
-  .ng-select .ng-select-container .ng-value-container .ng-input > input {
-    padding: 10px 15px !important;
-  }
-
-  .ng-select.ng-select-single .ng-select-container .ng-value-container .ng-input {
-    padding-left: 0 !important;
-  }
-
-  .ng-select .ng-select-container .ng-value-container {
-    padding-left: 0 !important;
-  }
-  /* Checkbox estilos */
-
-  .checkbox-wrapper-2 .ikxBAC {
-    appearance: none;
-    background-color: #dfe1e4;
-    border-radius: 72px;
-    border-style: none;
-    flex-shrink: 0;
-    height: 20px;
-    margin: 0;
-    position: relative;
-    width: 30px;
-  }
-
-  .checkbox-wrapper-2 .ikxBAC::before {
-    bottom: -6px;
-    content: "";
-    left: -6px;
-    position: absolute;
-    right: -6px;
-    top: -6px;
-  }
-
-  .checkbox-wrapper-2 .ikxBAC,
-  .checkbox-wrapper-2 .ikxBAC::after {
-    transition: all 100ms ease-out;
-  }
-
-  .checkbox-wrapper-2 .ikxBAC::after {
-    background-color: #fff;
-    border-radius: 50%;
-    content: "";
-    height: 14px;
-    left: 3px;
-    position: absolute;
-    top: 3px;
-    width: 14px;
-  }
-
-  .checkbox-wrapper-2 input[type=checkbox] {
-    cursor: default;
-  }
-
-  .checkbox-wrapper-2 .ikxBAC:hover {
-    background-color: #c9cbcd;
-    transition-duration: 0s;
-  }
-
-  .checkbox-wrapper-2 .ikxBAC:checked {
-    background-color: #5891ff;
-  }
-
-  .checkbox-wrapper-2 .ikxBAC:checked::after {
-    background-color: #fff;
-    left: 13px;
-  }
-
-  .checkbox-wrapper-2 :focus:not(.focus-visible) {
-    outline: 0;
-  }
-
-  .checkbox-wrapper-2 .ikxBAC:checked:hover {
-    background-color: #535db3;
-  }
-  /*    Codigo de la navbar */
-  $hamburger-padding-x: 0px !default;
-  $hamburger-padding-y: 0px !default;
-  $hamburger-layer-width: 25px !default;
-  $hamburger-layer-height: 2px !default;
-  $hamburger-layer-spacing: 5px !default;
-  $hamburger-layer-color: #9b9ea2 !default;
-  $hamburger-layer-border-radius: 4px !default;
-  $hamburger-hover-opacity: 0.7 !default;
+}
 
 
-  @import './assets/territorytool';
-  /* Importing Bootstrap SCSS file. */
-  @import "./node_modules/bootstrap/scss/bootstrap";
-  /* Importing Datepicker SCSS file. */
-  @import "node_modules/ngx-bootstrap/datepicker/bs-datepicker";
+/*    Codigo de la navbar */
+$hamburger-padding-x: 0px !default;
+$hamburger-padding-y: 0px !default;
+$hamburger-layer-width: 25px !default;
+$hamburger-layer-height: 2px !default;
+$hamburger-layer-spacing: 5px !default;
+$hamburger-layer-color: #9b9ea2 !default;
+$hamburger-layer-border-radius: 4px !default;
+$hamburger-hover-opacity: 0.7 !default;
+
+
+@import './assets/territorytool';
+/* Importing Bootstrap SCSS file. */
+@import "./node_modules/bootstrap/scss/bootstrap";
+/* Importing Datepicker SCSS file. */
+@import "node_modules/ngx-bootstrap/datepicker/bs-datepicker";
