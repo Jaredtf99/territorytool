@@ -2,26 +2,37 @@
 
 <p *ngIf="!territories"><em>Cargando...</em></p>
 
-<div class="filters">
+<div class="filters-container">
+  <div class="filters">
+    <input class="filters_item me-2" type="text" name="filterName" placeholder="Nombre" #ctrl="ngModel" [(ngModel)]="filterName" (change)="getTerritories()" />
 
-  <input class="me-2" type="text" name="filterName" placeholder="Nombre" #ctrl="ngModel" [(ngModel)]="filterName" (change)="getTerritories()" />
+    <div class="filter-checkbox me-2">
+      <label>
+        <input type="checkbox" name="free" #ctrl="ngModel" [(ngModel)]="free" (change)="onChangeFree()">
+        <div class="filter-checkbox_text">
+          Libres
+        </div>
+      </label>
+    </div>
 
-  <div class="filter-checkbox me-2">
-    <label>
-      <input type="checkbox" name="free" #ctrl="ngModel" [(ngModel)]="free" (change)="onChangeFree()">
-      <div class="filter-checkbox_text">
-        Libres
-      </div>
-    </label>
+    <div class="filter-checkbox me-2">
+      <label>
+        <input type="checkbox" name="inUse" #ctrl="ngModel" [(ngModel)]="inUse" (change)="onChangeInUse()">
+        <div class="filter-checkbox_text">
+          Ocupados
+        </div>
+      </label>
+    </div>
+
   </div>
 
-  <div class="filter-checkbox">
-    <label>
-      <input type="checkbox" name="inUse" #ctrl="ngModel" [(ngModel)]="inUse" (change)="onChangeInUse()">
-      <div class="filter-checkbox_text">
-        Ocupados
-      </div>
-    </label>
+  <div class="sorting">
+    <span class="me-2">Orden</span>
+    <ng-select [(ngModel)]="orderBy" [clearable]="false" [searchable]="false" (change)="getTerritories()">
+      <ng-option [value]="1">Nombre</ng-option>
+      <ng-option [value]="2">Hermano</ng-option>
+      <ng-option [value]="3">Última vez</ng-option>
+    </ng-select>
   </div>
 
 

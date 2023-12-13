@@ -18,6 +18,8 @@ export class TerritoriesComponent {
   public territoryToEdit: Territory = new Territory();
   public idTerritoryToDelete = 0;
 
+  orderBy = 1;
+
   filterName = undefined;
   inUse = false;
   free = false;
@@ -35,7 +37,7 @@ export class TerritoriesComponent {
     if (this.free) apiFilterInUse = false;
 
     this.spinner.show();
-    this.territoryService.getAllTerritories(this.filterName, apiFilterInUse, undefined, false).subscribe(
+    this.territoryService.getAllTerritories(this.filterName, apiFilterInUse, this.orderBy, true).subscribe(
       {
         next: res => {
           this.territories = res;
