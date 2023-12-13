@@ -23,6 +23,7 @@ export class TerritoriesComponent {
   filterName = undefined;
   inUse = false;
   free = false;
+  sortAscending = true;
 
 
   constructor(public http: HttpClient, @Inject('BASE_URL') public baseUrl: string, public userService: UserService, private toastr: ToastrService, private spinner: NgxSpinnerService, public territoryService: TerritoryService) {
@@ -37,7 +38,7 @@ export class TerritoriesComponent {
     if (this.free) apiFilterInUse = false;
 
     this.spinner.show();
-    this.territoryService.getAllTerritories(this.filterName, apiFilterInUse, this.orderBy, true).subscribe(
+    this.territoryService.getAllTerritories(this.filterName, apiFilterInUse, this.orderBy, this.sortAscending).subscribe(
       {
         next: res => {
           this.territories = res;

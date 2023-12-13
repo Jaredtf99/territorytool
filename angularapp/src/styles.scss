@@ -177,12 +177,14 @@ body {
 .filters-container {
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
   font-family: roboto;
   margin-bottom: 10px;
 
   .filters {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
 
     .filters_item {
       border: 0;
@@ -225,6 +227,11 @@ body {
 }
 
 
+@media (max-width: 576px) {
+  .filters-container {
+    font-size: 0.9rem;
+  }
+}
 
 .ng-select .ng-select-container {
   border-radius: 10px !important;
@@ -246,13 +253,17 @@ body {
   border-radius: 0px 0px 10px 10px !important;
 }
 
-.ng-select.ng-select-single .ng-select-container {
-  height: 42px !important;
-  padding: 10px 0px 0px 15px;
+ .ng-select.ng-select-single .ng-select-container {
+  padding: 0px 0px 0px 15px;
 }
 
-.ng-select .ng-select-container .ng-value-container .ng-input > input {
-  padding: 10px 15px !important;
+.form-group .ng-select.ng-select-single .ng-select-container {
+  height: 42px !important;
+}
+
+
+ .ng-select .ng-select-container .ng-value-container .ng-input > input {
+  padding: 0px 0px 0px 15px !important;
 }
 
 .ng-select.ng-select-single .ng-select-container .ng-value-container .ng-input {
@@ -262,6 +273,12 @@ body {
 .ng-select .ng-select-container .ng-value-container {
   padding-left: 0 !important;
 }
+.ng-select .ng-select-single .ng-select-container .ng-value-container .ng-input {
+  position: static;
+   left: 0;
+   width: 0px;
+}
+
 /* Checkbox estilos */
 
 .checkbox-wrapper-2 .ikxBAC {
@@ -501,6 +518,30 @@ body {
   }
 }
 
+
+.sorting .sorting_direction {
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  background-color: RGBA(var(--bs-primary-rgb),var(--bs-bg-opacity,1));
+  color: white;
+  padding:4px 10px 4px 10px;
+  border-radius: 20px;
+
+  & input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+  }
+
+  & :checked ~ i {
+    transition: 0.2s ease;
+  }
+
+  & :not(:checked) ~ i {
+    transform: rotate(180deg);
+    transition: 0.2s ease;
+  }
+}
 /*    Codigo de la navbar */
 $hamburger-padding-x: 0px !default;
 $hamburger-padding-y: 0px !default;

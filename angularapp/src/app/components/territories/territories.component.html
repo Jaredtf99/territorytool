@@ -4,9 +4,9 @@
 
 <div class="filters-container">
   <div class="filters">
-    <input class="filters_item me-2" type="text" name="filterName" placeholder="Nombre" #ctrl="ngModel" [(ngModel)]="filterName" (change)="getTerritories()" />
+    <input class="filters_item me-sm-2 col-12 col-sm-auto mb-3 mb-sm-0" type="text" name="filterName" placeholder="Nombre" #ctrl="ngModel" [(ngModel)]="filterName" (change)="getTerritories()" />
 
-    <div class="filter-checkbox me-2">
+    <div class="filter-checkbox me-1 me-sm-2">
       <label>
         <input type="checkbox" name="free" #ctrl="ngModel" [(ngModel)]="free" (change)="onChangeFree()">
         <div class="filter-checkbox_text">
@@ -15,7 +15,7 @@
       </label>
     </div>
 
-    <div class="filter-checkbox me-2">
+    <div class="filter-checkbox me-1 me-sm-2">
       <label>
         <input type="checkbox" name="inUse" #ctrl="ngModel" [(ngModel)]="inUse" (change)="onChangeInUse()">
         <div class="filter-checkbox_text">
@@ -24,15 +24,38 @@
       </label>
     </div>
 
+    <div class="sorting d-flex d-sm-none">
+      <span class="me-1 me-sm-2">Orden</span>
+      <ng-select class="me-1 me-sm-2" [(ngModel)]="orderBy" [clearable]="false" [searchable]="false" (change)="getTerritories()">
+        <ng-option [value]="1">Nombre</ng-option>
+        <ng-option [value]="2">Hermano</ng-option>
+        <ng-option [value]="3">Última vez</ng-option>
+      </ng-select>
+      <div class="sorting_direction">
+        <label>
+          <input type="checkbox" name="sortAscending" #ctrl="ngModel" [(ngModel)]="sortAscending" (change)="getTerritories()">
+          <i class="fa-solid fa-arrow-up"></i>
+        </label>
+      </div>
+
+    </div>
+
   </div>
 
-  <div class="sorting">
+  <div class="sorting d-none d-sm-flex">
     <span class="me-2">Orden</span>
-    <ng-select [(ngModel)]="orderBy" [clearable]="false" [searchable]="false" (change)="getTerritories()">
+    <ng-select class="me-2" [(ngModel)]="orderBy" [clearable]="false" [searchable]="false" (change)="getTerritories()">
       <ng-option [value]="1">Nombre</ng-option>
       <ng-option [value]="2">Hermano</ng-option>
       <ng-option [value]="3">Última vez</ng-option>
     </ng-select>
+    <div class="sorting_direction">
+      <label>
+        <input type="checkbox" name="sortAscending" #ctrl="ngModel" [(ngModel)]="sortAscending" (change)="getTerritories()">
+        <i class="fa-solid fa-arrow-up"></i>
+      </label>
+    </div>
+
   </div>
 
 
