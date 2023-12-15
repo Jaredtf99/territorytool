@@ -1,8 +1,6 @@
 import { Component, Inject, ChangeDetectorRef, OnInit, ViewContainerRef, ViewChild, AfterViewInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ToastrService } from 'ngx-toastr';
-import { Globals } from '../../globals';
 import { NgxScannerQrcodeComponent, ScannerQRCodeConfig, ScannerQRCodeResult } from 'ngx-scanner-qrcode';
 import { TerritoryService } from '../../shared/territory.service';
 import { NgxSpinnerService } from 'ngx-spinner';
@@ -30,7 +28,7 @@ export class AddTerritoryComponent implements AfterViewInit {
   };
 
 
-  constructor(private formBuilder: FormBuilder, private toastr: ToastrService, private globals: Globals, private territoryService: TerritoryService, private spinner: NgxSpinnerService) {
+  constructor(private formBuilder: FormBuilder, private toastr: ToastrService, private territoryService: TerritoryService, private spinner: NgxSpinnerService) {
     this.addTerritoryForm = this.formBuilder.group({
       code: ['', Validators.required],
       name: ['', Validators.required],

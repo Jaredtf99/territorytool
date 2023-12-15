@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Web;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -62,6 +63,23 @@ namespace TerritoryTool.ServerSide.Controllers
             var territories = _territoryRepository.SearchTerritories(search, onlyFreeTerritories, onlyGivenTerritories);
 
             return ConvertTerritoryToTerritoryInfoList(territories);
+        }
+
+
+        /// <summary>
+        /// Devuelve un territorio por el mapUrl
+        /// </summary>
+        [HttpGet("map")]
+        public ActionResult GetTerritoryByMap(string mapUrl)
+        {
+            mapUrl = HttpUtility.UrlDecode(mapUrl);
+
+            var territory = _territoryRepository.GetTerritoryByMapUrl(mapUrl);
+
+            if (territory == null)
+                return NotFound();
+
+            return Ok(ConvertTerritoryToTerritoryInfo(territory));
         }
 
 

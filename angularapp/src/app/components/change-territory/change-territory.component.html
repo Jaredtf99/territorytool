@@ -15,8 +15,9 @@
                  typeToSearchText="Introduce 2 o más caracteres"
                  [typeahead]="territoriesInput$"
                  bindLabel="name"
-                 bindValue="code"
-                 formControlName="selectedTerritory">
+                 formControlName="selectedTerritory"
+                 [(ngModel)]="selectedTerritory"
+                 id="changeTerritoryNgSelectTerritories">
         <ng-template ng-label-tmp let-item="item">
           <span>{{item.name}}</span>
         </ng-template>
@@ -38,8 +39,9 @@
                  typeToSearchText="Introduce 2 o más caracteres"
                  [typeahead]="personsInput$"
                  bindLabel="name"
-                 bindValue="name"
-                 formControlName="selectedPerson">
+                 [(ngModel)]="selectedPerson"
+                 formControlName="selectedPerson"
+                 id="changeTerritoryNgSelectPerson">
       </ng-select>
     </div>
 
@@ -55,11 +57,30 @@
     </div>
 
 
-    <div class="form-group">
-      <button type="submit" class="btn btn-block create-account">Añadir territorio</button>
+    <div class="form_buttons">
+      <button type="submit" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modalScanner" (click)="startQrScanner()"><i class="fa fa-qrcode me-2"></i>Escanear QR</button>
+
+      <button type="submit" class="btn btn-block create-account">Entregar territorio</button>
     </div>
 
   </form>
 
 </div>
 
+<div class="modal fade" id="modalScanner" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-bs-dismiss="modal" (click)="stopQrScanner()">
+          <span aria-hidden="true">&times;</span><span class="sr-only">Cerrar</span>
+        </button>
+        <h4 class="modal-title" id="myModalLabel">Escanear QR</h4>
+      </div>
+      <div class="modal-body">
+        <ngx-scanner-qrcode #action="scanner" [config]="config" (event)="onEvent($event, action)"></ngx-scanner-qrcode>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!--TODO: Sacar este modal a un componente-->

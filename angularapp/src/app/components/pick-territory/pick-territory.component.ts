@@ -5,13 +5,17 @@ import { TerritoryService } from '../../shared/territory.service';
 import { NgxSpinnerService } from 'ngx-spinner';
 import { Territory } from '../../classes/Territory';
 import { Observable, Subject, catchError, concat, distinctUntilChanged, of, switchMap, tap } from 'rxjs';
+import { NgxScannerQrcodeComponent, ScannerQRCodeConfig, ScannerQRCodeResult } from 'ngx-scanner-qrcode';
+import { AppService } from '../../shared/app.service';
+
+declare var $: any;
 
 @Component({
   selector: 'pick-territory',
   templateUrl: './pick-territory.component.html',
 })
 export class PickTerritoryComponent implements AfterViewInit {
-  pickTerritoryForm: FormGroup;
+  pickTerritoryForm!: FormGroup;
   submitted = false;
 
   territories$!: Observable<Territory[]>;
@@ -19,9 +23,32 @@ export class PickTerritoryComponent implements AfterViewInit {
   territoriesInput$ = new Subject<string>();
   selectedTerritory: Territory | undefined;
 
+  @ViewChild('action') action!: NgxScannerQrcodeComponent;
 
-  constructor(private formBuilder: FormBuilder, private toastr: ToastrService, private territoryService: TerritoryService, private spinner: NgxSpinnerService) {
+  public config: ScannerQRCodeConfig = {
+    isBeep: false,
+    constraints: {
+      video: {
+        width: window.innerWidth
+      },
+    },
+  };
 
+
+  constructor(
+    private formBuilder: FormBuilder,
+    private toastr: ToastrService,
+    private territoryService: TerritoryService,
+    private spinner: NgxSpinnerService,
+    private appService: AppService
+  ) {
+
+    this.resetTerritoryForm();
+    this.loadTerritories();
+
+  }
+
+  private resetTerritoryForm() {
     const currentDate = new Date();
     const formattedDate = this.formatDate(currentDate);
 
@@ -30,6 +57,9 @@ export class PickTerritoryComponent implements AfterViewInit {
       customDate: [false, Validators.required],
       date: [formattedDate],
     });
+
+    this.appService.clearXButtonFromNgSelect("pickTerritoryNgSelectTerritories");
+    this.loadTerritories();
 
   }
 
@@ -45,13 +75,19 @@ export class PickTerritoryComponent implements AfterViewInit {
 
     this.loadTerritories();
 
+    const modalElement = document.querySelector('#modalScanner');
+
+    modalElement!.addEventListener('hidden.bs.modal', () => {
+      this.stopQrScanner();
+    });
+
   }
 
   get f() { return this.pickTerritoryForm.controls; }
 
 
   private loadTerritories() {
-    this.territories$ = 
+    this.territories$ =
       this.territoriesInput$.pipe(
         distinctUntilChanged(),
         tap(() => this.territoriesLoading = true),
@@ -59,8 +95,8 @@ export class PickTerritoryComponent implements AfterViewInit {
           catchError(() => of([])), // empty list on error
           tap(() => this.territoriesLoading = false)
         ))
-      
-    );
+
+      );
   }
 
   pickTerritory() {
@@ -77,11 +113,11 @@ export class PickTerritoryComponent implements AfterViewInit {
         customDate += `T${currentDate.getHours()}:${currentDate.getMinutes()}`;
       }
 
-      this.territoryService.pickTerritory(this.f['selectedTerritory'].value, this.f['customDate'].value, customDate).subscribe({
+      this.territoryService.pickTerritory(this.f['selectedTerritory'].value.code, this.f['customDate'].value, customDate).subscribe({
         next: resp => {
           this.spinner.hide();
           this.toastr.success('Territorio recogido');
-          this.pickTerritoryForm.reset();
+          this.resetTerritoryForm();
           this.submitted = false;
         },
         error: err => {
@@ -93,6 +129,39 @@ export class PickTerritoryComponent implements AfterViewInit {
 
   }
 
+  public onEvent(e: ScannerQRCodeResult[], action?: any): void {
+
+    this.territoryService.getTerritoryByMapUrl(e[0].value).subscribe({
+      next: resp => {
+        this.selectedTerritory = resp;
+      },
+      error: err => {
+        this.toastr.error('Error inesperado');
+      }
+    });
+
+    $('#modalScanner').modal('hide');
+  }
+
+
+  startQrScanner() {
+    const fn = 'start';
+
+    const playDeviceFacingBack = (devices: any[]) => {
+      const device = devices.find(f => (/back|rear|environment/gi.test(f.label)));
+      const indexToChoose = devices.length > 1 ? 1 : 0;
+      this.action.playDevice(device ? device.deviceId : devices[indexToChoose].deviceId);
+    }
+
+    this.action[fn](playDeviceFacingBack).subscribe((r: any) => alert);
+
+  }
+
+  stopQrScanner() {
+    const fn = 'stop';
+
+    this.action[fn]().subscribe((r: any) => alert);
+  }
 
 
 }
