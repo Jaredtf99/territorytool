@@ -149,12 +149,12 @@ body {
   }
 
   .btn {
-    font-size: .9rem;
 
     &.btn-lightning {
       color: #f0f3ff;
       background-color: #5b6582;
       border-color: #5b6582;
+      font-size: .9rem;
 
       &:hover {
         background-color: #4c5671;

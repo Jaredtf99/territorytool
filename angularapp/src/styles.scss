@@ -7,6 +7,10 @@ body {
   background-color: #f7f7f7 !important;
 }
 
+.btn {
+  font-weight: 500 !important;
+}
+
 .registration-form {
   background-color: #fff;
   max-width: 600px;
@@ -40,17 +44,6 @@ body {
   border-radius: 10px;
   padding: 10px 15px;
 }
-
-.registration-form .create-account {
-  border-radius: 30px;
-  padding: 10px 20px;
-  font-size: 18px;
-  font-weight: bold;
-  background-color: #5791ff;
-  border: none;
-  color: white;
-}
-
 
 .form-group label {
   color: #6a6a6a;
