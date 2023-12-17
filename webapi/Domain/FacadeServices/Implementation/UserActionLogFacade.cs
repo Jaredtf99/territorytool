@@ -96,7 +96,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
                     ActionLogInfo actionInfo = new ActionLogInfo
                     {
                         ActionType = (ActionType)action.ActionType,
-                        DateUtc = action.DateTimeUtc,
+                        DateUtc = new DateTime(action.DateTimeUtc.Year, action.DateTimeUtc.Month, action.DateTimeUtc.Day, action.DateTimeUtc.Hour, action.DateTimeUtc.Minute, action.DateTimeUtc.Second),
                         Message = action.Message,
                         UserName = userNameFinded,
                         Successful = action.Successful
