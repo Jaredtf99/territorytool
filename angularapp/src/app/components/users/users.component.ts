@@ -5,6 +5,7 @@ import { RoleType } from '../../enums/RoleType';
 import { User } from '../../classes/User';
 import { ToastrService } from 'ngx-toastr';
 import { NgxSpinnerService } from "ngx-spinner";
+import { CellComponent, TabulatorFull as Tabulator } from 'tabulator-tables';
 
 declare var $: any;
 
@@ -31,6 +32,13 @@ export class UsersComponent implements OnInit {
 
     this.getUsersData();
   }
+  editIcon = function () {
+    return "<i class='fa fa-pen-to-square'></i>";
+  };
+
+  deleteIcon = function () {
+    return "<i class='fa fa-trash-can'></i>";
+  };
 
   getUsersData() {
 
@@ -38,12 +46,40 @@ export class UsersComponent implements OnInit {
       next: res => {
         this.spinner.hide();
         this.users = res;
+        this.buildTabulatorTable();
       },
       error: err => {
         this.spinner.hide();
         console.error(err);
       }
     });
+
+  }
+
+  buildTabulatorTable() {
+    new Tabulator("#users_table", {
+      data: this.users,
+      layout: "fitColumns",
+      maxHeight: "100%",
+      columns: [
+        {
+          title: "",
+          formatter: this.editIcon,
+          width: 40,
+          hozAlign: "center",
+          headerSort: false,
+          cellClick: (e, cell) => this.openEditModal(cell.getRow().getData().UserID)
+        },
+        {
+          title: "", formatter: this.deleteIcon, width: 40, hozAlign: "center", headerSort: false,
+          cellClick: (e, cell) => this.openDeleteUserModal(cell.getRow().getData().UserID)
+        },
+        { title: "ID", field: "UserID", headerFilter: "input" },
+        { title: "Name", field: "UserName", headerFilter: "input" },
+        { title: "Role", field: "Role", headerFilter: "input" },
+      ],
+    });
+
 
   }
 
@@ -75,6 +111,7 @@ export class UsersComponent implements OnInit {
   }
 
   openEditModal(idToEdit: any) {
+    $('#editUser').modal('show');
     Object.assign(this.userToEdit, this.users.filter(user => user.UserID === idToEdit)[0]);
   }
 
@@ -112,7 +149,8 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  assignIdToDelete(idToDelete: string) {
+  openDeleteUserModal(idToDelete: string) {
+    $('#deleteUser').modal('show');
     this.idUserToDelete = idToDelete;
   }
 

@@ -1,26 +1,4 @@
-<table class='table' *ngIf="users">
-  <thead>
-    <tr>
-      <th></th>
-      <th>UserID</th>
-      <th>UserName</th>
-      <th>Role</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr *ngFor="let user of users">
-      <td>
-        <div *ngIf="canConfigurate(user.Role!)">
-          <i class="fa-solid fa-pen-to-square me-3" data-bs-toggle="modal" data-bs-target="#editUser" (click)="openEditModal(user.UserID)"></i>
-          <i class="fa-solid fa-trash-can" data-bs-toggle="modal" data-bs-target="#deleteUser" (click)="assignIdToDelete(user.UserID!)"></i>
-        </div>
-      </td>
-      <td>{{ user.UserID }}</td>
-      <td>{{ user.UserName }}</td>
-      <td>{{ user.Role }}</td>
-    </tr>
-  </tbody>
-</table>
+<div id="users_table"></div>
 
 
 <div class="modal fade" id="editUser" tabindex="-1" aria-labelledby="editUserLabel" aria-hidden="true">

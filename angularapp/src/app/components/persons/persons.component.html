@@ -1,25 +1,4 @@
-<table class='table' *ngIf="persons">
-  <thead>
-    <tr>
-      <th></th>
-      <th>Nombre</th>
-      <th>Territorio</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr *ngFor="let person of persons">
-      <td>
-        <button class="btn" *ngIf="canDelete">
-          <i class="fa-solid fa-trash-can" style="color: red" data-bs-toggle="modal" data-bs-target="#deletePerson" (click)="(personNameToDelete = person.Name)"></i>
-
-        </button>
-      </td>
-      <td>{{ person.Name }}</td>
-      <td *ngIf="person.TerritoryName != null">{{person.TerritoryName}} ({{ person.TerritoryCode }})</td>
-      <td *ngIf="person.TerritoryName == null">Sin asignar</td>
-    </tr>
-  </tbody>
-</table>
+<div id="person_table"></div>
 
 
 <div class="modal fade" id="deletePerson" tabindex="-1" aria-labelledby="deletePersonLabel" aria-hidden="true">

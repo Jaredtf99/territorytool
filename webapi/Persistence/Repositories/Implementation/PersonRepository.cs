@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Data;
 using System.Linq;
 using TerritoryTool.ServerSide.Persistence.Entities;
 using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
@@ -37,7 +38,10 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
 
         public IEnumerable<Person> GetAllPersons()
         {
-            return _context.Person.ToList();
+            return _context.Person
+                .Include(p => p.Transactions.Where(t => t.PickedDateUtc == null))
+                    .ThenInclude(t => t.Territory)
+                .ToList();
         }
         public Person? GetPersonWithTerritory(int idTerritory)
         {

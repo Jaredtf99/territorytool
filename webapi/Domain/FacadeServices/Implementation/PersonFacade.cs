@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -13,6 +14,7 @@ using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
 using TerritoryTool.ServerSide.Persistence;
 using TerritoryTool.ServerSide.Persistence.Entities;
 using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
+using static System.Collections.Specialized.BitVector32;
 
 namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 {
@@ -49,8 +51,6 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
         public IEnumerable<PersonInfo> GetAllPersons()
         {
-            IEnumerable<PersonInfo> personsInfo = new List<PersonInfo>();
-
             var persons = _personRepo.GetAllPersons();
 
             var retval = ConvertPersonToPersonInfoList(persons);
@@ -111,12 +111,37 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             PersonInfo personInfo = new PersonInfo();
 
             personInfo.Name = person.Name;
-            //TODO: Revisar esto, estaba mal planteado. Podemos sacar una lista de territorios activos, y ver como mostrarlo por pantalla.
-            //personInfo.TerritoryCode = person.Te?.Code;
-            //personInfo.TerritoryName = person.Territory?.Name;
+
+            if (person.Transactions != null)
+                personInfo.TerritoriesInUse = ConvertTransactionToPersonInfoTransactionList(person.Transactions.Where(x => x.PickedDateUtc == null));
 
             return personInfo;
 
+        }
+        private List<PersonInfoTransaction> ConvertTransactionToPersonInfoTransactionList(IEnumerable<Transaction> transactions)
+        {
+            List<PersonInfoTransaction> retval = new List<PersonInfoTransaction>();
+
+            foreach (Transaction t in transactions)
+            {
+                PersonInfoTransaction personInfoTransaction = ConvertTransactionToPersonInfoTransaction(t)!;
+
+                retval.Add(personInfoTransaction);
+            }
+
+            return retval;
+        }
+
+        private PersonInfoTransaction ConvertTransactionToPersonInfoTransaction(Transaction transaction)
+        {
+            if (transaction == null) return null;
+
+            PersonInfoTransaction personInfoTransaction = new PersonInfoTransaction();
+
+            personInfoTransaction.GivenDate = new DateTime(transaction.GivenDateUtc.Year, transaction.GivenDateUtc.Month, transaction.GivenDateUtc.Day, transaction.GivenDateUtc.Hour, transaction.GivenDateUtc.Minute, transaction.GivenDateUtc.Second);
+            personInfoTransaction.TerritoryName = transaction.Territory.Name;
+            personInfoTransaction.TerritoryCode = transaction.Territory.Code;
+            return personInfoTransaction;
         }
 
 

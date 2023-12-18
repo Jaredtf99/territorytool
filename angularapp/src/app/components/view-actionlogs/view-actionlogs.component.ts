@@ -20,29 +20,33 @@ export class ViewActionlogsComponent implements OnInit {
       next: res => {
         this.spinner.hide();
         this.actionlogs = res;
-
-        var table = new Tabulator("#actionlogs_table", {
-          height: 700,
-          data: res,
-          layout: "fitColumns",
-          columns: [
-            { title: "Type", field: "ActionType" },
-            {
-              title: "Date", field: "DateUtc", formatter: "datetimediff", formatterParams: {
-                inputFormat: "yyyy-MM-dd'T'TT",
-                humanize: true,
-              }
-            },
-            { title: "UserName", field: "UserName" },
-            { title: "Message", field: "Message" },
-            { title: "Successful", field: "Successful", formatter: "tickCross" },
-          ],
-        });
+        this.buildTabulatorTable();
       },
       error: error => {
         this.spinner.hide();
         console.error(error);
       }
+    });
+
+  }
+
+  buildTabulatorTable() {
+    new Tabulator("#actionlogs_table", {
+      maxHeight: "100%",
+      data: this.actionlogs,
+      layout: "fitColumns",
+      columns: [
+        { title: "Type", field: "ActionType", headerFilter: "input" },
+        {
+          title: "Date", field: "DateUtc", formatter: "datetimediff", formatterParams: {
+            inputFormat: "yyyy-MM-dd'T'TT",
+            humanize: true,
+          }
+        },
+        { title: "UserName", field: "UserName", headerFilter: "input" },
+        { title: "Message", field: "Message", headerFilter: "input" },
+        { title: "Successful", field: "Successful", formatter: "tickCross" },
+      ],
     });
 
   }
