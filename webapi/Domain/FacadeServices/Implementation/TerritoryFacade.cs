@@ -7,6 +7,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -116,7 +117,9 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
                 using (HttpClient httpClient = new HttpClient())
                 {
-                    HttpResponseMessage response = await httpClient.GetAsync(string.Format(MapApiImage, coordinate.Longitude.ToString().Replace(",","."), coordinate.Latitude.ToString().Replace(",", "."), _appSettings.MapBoxApiKey));
+                    string url = string.Format(MapApiImage, coordinate.Longitude.ToString().Replace(",", "."), coordinate.Latitude.ToString().Replace(",", "."), _appSettings.MapBoxApiKey);
+
+                    HttpResponseMessage response = await httpClient.GetAsync(url);
 
                     if (response.IsSuccessStatusCode)
                     {
@@ -173,8 +176,8 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
                         var coordenadas = coordenadasString.Split(',');
 
-                        decimal lat = decimal.Parse(coordenadas[0].Replace(".", ","));
-                        decimal lon = decimal.Parse(coordenadas[1].Replace(".", ","));
+                        decimal lat = decimal.Parse(coordenadas[0], NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo);
+                        decimal lon = decimal.Parse(coordenadas[1], NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo);
 
                         coordinate = new Coordinate(lat, lon);
                     }
