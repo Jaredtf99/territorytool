@@ -24,10 +24,10 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
         private readonly ILogger _logger;
 
         private UserManager<ApplicationUser> _userManager;
-        private readonly ApplicationSettings _appSettings;
+        private readonly ApplicationSecrets _appSettings;
         private readonly IUserActionLogFacade _userActionLogFacade;
 
-        public UserConfigurationFacade(ILogger<UserConfigurationFacade> logger, UserManager<ApplicationUser> userManager, IOptions<ApplicationSettings> appSettings, IUserActionLogFacade userActionLogFacade)
+        public UserConfigurationFacade(ILogger<UserConfigurationFacade> logger, UserManager<ApplicationUser> userManager, IOptions<ApplicationSecrets> appSettings, IUserActionLogFacade userActionLogFacade)
         {
             _logger = logger;
             _userManager = userManager;

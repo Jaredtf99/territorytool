@@ -13,6 +13,7 @@ using OfficeOpenXml.Style;
 using TerritoryTool.ServerSide.Controllers.Models.Person;
 using TerritoryTool.ServerSide.Domain.Classes;
 using TerritoryTool.ServerSide.Domain.Enums;
+using TerritoryTool.ServerSide.Domain.Exceptions;
 using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
 using TerritoryTool.ServerSide.Domain.Helpers;
 using TerritoryTool.ServerSide.Persistence.Entities;
@@ -28,12 +29,14 @@ namespace TerritoryTool.ServerSide.Controllers
         private readonly ILogger _logger;
 
         private readonly ITerritoryRepository _territoryRepository;
+        private readonly ITerritoryFacade _territoryFacade;
         private readonly IPersonRepository _personRepository;
         private readonly IUserActionLogFacade _userActionLogFacade;
 
-        public TerritoryController(ITerritoryRepository territoryRepository, ILogger<ActionLogController> logger, IUserActionLogFacade userActionLogFacade, IPersonRepository personRepository)
+        public TerritoryController(ITerritoryRepository territoryRepository, ITerritoryFacade territoryFacade, ILogger<ActionLogController> logger, IUserActionLogFacade userActionLogFacade, IPersonRepository personRepository)
         {
             _territoryRepository = territoryRepository;
+            _territoryFacade = territoryFacade;
             _logger = logger;
             _userActionLogFacade = userActionLogFacade;
             _personRepository = personRepository;
@@ -89,19 +92,15 @@ namespace TerritoryTool.ServerSide.Controllers
         {
             var userId = SecurityHelper.GetLoggedUserId(User);
             _logger.LogInformation("Adding territory...");
-            
-            if (_territoryRepository.GetTerritoryByCode(territoryInfo.Code) != null)
-                return BadRequest("Ya existe un territorio con el mismo código");
 
-            if (_territoryRepository.GetTerritoryByName(territoryInfo.Name) != null)
-                return BadRequest("Ya existe un territorio con el mismo nombre");
-
-            if (_territoryRepository.GetTerritoryByMapUrl(territoryInfo.MapUrl) != null)
-                return BadRequest("Ya existe un territorio con la misma URL del mapa");
-
-            _territoryRepository.AddNewTerritory(territoryInfo.Code, territoryInfo.Name, territoryInfo.MapUrl);
-
-            _userActionLogFacade.AddNewActionLog(ActionType.AddTerritory, string.Format("Added territory {0} {1}", territoryInfo.Code, territoryInfo.Name), userId, true);
+            try
+            {
+                _territoryFacade.AddTerritory(territoryInfo.Code, territoryInfo.Name, territoryInfo.MapUrl, userId);
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
 
             return Ok();
         }
@@ -117,27 +116,14 @@ namespace TerritoryTool.ServerSide.Controllers
             if (string.IsNullOrWhiteSpace(info.Code) || string.IsNullOrWhiteSpace(info.Name) || string.IsNullOrWhiteSpace(info.MapUrl))
                 return BadRequest("INVALID_PARAMETERS");
 
-            Territory? territory = _territoryRepository.GetTerritoryById(idTerritory);
-
-            if (territory == null) 
-                return BadRequest("TERRITORY_NOT_FOUND");
-
-            if (territory.Code != info.Code && _territoryRepository.GetTerritoryByCode(info.Code) != null)
-                return BadRequest("CODE_EXIST");
-
-            if (territory.Name != info.Name && _territoryRepository.GetTerritoryByName(info.Name) != null)
-                return BadRequest("NAME_EXIST");
-
-            if (territory.MapUrl != info.MapUrl && _territoryRepository.GetTerritoryByMapUrl(info.MapUrl) != null)
-                return BadRequest("MAPURL_EXIST");
-
-            territory.Code = info.Code;
-            territory.Name = info.Name;
-            territory.MapUrl = info.MapUrl;
-
-            _territoryRepository.EditTerritory(territory);
-
-            _userActionLogFacade.AddNewActionLog(ActionType.EditTerritory, string.Format("Edited territory ID {0} to: Code ({1}) Name ({2}) MapURL ({3})", idTerritory, info.Code, info.Name, info.MapUrl), userId, true);
+            try
+            {
+                _territoryFacade.EditTerritory(idTerritory, info.Code, info.Name, info.MapUrl, userId);
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
 
             return Ok();
         }
@@ -312,6 +298,10 @@ namespace TerritoryTool.ServerSide.Controllers
             territoryInfo.PersonName = territory.Person?.Name;
             territoryInfo.Code = territory.Code;
             territoryInfo.Name = territory.Name;
+            territoryInfo.Id = territory.Id;
+
+            if (territory.ImgUrl != null)
+                territoryInfo.ImgUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/{territory.ImgUrl}";
 
             return territoryInfo;
 

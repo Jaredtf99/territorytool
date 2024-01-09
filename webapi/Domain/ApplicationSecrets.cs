@@ -1,7 +1,8 @@
 ﻿namespace TerritoryTool.ServerSide.Domain
 {
-    public class ApplicationSettings
+    public class ApplicationSecrets
     {
         public string JWT_Secret { get; set; }
+        public string MapBoxApiKey { get; set; }
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using OfficeOpenXml;
@@ -19,6 +20,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Configuration.AddUserSecrets("TerritoryTool").Build();
+
 builder.Services.ConfigureDatabaseServices(builder.Configuration.GetConnectionString("SQLite"));
 builder.Services.ConfigureIdentityServices();
 builder.Services.ConfigureJwtAuthentication(builder.Configuration);
@@ -26,7 +29,8 @@ builder.Services.ConfigureJwtAuthentication(builder.Configuration);
 builder.Services.RegisterRepositories();
 builder.Services.RegisterFacadeServices();
 
-builder.Services.Configure<ApplicationSettings>(builder.Configuration.GetSection("ApplicationSettings"));
+builder.Services.Configure<ApplicationSecrets>(builder.Configuration);
+
 builder.Logging.AddFile(builder.Configuration["Logging:LogFilePath"].ToString());
 
 builder.Services.AddCors(options =>
@@ -59,7 +63,12 @@ app.UseHttpsRedirection();
 
 app.UseAuthorization();
 app.UseAuthentication();
-
+app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions()
+{
+    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Resources\Images")),
+    RequestPath = new PathString("/Resources/Images")
+});
 app.MapControllers();
 
 app.Run();

@@ -13,7 +13,7 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Interfaces
         IEnumerable<Territory> GetAllTerritories(string? term, bool? inUse, FilterTerritoriesOrderByEnum? orderBy, bool orderAscending);
         IEnumerable<Territory> SearchTerritories(string search, bool onlyFreeTerritories, bool onlyGivenTerritories);
 
-        void AddNewTerritory(string code, string name, string mapUrl);
+        Territory AddNewTerritory(string code, string name, string mapUrl);
 
         void EditTerritory(Territory territory);
 

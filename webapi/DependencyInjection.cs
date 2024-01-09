@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<IPersonFacade, PersonFacade>();
         services.AddScoped<IUserActionLogFacade, UserActionLogFacade>();
         services.AddScoped<IUserConfigurationFacade, UserConfigurationFacade>();
+        services.AddScoped<ITerritoryFacade, TerritoryFacade>();
     }
 
 }

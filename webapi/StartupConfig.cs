@@ -31,7 +31,7 @@ public static class StartupConfiguration
 
     public static void ConfigureJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
-        var key = Encoding.UTF8.GetBytes(configuration["ApplicationSettings:JWT_Secret"]);
+        var key = Encoding.UTF8.GetBytes(configuration["JWT_Secret"]);
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>

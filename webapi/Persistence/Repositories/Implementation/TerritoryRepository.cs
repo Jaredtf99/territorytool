@@ -88,7 +88,7 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             return _context.Territory.Where(x => x.Name.ToLower() == name.ToLower()).FirstOrDefault();
         }
 
-        public void AddNewTerritory(string code, string name, string mapUrl)
+        public Territory AddNewTerritory(string code, string name, string mapUrl)
         {
             Territory newTerritory = new Territory
             {
@@ -97,9 +97,11 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                 MapUrl = mapUrl
             };
 
-            _context.Territory.Add(newTerritory);
+            var territory = _context.Territory.Add(newTerritory);
             _context.SaveChanges();
 
+
+            return territory.Entity;
         }
 
         public void EditTerritory(Territory territory)
