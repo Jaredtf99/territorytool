@@ -37,6 +37,9 @@ import { PickTerritoryComponent } from './components/pick-territory/pick-territo
 import { GenerateReportComponent } from './components/generate-report/generate-report.component';
 import { NgSelectModule } from '@ng-select/ng-select';
 
+import { EditTerritoryModalComponent } from './components/edit-territory-modal/edit-territory-modal.component';
+import { DeleteTerritoryModalComponent } from './components/delete-territory-modal/delete-territory-modal.component';
+
 LOAD_WASM().subscribe((res: any) => console.log('LOAD_WASM', res));
 
 @NgModule({
@@ -59,6 +62,8 @@ LOAD_WASM().subscribe((res: any) => console.log('LOAD_WASM', res));
     ChangeTerritoryComponent,
     PickTerritoryComponent,
     GenerateReportComponent,
+    EditTerritoryModalComponent,
+    DeleteTerritoryModalComponent,
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),

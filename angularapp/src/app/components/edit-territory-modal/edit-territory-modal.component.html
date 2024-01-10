@@ -1,0 +1,47 @@
+<div class="modal fade" id="editTerritory" tabindex="-1" role="dialog" aria-labelledby="editTerritoryLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editTerritoryLabel">Editar territorio</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+
+        <div class="form-group mb-4">
+          <label>Nombre</label>
+          <input type="text" class="form-control item" #ctrl="ngModel" [(ngModel)]="territoryInfo.name">
+
+          <div *ngIf="territoryInfo.name === null || territoryInfo.name === ''" class="alert alert-danger mt-2">
+            Introduce el nombre del territorio
+          </div>
+        </div>
+
+
+        <div class="form-group mb-4">
+          <label>Código</label>
+          <input type="text" class="form-control item" #ctrl="ngModel" [(ngModel)]="territoryInfo.code">
+
+          <div *ngIf="territoryInfo.code === null || territoryInfo.code === ''" class="alert alert-danger mt-2">
+            Introduce el código del territorio
+          </div>
+        </div>
+
+
+        <div class="form-group mb-4">
+          <label>URL del mapa</label>
+          <input type="text" class="form-control item" #ctrl="ngModel" [(ngModel)]="territoryInfo.mapUrl">
+
+          <div *ngIf="territoryInfo.mapUrl === null || territoryInfo.mapUrl === ''" class="alert alert-danger mt-2">
+            Introduce la URL del mapa
+          </div>
+        </div>
+
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" [disabled]="territoryInfo.name === null || territoryInfo.name === '' || territoryInfo.code === null || territoryInfo.code === '' || territoryInfo.mapUrl === null || territoryInfo.mapUrl === ''" (click)="editTerritory()">Editar</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,10 +1,11 @@
-import { Component, Inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Component, Inject, ViewChild } from '@angular/core';
 import { UserService } from '../../shared/user.service';
 import { ToastrService } from 'ngx-toastr';
 import { Territory } from '../../classes/Territory';
 import { NgxSpinnerService } from "ngx-spinner";
 import { TerritoryService } from '../../shared/territory.service';
+import { EditTerritoryModalComponent } from '../edit-territory-modal/edit-territory-modal.component';
+import { DeleteTerritoryModalComponent } from '../delete-territory-modal/delete-territory-modal.component';
 
 declare var $: any;
 
@@ -13,6 +14,10 @@ declare var $: any;
   templateUrl: './territories.component.html'
 })
 export class TerritoriesComponent {
+
+  @ViewChild(EditTerritoryModalComponent) editTerritoryModalComponent!: EditTerritoryModalComponent;
+  @ViewChild(DeleteTerritoryModalComponent) deleteTerritoryModalComponent!: DeleteTerritoryModalComponent;
+
   public territories!: Territory[];
   public territoriesFiltered!: Territory[];
   public territoryToEdit: Territory = new Territory();
@@ -25,8 +30,7 @@ export class TerritoriesComponent {
   free = false;
   sortAscending = true;
 
-
-  constructor(public http: HttpClient, @Inject('BASE_URL') public baseUrl: string, public userService: UserService, private toastr: ToastrService, private spinner: NgxSpinnerService, public territoryService: TerritoryService) {
+  constructor(public userService: UserService, private toastr: ToastrService, private spinner: NgxSpinnerService, public territoryService: TerritoryService) {
     this.getTerritories();
   }
 
@@ -62,62 +66,24 @@ export class TerritoriesComponent {
     this.getTerritories();
   }
 
-  openEditModal(idToEdit: number)
-  {
-    Object.assign(this.territoryToEdit, this.territoriesFiltered.filter(territory => territory.id === idToEdit)[0]);
+  openEditModal(territory: Territory) {
+    this.territoryToEdit = { ...territory };
+    this.editTerritoryModalComponent.openModal();
   }
 
-  editTerritory() {
-    this.spinner.show();
-
-    let tEdit = this.territoryToEdit;
-    this.territoryService.editTerritory(tEdit.id!, tEdit.mapUrl!, tEdit.name!, tEdit.code!).subscribe(
-      {
-        next: res => {
-          this.spinner.hide();
-          this.toastr.success('Territorio editado');
-          Object.assign(this.territories.filter(territory => territory.id === this.territoryToEdit.id)[0], this.territoryToEdit);
-          this.getTerritories();
-          $('#editTerritory').modal('hide');
-        },
-        error: err => {
-          this.spinner.hide();
-          if (err.error === "CODE_EXIST")
-            this.toastr.error("El código ya existe");
-          else if (err.error === "NAME_EXIST")
-            this.toastr.error("El nombre ya existe");
-          else if (err.error === "MAPURL_EXIST")
-            this.toastr.error("La URL del mapa ya existe");
-          else {
-            this.toastr.error("Error desconocido");
-          }
-        }
-      }
-    );
+  territoryUpdatedCallback() {
+    this.getTerritories();
   }
 
   assignIdToDelete(idToDelete: number) {
     this.idTerritoryToDelete = idToDelete;
-  }
-
-  deleteTerritory() {
-    this.spinner.show();
-
-    $('#deleteTerritory').modal('hide');
-
-    this.territoryService.deleteTerritory(this.idTerritoryToDelete).subscribe(
-      {
-        next: res => {
-          this.spinner.hide();
-          this.toastr.success('Territorio eliminado');
-          this.territories.splice(this.territories.indexOf(this.territoriesFiltered.filter(territory => territory.id === this.idTerritoryToDelete)[0]), 1);
-          this.getTerritories();
-        },
-        error: err => {
-          this.spinner.hide();
-          this.toastr.error("Error desconocido");
-        }
-      });
+    this.deleteTerritoryModalComponent.openModal();
 
   }
+
+  territoryDeleteCallback() {
+    this.getTerritories();
+  }
+
+
 }
