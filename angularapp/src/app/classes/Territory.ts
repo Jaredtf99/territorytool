@@ -5,4 +5,5 @@ export class Territory {
   mapUrl?: string;
   imgUrl?: string;
   personName?: string;
+  givenDateUtc?: Date;
 }

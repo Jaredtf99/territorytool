@@ -299,6 +299,8 @@ namespace TerritoryTool.ServerSide.Controllers
             territoryInfo.Code = territory.Code;
             territoryInfo.Name = territory.Name;
             territoryInfo.Id = territory.Id;
+            territoryInfo.GivenDateUtc = territory.Transactions?.FirstOrDefault(x => x.PickedDateUtc == null)?.GivenDateUtc;
+
 
             if (territory.ImgUrl != null)
                 territoryInfo.ImgUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/{territory.ImgUrl}";

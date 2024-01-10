@@ -82,7 +82,9 @@
 
     <div class="text">
       <p class="h3"> {{ territory.name }} <span class="badge text-bg-primary ms-1">{{ territory.code }}</span> </p>
-      <p class="p"> {{ territory.personName }} </p>
+      <p class="p">
+        {{ territory.personName }} <span *ngIf="territory.givenDateUtc">{{ territory.givenDateUtc | timeago }}</span>
+      </p>
 
     </div>
   </div>

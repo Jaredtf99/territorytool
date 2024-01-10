@@ -58,7 +58,7 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                 }
             }
 
-            return query.Include(x => x.Person).ToList();
+            return query.Include(x => x.Person).Include(x => x.Transactions.Where(t => t.PickedDateUtc == null)).ToList();
         }
 
         public IEnumerable<Transaction> GetAllTransactionsForReport(DateTime start, DateTime end)

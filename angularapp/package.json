@@ -33,6 +33,7 @@
     "ngx-infinite-scroll": "^16.0.0",
     "ngx-scanner-qrcode": "^1.6.4",
     "ngx-spinner": "^16.0.2",
+    "ngx-timeago": "^3.0.0",
     "ngx-toastr": "^17.0.2",
     "rxjs": "~7.8.0",
     "tabulator-tables": "^5.5.2",
