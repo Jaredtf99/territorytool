@@ -1,0 +1,32 @@
+<div *ngIf="territoryInfo" class="territory-detail-container">
+
+  <div class="territory-detail-container-cell territory-detail-timeline">
+
+    <div class="history-tl-container">
+      <ul class="tl">
+        <li class="tl-item" *ngFor="let timelineItem of territoryInfo.timelineItems">
+          <div class="item-title">{{timelineItem.description}}</div>
+          <div class="item-detail">{{timelineItem.date | timeago }}</div>
+        </li>
+      </ul>
+
+    </div>
+  </div>
+
+  <img *ngIf="territoryInfo.imgUrl" class="territory-detail-container-cell territory-detail-map" [src]="territoryInfo.imgUrl" alt="Alternate Text" />
+  <img *ngIf="!territoryInfo.imgUrl" class="territory-detail-container-cell territory-detail-map" src="./assets/img/testterritorio.png" alt="Alternate Text" />
+
+  <div class="territory-detail-container-cell territory-detail-info">
+    test
+  </div>
+
+
+  <div class="territory-detail-container-cell territory-detail-actions">
+    test
+  </div>
+
+  <div class="territory-detail-container-cell territory-detail-statistics">
+    test
+  </div>
+
+</div>

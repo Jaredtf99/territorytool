@@ -11,12 +11,14 @@ using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Transactions;
 using System.Xml.Linq;
 using TerritoryTool.ServerSide.Controllers.Models.Person;
 using TerritoryTool.ServerSide.Domain.Classes;
 using TerritoryTool.ServerSide.Domain.Enums;
 using TerritoryTool.ServerSide.Domain.Exceptions;
 using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
+using TerritoryTool.ServerSide.Domain.Helpers;
 using TerritoryTool.ServerSide.Persistence;
 using TerritoryTool.ServerSide.Persistence.Entities;
 using TerritoryTool.ServerSide.Persistence.Repositories.Implementation;
@@ -98,6 +100,13 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
             _actionLog.AddNewActionLog(ActionType.EditTerritory, string.Format("Edited territory ID {0} to: Code ({1}) Name ({2}) MapURL ({3})", id, code, name, mapUrl), editedById, true);
 
+        }
+
+        public TerritoryDetailInfo? GetTerritoryDetailInfo(int id, IWebApiUrlHelper urlHelper)
+        {
+            var territory =_territoryRepo.GetTerritoryForDetailById(id);
+
+            return ConvertTerritoryToTerritoryDetailInfo(territory, urlHelper.GetCurrentUrl());
         }
 
         private async Task<string> DownloadTerritoryMapImageAsync(Territory territory)
@@ -194,6 +203,69 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             }
 
             return coordinate;
+        }
+
+        private TerritoryInfo? ConvertTerritoryToTerritoryInfo(Territory? territory, string resourceUrl = "")
+        {
+
+            if (territory == null) return null;
+
+            TerritoryInfo territoryInfo = new TerritoryInfo();
+
+            territoryInfo.MapUrl = territory.MapUrl;
+            territoryInfo.PersonName = territory.Person?.Name;
+            territoryInfo.Code = territory.Code;
+            territoryInfo.Name = territory.Name;
+            territoryInfo.Id = territory.Id;
+            territoryInfo.GivenDateUtc = territory.Transactions?.FirstOrDefault(x => x.PickedDateUtc == null)?.GivenDateUtc;
+
+            if (territory.ImgUrl != null)
+                territoryInfo.ImgUrl = $"{resourceUrl}/{territory.ImgUrl}";
+
+            return territoryInfo;
+
+        }
+
+        private TerritoryDetailInfo? ConvertTerritoryToTerritoryDetailInfo(Territory? territory, string resourceUrl = "")
+        {
+
+            if (territory == null) return null;
+
+            TerritoryDetailInfo territoryDetailInfo = new TerritoryDetailInfo();
+
+            territoryDetailInfo.MapUrl = territory.MapUrl;
+            territoryDetailInfo.PersonName = territory.Person?.Name;
+            territoryDetailInfo.Code = territory.Code;
+            territoryDetailInfo.Name = territory.Name;
+            territoryDetailInfo.Id = territory.Id;
+            territoryDetailInfo.GivenDateUtc = territory.Transactions?.FirstOrDefault(x => x.PickedDateUtc == null)?.GivenDateUtc;
+
+            if (territory.ImgUrl != null)
+                territoryDetailInfo.ImgUrl = $"{resourceUrl}/{territory.ImgUrl}";
+
+            territoryDetailInfo.TimelineItems = new List<TerritoryInfoTimeline>();
+
+            foreach (var transaction in territory.Transactions)
+            {
+                TerritoryInfoTimeline t = new TerritoryInfoTimeline();
+                t.Date = transaction.GivenDateUtc;
+                t.Description = $"Entregado a {transaction.Person.Name}";
+                t.Type = TerritoryInfoTimelineType.Gave;
+                territoryDetailInfo.TimelineItems.Add(t);
+
+                if (transaction.PickedDateUtc != null)
+                {
+                    TerritoryInfoTimeline tr = new TerritoryInfoTimeline();
+                    tr.Date = transaction.PickedDateUtc.Value;
+                    tr.Description = $"Devuelto";
+                    tr.Type = TerritoryInfoTimelineType.Picked;
+                    territoryDetailInfo.TimelineItems.Add(tr);
+                }
+
+            }
+
+            return territoryDetailInfo;
+
         }
 
     }

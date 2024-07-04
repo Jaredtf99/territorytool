@@ -2,6 +2,7 @@ import { Injectable, Inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http'
 import { Observable } from 'rxjs';
 import { Territory } from '../classes/Territory';
+import { TerritoryDetail } from '../classes/TerritoryDetail';
 
 
 @Injectable()
@@ -14,6 +15,11 @@ export class TerritoryService {
 
     return this.http.post(`${this.baseUrl}/territories/${id}`, body).pipe()
   }
+
+  getTerritoryDetailInfo(id: number): Observable<TerritoryDetail> {
+    return this.http.get(`${this.baseUrl}/territories/${id}`).pipe()
+  }
+
 
   getAllTerritories(
     term: string | undefined,

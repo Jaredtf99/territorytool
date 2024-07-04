@@ -83,6 +83,12 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             return _context.Territory.Find(id);
         }
 
+        public Territory? GetTerritoryForDetailById(int id)
+        {
+            return _context.Territory.Where(x => x.Id == id).Include(x => x.Transactions).ThenInclude(t => t.Person).FirstOrDefault();
+        }
+
+
         public Territory? GetTerritoryByName(string name)
         {
             return _context.Territory.Where(x => x.Name.ToLower() == name.ToLower()).FirstOrDefault();

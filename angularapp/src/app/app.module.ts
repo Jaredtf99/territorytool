@@ -40,6 +40,7 @@ import { TimeagoModule } from "ngx-timeago";
 
 import { EditTerritoryModalComponent } from './components/edit-territory-modal/edit-territory-modal.component';
 import { DeleteTerritoryModalComponent } from './components/delete-territory-modal/delete-territory-modal.component';
+import { TerritoryDetailComponent } from './components/territory-detail/territory-detail.component';
 
 LOAD_WASM().subscribe((res: any) => console.log('LOAD_WASM', res));
 
@@ -65,6 +66,7 @@ LOAD_WASM().subscribe((res: any) => console.log('LOAD_WASM', res));
     GenerateReportComponent,
     EditTerritoryModalComponent,
     DeleteTerritoryModalComponent,
+    TerritoryDetailComponent,
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -79,6 +81,7 @@ LOAD_WASM().subscribe((res: any) => console.log('LOAD_WASM', res));
         path: '', component: LoggedComponent, canActivateChild: [AuthGuard], children: [
           { path: 'home', component: HomeComponent, },
           { path: 'territories', component: TerritoriesComponent },
+          { path: 'territory/:id', component: TerritoryDetailComponent },
           { path: 'add-territory', component: AddTerritoryComponent, data: { permittedRoles: ['SUPERADMIN', 'ADMIN'] } },
           { path: 'change-territory', component: ChangeTerritoryComponent },
           { path: 'pick-territory', component: PickTerritoryComponent },

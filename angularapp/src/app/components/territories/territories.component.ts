@@ -6,6 +6,7 @@ import { NgxSpinnerService } from "ngx-spinner";
 import { TerritoryService } from '../../shared/territory.service';
 import { EditTerritoryModalComponent } from '../edit-territory-modal/edit-territory-modal.component';
 import { DeleteTerritoryModalComponent } from '../delete-territory-modal/delete-territory-modal.component';
+import { Router } from '@angular/router';
 
 declare var $: any;
 
@@ -30,8 +31,13 @@ export class TerritoriesComponent {
   free = false;
   sortAscending = true;
 
-  constructor(public userService: UserService, private toastr: ToastrService, private spinner: NgxSpinnerService, public territoryService: TerritoryService) {
+  constructor(public userService: UserService, private toastr: ToastrService, private spinner: NgxSpinnerService, public territoryService: TerritoryService, private router: Router) {
     this.getTerritories();
+  }
+
+  detail(territoryId : number | undefined)
+  {
+    this.router.navigate(['/territory', territoryId]);
   }
 
   getTerritories()

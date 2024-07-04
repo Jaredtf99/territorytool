@@ -1,0 +1,47 @@
+.territory-detail-container {
+  display: grid;
+  height: 100%;
+  grid-template-columns: 1fr 2fr 2fr;
+  grid-template-rows: 4fr 1fr 4fr;
+  gap: 30px;
+  grid-template-areas:
+    "timeline map info"
+    "timeline actions actions"
+    "timeline statistics statistics";
+}
+
+.territory-detail-container-cell {
+  background-color: #fff;
+  border-radius: 30px;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.075);
+}
+
+.territory-detail-timeline {
+  grid-area: timeline;
+  overflow-y: auto;
+}
+
+.territory-detail-map {
+  grid-area: map;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/*  .territory-detail-map img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+*/
+.territory-detail-actions {
+  grid-area: actions;
+}
+
+.territory-detail-info {
+  grid-area: info;
+}
+
+.territory-detail-statistics {
+  grid-area: statistics;
+}

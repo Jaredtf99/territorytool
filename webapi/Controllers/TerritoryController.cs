@@ -18,6 +18,7 @@ using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
 using TerritoryTool.ServerSide.Domain.Helpers;
 using TerritoryTool.ServerSide.Persistence.Entities;
 using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
+using webapi.Controllers.Helpers;
 
 namespace TerritoryTool.ServerSide.Controllers
 {
@@ -51,6 +52,20 @@ namespace TerritoryTool.ServerSide.Controllers
 
             return ConvertTerritoryToTerritoryInfoList(territories);
         }
+
+        [HttpGet("{idTerritory}")]
+        public ActionResult GetTerritoryDetailInfo(int idTerritory)
+        {
+            var territory = _territoryFacade.GetTerritoryDetailInfo(idTerritory, WebApiUrlHelper.AsInstance(Request));
+
+            if (territory == null) 
+            {
+                return NotFound();
+            }
+
+            return Ok(territory);
+        }
+
 
         /// <summary>
         /// Devuelve una lista de territorios en base al filtro de busqueda por texto
