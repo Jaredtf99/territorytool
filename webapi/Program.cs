@@ -28,6 +28,7 @@ builder.Services.ConfigureJwtAuthentication(builder.Configuration);
 
 builder.Services.RegisterRepositories();
 builder.Services.RegisterFacadeServices();
+builder.Services.AddWebApiServices();
 
 builder.Services.Configure<ApplicationSecrets>(builder.Configuration);
 
