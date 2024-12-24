@@ -2,6 +2,7 @@ import { Component, Inject, ViewChild } from '@angular/core';
 import { UserService } from '../../shared/user.service';
 import { ToastrService } from 'ngx-toastr';
 import { Territory } from '../../classes/Territory';
+import { TerritoryEditInfo } from '../../classes/TerritoryEditInfo';
 import { NgxSpinnerService } from "ngx-spinner";
 import { TerritoryService } from '../../shared/territory.service';
 import { EditTerritoryModalComponent } from '../edit-territory-modal/edit-territory-modal.component';
@@ -21,7 +22,7 @@ export class TerritoriesComponent {
 
   public territories!: Territory[];
   public territoriesFiltered!: Territory[];
-  public territoryToEdit: Territory = new Territory();
+  public territoryToEdit: TerritoryEditInfo = new TerritoryEditInfo();
   public idTerritoryToDelete = 0;
 
   orderBy = 1;

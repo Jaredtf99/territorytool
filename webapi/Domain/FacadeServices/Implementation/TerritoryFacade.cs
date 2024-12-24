@@ -23,6 +23,7 @@ using TerritoryTool.ServerSide.Persistence;
 using TerritoryTool.ServerSide.Persistence.Entities;
 using TerritoryTool.ServerSide.Persistence.Repositories.Implementation;
 using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
+using Transaction = TerritoryTool.ServerSide.Persistence.Entities.Transaction;
 
 namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 {
@@ -84,7 +85,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             if (territory.MapUrl != mapUrl && _territoryRepo.GetTerritoryByMapUrl(mapUrl) != null)
                 throw new DomainException("MAPURL_EXIST");
 
-            if (mapUrl != territory.MapUrl) 
+            if (mapUrl != territory.MapUrl)
             {
                 //TODO: hacer que no haya que esperar por esto
                 string rutaImagen = DownloadTerritoryMapImageAsync(territory).Result;
@@ -102,9 +103,25 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
         }
 
+        public void RefreshImageTerritory(int id, string refreshedById)
+        {
+            Territory? territory = _territoryRepo.GetTerritoryById(id);
+
+            if (territory == null)
+                throw new DomainException("TERRITORY_NOT_FOUND");
+
+            string rutaImagen = DownloadTerritoryMapImageAsync(territory).Result;
+            territory.ImgUrl = rutaImagen;
+
+            _territoryRepo.EditTerritory(territory);
+
+            _actionLog.AddNewActionLog(ActionType.RefreshTerritoryImage, string.Format("Refreshed image territory ID {0}", id), refreshedById, true);
+        }
+
+
         public TerritoryDetailInfo? GetTerritoryDetailInfo(int id, IWebApiUrlHelper urlHelper)
         {
-            var territory =_territoryRepo.GetTerritoryForDetailById(id);
+            var territory = _territoryRepo.GetTerritoryForDetailById(id);
 
             return ConvertTerritoryToTerritoryDetailInfo(territory, urlHelper.GetCurrentUrl());
         }
@@ -114,13 +131,14 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             string rutaImagen = null;
 
             //TODO: sacar apiImage a un externalService
+            //TODO: Lanzar excepciones si no va bien
 
             const string MapApiImage = "https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/{0},{1},16.31,0,25/300x200@2x?access_token={2}&attribution=false&logo=false";
             _logger.LogInformation($"Buscando coordenadas de la url del mapa del territorio {territory.Name} ({territory.Code})");
 
             Coordinate? coordinate = await GetCoordsFromMapUrl(territory.MapUrl);
 
-            if (coordinate != null) 
+            if (coordinate != null)
             {
                 byte[] imageBytes = null;
 
@@ -140,7 +158,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
                     }
                 }
 
-                if (imageBytes != null) 
+                if (imageBytes != null)
                 {
                     var directorioImagenes = Path.Combine("Resources", "Images");
 
@@ -233,12 +251,19 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
             TerritoryDetailInfo territoryDetailInfo = new TerritoryDetailInfo();
 
+
+            Transaction? lastTransaction = territory.Transactions?.OrderBy(x => x.Id).FirstOrDefault();
+
             territoryDetailInfo.MapUrl = territory.MapUrl;
             territoryDetailInfo.PersonName = territory.Person?.Name;
             territoryDetailInfo.Code = territory.Code;
             territoryDetailInfo.Name = territory.Name;
             territoryDetailInfo.Id = territory.Id;
-            territoryDetailInfo.GivenDateUtc = territory.Transactions?.FirstOrDefault(x => x.PickedDateUtc == null)?.GivenDateUtc;
+            territoryDetailInfo.GivenDateUtc = lastTransaction?.GivenDateUtc;
+            territoryDetailInfo.LastPickedDateUtc = lastTransaction?.PickedDateUtc;
+            territoryDetailInfo.PickedCount = territory.Transactions?.Count() ?? 0;
+            territoryDetailInfo.LastUser = lastTransaction?.PickedByNavigation?.UserName ?? lastTransaction?.GivenByNavigation.UserName;
+
 
             if (territory.ImgUrl != null)
                 territoryDetailInfo.ImgUrl = $"{resourceUrl}/{territory.ImgUrl}";

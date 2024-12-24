@@ -2,8 +2,9 @@
   display: grid;
   height: 100%;
   grid-template-columns: 1fr 2fr 2fr;
-  grid-template-rows: 4fr 1fr 4fr;
+  grid-template-rows: 7fr 1fr 7fr;
   gap: 30px;
+  gap: 0px 30px;
   grid-template-areas:
     "timeline map info"
     "timeline actions actions"
@@ -36,10 +37,23 @@
 */
 .territory-detail-actions {
   grid-area: actions;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  background: none;
+  box-shadow: none;
+}
+
+.territory-detail-actions button {
+  margin-right: 10px;
 }
 
 .territory-detail-info {
   grid-area: info;
+  padding: 20px;
+  display: flex;
+  align-content: flex-start;
+  flex-wrap: wrap;
 }
 
 .territory-detail-statistics {

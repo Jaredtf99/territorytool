@@ -17,7 +17,7 @@ export class TerritoryService {
   }
 
   getTerritoryDetailInfo(id: number): Observable<TerritoryDetail> {
-    return this.http.get(`${this.baseUrl}/territories/${id}`).pipe()
+    return this.http.get(`${this.baseUrl}/territories/${id}/detail`).pipe()
   }
 
 
@@ -96,5 +96,10 @@ export class TerritoryService {
     return this.http.post(`${this.baseUrl}/territories/pick-territory`, body).pipe()
   }
 
+  refreshTerritoryImage(id: number): Observable<any> {
+    const url = `${this.baseUrl}/territories/${id}/refresh-image`;
+
+    return this.http.post(url, null).pipe()
+  }
 
 }

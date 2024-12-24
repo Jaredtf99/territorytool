@@ -85,7 +85,11 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
 
         public Territory? GetTerritoryForDetailById(int id)
         {
-            return _context.Territory.Where(x => x.Id == id).Include(x => x.Transactions).ThenInclude(t => t.Person).FirstOrDefault();
+            return _context.Territory.Where(x => x.Id == id)
+                .Include(x => x.Transactions).ThenInclude(t => t.Person)
+                .Include(x => x.Transactions).ThenInclude(t => t.GivenByNavigation)
+                .Include(x => x.Transactions).ThenInclude(t => t.PickedByNavigation)
+                .FirstOrDefault();
         }
 
 

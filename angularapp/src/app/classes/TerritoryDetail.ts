@@ -7,6 +7,9 @@ export class TerritoryDetail {
   mapUrl?: string;
   imgUrl?: string;
   personName?: string;
+  lastPickedDateUtc?: Date;
   givenDateUtc?: Date;
+  pickedCount?: number;
+  lastUser?: string;
   timelineItems?: TimelineItem[];
 }

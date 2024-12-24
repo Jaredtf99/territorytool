@@ -16,5 +16,6 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces
 
         TerritoryDetailInfo? GetTerritoryDetailInfo(int id, IWebApiUrlHelper urlHelper);
 
+        void RefreshImageTerritory(int id, string refreshedById);
     }
 }

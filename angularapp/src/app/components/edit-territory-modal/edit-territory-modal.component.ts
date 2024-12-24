@@ -1,6 +1,6 @@
 import { Component, ElementRef, EventEmitter, Input, Output } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
-import { Territory } from '../../classes/Territory';
+import { TerritoryEditInfo } from '../../classes/TerritoryEditInfo';
 import { NgxSpinnerService } from "ngx-spinner";
 import { TerritoryService } from '../../shared/territory.service';
 
@@ -12,7 +12,7 @@ declare var $: any;
 })
 export class EditTerritoryModalComponent {
 
-  @Input() territoryInfo!: Territory;
+  @Input() territoryInfo!: TerritoryEditInfo;
   @Output() territoryUpdated: EventEmitter<void> = new EventEmitter<void>();
 
   constructor(private toastr: ToastrService, private spinner: NgxSpinnerService, public territoryService: TerritoryService, private el: ElementRef) {

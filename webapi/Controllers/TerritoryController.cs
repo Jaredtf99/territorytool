@@ -54,6 +54,18 @@ namespace TerritoryTool.ServerSide.Controllers
         }
 
         [HttpGet("{idTerritory}")]
+        public ActionResult GetTerritory(int idTerritory)
+        {
+            var territory = _territoryRepository.GetTerritoryById(idTerritory);
+
+            if (territory == null)
+                return NotFound();
+
+            return Ok(ConvertTerritoryToTerritoryInfo(territory));
+        }
+
+
+        [HttpGet("{idTerritory}/detail")]
         public ActionResult GetTerritoryDetailInfo(int idTerritory)
         {
             var territory = _territoryFacade.GetTerritoryDetailInfo(idTerritory, WebApiUrlHelper.AsInstance(Request));
@@ -285,6 +297,26 @@ namespace TerritoryTool.ServerSide.Controllers
 
                 return File(stream.ToArray(), contentType, fileName);
             }
+        }
+
+        [HttpPost("{idTerritory}/refresh-image")]
+        [Authorize(Roles = "SUPERADMIN,ADMIN")]
+        public ActionResult RefreshImage([FromRoute] int idTerritory)
+        {
+            var userId = SecurityHelper.GetLoggedUserId(User);
+
+            _logger.LogInformation("Refreshing territory...");
+
+            try
+            {
+                _territoryFacade.RefreshImageTerritory(idTerritory, userId);
+            }
+            catch (DomainException ex)
+            {
+                return NotFound(ex.Message);
+            }
+
+            return Ok();
         }
 
         private IEnumerable<TerritoryInfo> ConvertTerritoryToTerritoryInfoList(IEnumerable<Territory> territories)

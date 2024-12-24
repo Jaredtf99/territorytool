@@ -1,12 +1,16 @@
-import { Component, OnInit, Inject } from '@angular/core';
+import { Component, OnInit, Inject, ViewChild } from '@angular/core';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
-import { ToastrService } from 'ngx-toastr';
+import { Toast, ToastrService } from 'ngx-toastr';
 import { PersonService } from '../../shared/person.service';
 import { NgxSpinnerService } from "ngx-spinner";
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { TerritoryService } from '../../shared/territory.service';
-import { Territory } from '../../classes/Territory';
 import { TerritoryDetail } from '../../classes/TerritoryDetail';
+import { TerritoryEditInfo } from '../../classes/TerritoryEditInfo';
+import { EditTerritoryModalComponent } from '../edit-territory-modal/edit-territory-modal.component';
+import { DeleteTerritoryModalComponent } from '../delete-territory-modal/delete-territory-modal.component';
+
+declare var $: any;
 
 @Component({
   selector: 'territory-detail',
@@ -17,9 +21,12 @@ export class TerritoryDetailComponent implements OnInit {
 
   territoryId!: number;
   territoryInfo: TerritoryDetail | undefined;
+  territoryToEdit: TerritoryEditInfo = new TerritoryEditInfo();
+  @ViewChild(EditTerritoryModalComponent) editTerritoryModalComponent!: EditTerritoryModalComponent;
+  @ViewChild(DeleteTerritoryModalComponent) deleteTerritoryModalComponent!: DeleteTerritoryModalComponent;
 
 
-  constructor(private route: ActivatedRoute, public territoryService: TerritoryService, private toastr: ToastrService, private spinner: NgxSpinnerService) {
+  constructor(private route: ActivatedRoute, public territoryService: TerritoryService, private toastr: ToastrService, private spinner: NgxSpinnerService, private router: Router) {
 
   }
 
@@ -27,23 +34,87 @@ export class TerritoryDetailComponent implements OnInit {
     this.route.params.subscribe(params => {
       this.territoryId = params['id'];
 
-      this.territoryService.getTerritoryDetailInfo(this.territoryId).subscribe(
-        {
-          next: res => {
-            this.territoryInfo = res
-            this.territoryInfo.timelineItems!.sort((a: any, b: any) => {
-              return new Date(b.date).getTime() - new Date(a.date).getTime();
-            });
-            this.spinner.hide();
-          },
-          error: err => {
-            this.spinner.hide();
-            console.error(err);
-          }
-        });
-
+      this.getTerritoryInfo();
     });
   }
+
+  getTerritoryInfo() {
+    this.territoryService.getTerritoryDetailInfo(this.territoryId).subscribe(
+      {
+        next: res => {
+          this.territoryInfo = res
+          this.territoryInfo.timelineItems!.sort((a: any, b: any) => {
+            return new Date(b.date).getTime() - new Date(a.date).getTime();
+          });
+          this.spinner.hide();
+        },
+        error: err => {
+          this.spinner.hide();
+          console.error(err);
+        }
+      });
+
+  }
+
+  openPickTerritoryConfirm() {
+    $('#pickTerritory').modal('show');
+  }
+
+  pickTerritory() {
+    this.spinner.show();
+
+    this.territoryService.pickTerritory(this.territoryInfo!.code!, false, undefined).subscribe(
+      {
+        next: res => {
+          $('#pickTerritory').modal('hide');
+          this.toastr.success('Territorio entregado');
+          this.getTerritoryInfo();
+        },
+        error: err => {
+          $('#pickTerritory').modal('hide');
+          this.toastr.error('Error entregando el territorio');
+          this.spinner.hide();
+          console.error(err);
+        }
+      });
+
+  }
+
+  refreshTerritoryImage() {
+    this.spinner.show();
+
+    this.territoryService.refreshTerritoryImage(this.territoryId).subscribe(
+      {
+        next: res => {
+          this.toastr.success('Imagen actualizada');
+          this.getTerritoryInfo();
+        },
+        error: err => {
+          this.toastr.error('Error actualizando la imagen');
+          this.spinner.hide();
+          console.error(err);
+        }
+      });
+
+  }
+
+  openEditModal() {
+    this.territoryToEdit = { ...this.territoryInfo };
+    this.editTerritoryModalComponent.openModal();
+  }
+
+  openDeleteModal() {
+    this.deleteTerritoryModalComponent.openModal();
+  }
+
+  territoryUpdatedCallback() {
+    this.getTerritoryInfo();
+  }
+
+  territoryDeleteCallback() {
+    this.router.navigate(['/territories']);
+  }
+
 
 }
 
