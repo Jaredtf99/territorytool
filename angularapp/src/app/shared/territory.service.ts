@@ -102,4 +102,8 @@ export class TerritoryService {
     return this.http.post(url, null).pipe()
   }
 
+  getTerritoryStatistics(territoryId: number) {
+    return this.http.get<any>(`${this.baseUrl}/territories/${territoryId}/statistics`);
+  }
+
 }

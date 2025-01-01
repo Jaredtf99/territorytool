@@ -82,7 +82,7 @@ namespace TerritoryTool.ServerSide.Controllers
         /// <summary>
         /// Devuelve una lista de territorios en base al filtro de busqueda por texto
         /// </summary>
-        /// <param name="search">Termino de búsqueda</param>
+        /// <param name="search">Termino de bï¿½squeda</param>
         /// <param name="onlyFreeTerritories">Flag para obtener solo los territorios libres</param>
         /// <returns></returns>
         [HttpGet]
@@ -317,6 +317,20 @@ namespace TerritoryTool.ServerSide.Controllers
             }
 
             return Ok();
+        }
+
+        [HttpGet("{id}/statistics")]
+        public async Task<ActionResult<TerritoryStatistics>> GetTerritoryStatistics(int id)
+        {
+            try
+            {
+                var stats = await _territoryRepository.GetTerritoryStatistics(id);
+                return Ok(stats);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
         }
 
         private IEnumerable<TerritoryInfo> ConvertTerritoryToTerritoryInfoList(IEnumerable<Territory> territories)

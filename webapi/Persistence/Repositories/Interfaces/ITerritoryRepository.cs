@@ -25,5 +25,7 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Interfaces
 
         Territory? GetTerritoryForDetailById(int id);
 
+        Task<TerritoryStatistics> GetTerritoryStatistics(int territoryId);
+
     }
 }

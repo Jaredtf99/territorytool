@@ -59,3 +59,66 @@
 .territory-detail-statistics {
   grid-area: statistics;
 }
+
+.statistics-container {
+  padding: 20px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.stat-item {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.stat-item i {
+  font-size: 24px;
+  margin-bottom: 10px;
+  color: #007bff;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #6c757d;
+  margin-bottom: 5px;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #212529;
+}
+
+.stat-badge {
+  margin-top: 5px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  background-color: #28a745;
+  color: white;
+}
+
+.stat-badge.low-usage {
+  background-color: #dc3545;
+}
+
+.above-average {
+  color: #28a745;
+}
+
+.below-average {
+  color: #dc3545;
+}
+
+.comparison .stat-value {
+  font-weight: bold;
+}

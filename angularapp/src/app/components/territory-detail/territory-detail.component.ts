@@ -24,6 +24,7 @@ export class TerritoryDetailComponent implements OnInit {
   territoryToEdit: TerritoryEditInfo = new TerritoryEditInfo();
   @ViewChild(EditTerritoryModalComponent) editTerritoryModalComponent!: EditTerritoryModalComponent;
   @ViewChild(DeleteTerritoryModalComponent) deleteTerritoryModalComponent!: DeleteTerritoryModalComponent;
+  territoryStats: any;
 
 
   constructor(private route: ActivatedRoute, public territoryService: TerritoryService, private toastr: ToastrService, private spinner: NgxSpinnerService, private router: Router) {
@@ -33,8 +34,8 @@ export class TerritoryDetailComponent implements OnInit {
   ngOnInit(): void {
     this.route.params.subscribe(params => {
       this.territoryId = params['id'];
-
       this.getTerritoryInfo();
+      this.getTerritoryStats();
     });
   }
 
@@ -54,6 +55,17 @@ export class TerritoryDetailComponent implements OnInit {
         }
       });
 
+  }
+
+  getTerritoryStats() {
+    this.territoryService.getTerritoryStatistics(this.territoryId).subscribe({
+      next: res => {
+        this.territoryStats = res;
+      },
+      error: err => {
+        console.error(err);
+      }
+    });
   }
 
   openPickTerritoryConfirm() {

@@ -67,7 +67,82 @@
   </div>
 
   <div class="territory-detail-container-cell territory-detail-statistics">
-    test
+    <div class="statistics-container" *ngIf="territoryStats">
+      
+      <div class="stats-grid">
+        <div class="stat-item">
+          <i class="fa fa-chart-line"></i>
+          <span class="stat-label">Ranking de Uso:</span>
+          <span class="stat-value">{{territoryStats.usageRank}} de {{territoryStats.totalTerritories}}</span>
+          <span class="stat-badge" *ngIf="territoryStats.isHighUsage">Alto uso</span>
+          <span class="stat-badge low-usage" *ngIf="territoryStats.isLowUsage">Bajo uso</span>
+        </div>
+
+        <div class="stat-item">
+          <i class="fa fa-clock"></i>
+          <span class="stat-label">Porcentaje de tiempo en uso:</span>
+          <span class="stat-value">{{territoryStats.assignedTimePercentage | number:'1.0-1'}}%</span>
+        </div>
+
+        <div class="stat-item">
+          <i class="fa fa-hourglass-half"></i>
+          <span class="stat-label">Tiempo promedio de reasignación:</span>
+          <span class="stat-value">{{territoryStats.averageReassignmentTime | number:'1.0-0'}} días</span>
+        </div>
+
+        <div class="stat-item" *ngIf="territoryStats.currentUnassignedTime">
+          <i class="fa fa-calendar"></i>
+          <span class="stat-label">Tiempo actual sin asignar:</span>
+          <span class="stat-value">{{territoryStats.currentUnassignedTime | number:'1.0-0'}} días</span>
+        </div>
+
+        <div class="stat-item">
+          <i class="fa fa-rotate-left"></i>
+          <span class="stat-label">Tiempo promedio de uso:</span>
+          <span class="stat-value">{{territoryStats.averageHoldingTime | number:'1.0-0'}} días</span>
+        </div>
+
+        <div class="stat-item">
+          <i class="fa fa-calendar-check"></i>
+          <span class="stat-label">Veces usado:</span>
+          <span class="stat-value">{{territoryStats.totalTimesUsed}}</span>
+        </div>
+
+        <div class="stat-item">
+          <i class="fa fa-clock-rotate-left"></i>
+          <span class="stat-label">Frecuencia de uso:</span>
+          <span class="stat-value">Cada {{territoryStats.usageFrequencyDays | number:'1.0-0'}} días</span>
+        </div>
+
+        <div class="stat-item">
+          <i class="fa fa-history"></i>
+          <span class="stat-label">Último uso:</span>
+          <span class="stat-value">{{territoryStats.lastUsedAgo}}</span>
+        </div>
+
+        <div class="stat-item comparison">
+          <i class="fa fa-scale-balanced"></i>
+          <span class="stat-label">Tiempo de uso vs. Media</span>
+          <span class="stat-value" [class.above-average]="territoryStats.averageHoldingTimeVsGlobal > 0"
+                                    [class.below-average]="territoryStats.averageHoldingTimeVsGlobal < 0">
+            {{territoryStats.averageHoldingTimeVsGlobal > 0 ? '+' : ''}}
+            {{territoryStats.averageHoldingTimeVsGlobal | number:'1.0-0'}}%
+          </span>
+          <span class="stat-badge" *ngIf="territoryStats.isLongHeld">Uso prolongado</span>
+        </div>
+
+        <div class="stat-item comparison">
+          <i class="fa fa-clock-rotate-left"></i>
+          <span class="stat-label">Reasignación vs. Media</span>
+          <span class="stat-value" [class.above-average]="territoryStats.reassignmentTimeVsGlobal > 0"
+                                    [class.below-average]="territoryStats.reassignmentTimeVsGlobal < 0">
+            {{territoryStats.reassignmentTimeVsGlobal > 0 ? '+' : ''}}
+            {{territoryStats.reassignmentTimeVsGlobal | number:'1.0-0'}}%
+          </span>
+          <span class="stat-badge" *ngIf="territoryStats.isQuicklyReassigned">Reasignación rápida</span>
+        </div>
+      </div>
+    </div>
   </div>
 
 </div>
