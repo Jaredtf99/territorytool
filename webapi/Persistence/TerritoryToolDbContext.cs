@@ -222,7 +222,7 @@ namespace TerritoryTool.ServerSide.Persistence
                 entity.HasOne(d => d.Territory)
                     .WithMany(p => p.Transactions)
                     .HasForeignKey(d => d.TerritoryId)
-                    .OnDelete(DeleteBehavior.ClientSetNull);
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

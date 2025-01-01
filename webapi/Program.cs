@@ -72,4 +72,7 @@ app.UseStaticFiles(new StaticFileOptions()
 });
 app.MapControllers();
 
+// Aplicar migraciones
+app.ApplyMigrations();
+
 app.Run();

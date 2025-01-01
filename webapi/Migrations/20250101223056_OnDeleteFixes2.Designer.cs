@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TerritoryTool.ServerSide.Persistence;
 
@@ -10,9 +11,11 @@ using TerritoryTool.ServerSide.Persistence;
 namespace webapi.Migrations
 {
     [DbContext(typeof(TerritoryToolDbContext))]
-    partial class TerritoryToolDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250101223056_OnDeleteFixes2")]
+    partial class OnDeleteFixes2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.11");
