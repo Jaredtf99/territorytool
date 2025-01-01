@@ -30,7 +30,7 @@ public class UpdateTerritoryImagesJob : IJob
             
             foreach (var territory in territories)
             {
-                _territoryFacade.RefreshImageTerritory(territory.Id, "SYSTEM");
+                _territoryFacade.RefreshImageTerritory(territory.Id);
             }
             
             _logger.LogInformation("Actualización de imágenes de territorios completada");

@@ -103,9 +103,9 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
         }
 
-        public void RefreshImageTerritory(int id, string refreshedById)
+        public void RefreshImageTerritory(int territoryId, string? refreshedById = null)
         {
-            Territory? territory = _territoryRepo.GetTerritoryById(id);
+            Territory? territory = _territoryRepo.GetTerritoryById(territoryId);
 
             if (territory == null)
                 throw new DomainException("TERRITORY_NOT_FOUND");
@@ -115,7 +115,14 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
             _territoryRepo.EditTerritory(territory);
 
-            _actionLog.AddNewActionLog(ActionType.RefreshTerritoryImage, string.Format("Refreshed image territory ID {0}", id), refreshedById, true);
+            if (!string.IsNullOrEmpty(refreshedById))
+            {
+                _actionLog.AddNewActionLog(
+                    ActionType.RefreshTerritoryImage, 
+                    string.Format("Refreshed image territory ID {0}", territoryId), 
+                    refreshedById, 
+                    true);
+            }
         }
 
 
