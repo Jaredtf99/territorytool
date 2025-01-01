@@ -171,7 +171,13 @@ namespace TerritoryTool.ServerSide.Persistence
 
                 entity.HasOne(d => d.Person)
                     .WithMany(p => p.TerritoriesInUse)
-                    .HasForeignKey(d => d.PersonId);
+                    .HasForeignKey(d => d.PersonId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasMany(t => t.Transactions)
+                    .WithOne(tr => tr.Territory)
+                    .HasForeignKey(tr => tr.TerritoryId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<Transaction>(entity =>
@@ -201,16 +207,17 @@ namespace TerritoryTool.ServerSide.Persistence
                 entity.HasOne(d => d.GivenByNavigation)
                     .WithMany(p => p.TransactionGivenByNavigation)
                     .HasForeignKey(d => d.GivenBy)
-                    .OnDelete(DeleteBehavior.ClientSetNull);
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(d => d.Person)
                     .WithMany(p => p.Transactions)
                     .HasForeignKey(d => d.PersonId)
-                    .OnDelete(DeleteBehavior.ClientSetNull);
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(d => d.PickedByNavigation)
                     .WithMany(p => p.TransactionPickedByNavigation)
-                    .HasForeignKey(d => d.PickedBy);
+                    .HasForeignKey(d => d.PickedBy)
+                    .OnDelete(DeleteBehavior.SetNull);
 
                 entity.HasOne(d => d.Territory)
                     .WithMany(p => p.Transactions)
