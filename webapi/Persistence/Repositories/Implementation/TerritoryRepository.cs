@@ -176,24 +176,18 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
 
         public async Task<TerritoryStatistics> GetTerritoryStatistics(int territoryId)
         {
-            // Obtener solo los conteos de transacciones de todos los territorios
-            var territories = await _context.Territory
-                .Include(t => t.Transactions)
-                .ToListAsync();
-
-            var territoryUsages = territories
+            // Calcular el ranking directamente en la base de datos
+            var territoryUsages = await _context.Territory
                 .Select(t => new { t.Id, Count = t.Transactions.Count })
                 .OrderByDescending(t => t.Count)
-                .ToList();
+                .ToListAsync();
 
-            var territory = await _context.Territory
-                .Include(t => t.Transactions)
-                .FirstOrDefaultAsync(t => t.Id == territoryId);
+            var currentTerritoryRank = territoryUsages
+                .Select((t, index) => new { t.Id, Rank = index + 1 })
+                .FirstOrDefault(t => t.Id == territoryId);
 
-            if (territory == null)
-                throw new KeyNotFoundException("Territory not found");
+            var totalTerritories = await _context.Territory.CountAsync();
 
-            var totalTerritories = territoryUsages.Count;
             var stats = new TerritoryStatistics
             {
                 TotalTerritories = totalTerritories
@@ -254,7 +248,12 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             }
 
             // Calcular tiempos promedio
-            var histories = territory.Transactions.OrderBy(h => h.GivenDateUtc).ToList();
+            var histories = await _context.Transaction
+                .Where(tr => tr.TerritoryId == territoryId)
+                .OrderBy(tr => tr.GivenDateUtc)
+                .Select(tr => new { tr.GivenDateUtc, tr.PickedDateUtc, tr.PersonId })
+                .ToListAsync();
+
             if (histories.Any())
             {
                 var firstTransaction = histories.First();
@@ -278,7 +277,7 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                             var next = histories[i + 1];
                             reassignmentTime = (next.GivenDateUtc - current.PickedDateUtc.Value).TotalDays;
                         }
-                        else if (territory.PersonId == null)
+                        else if (current.PersonId == null)
                         {
                             reassignmentTime = (DateTime.UtcNow - current.PickedDateUtc.Value).TotalDays;
                         }
@@ -296,7 +295,8 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                 stats.AverageHoldingTime = holdingPeriods.Any() ? holdingPeriods.Average() : 0;
 
                 // Calcular tiempo actual sin asignar
-                if (territory.PersonId == null)
+                var lastTransaction = histories.LastOrDefault();
+                if (lastTransaction?.PersonId == null)
                 {
                     var lastPickup = histories.LastOrDefault(h => h.PickedDateUtc.HasValue)?.PickedDateUtc;
                     if (lastPickup.HasValue)
@@ -311,12 +311,7 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             }
 
             // Calcular estadísticas de uso
-            var currentTerritoryRank = territoryUsages
-                .Select((t, index) => new { t.Id, Rank = index + 1 })
-                .First(t => t.Id == territoryId)
-                .Rank;
-            
-            stats.UsageRank = currentTerritoryRank;
+            stats.UsageRank = currentTerritoryRank?.Rank ?? totalTerritories;
             stats.IsHighUsage = stats.UsageRank <= (totalTerritories * 0.25);
             stats.IsLowUsage = stats.UsageRank > (totalTerritories * 0.75);
 
