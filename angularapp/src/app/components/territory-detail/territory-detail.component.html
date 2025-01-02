@@ -1,69 +1,91 @@
 <div *ngIf="territoryInfo" class="territory-detail-container">
 
-  <div class="territory-detail-container-cell territory-detail-timeline">
-
-    <div class="history-tl-container">
-      <ul class="tl">
-        <li class="tl-item" *ngFor="let timelineItem of territoryInfo.timelineItems">
-          <div class="item-title">{{timelineItem.description}}</div>
-          <div class="item-detail">{{timelineItem.date | timeago }}</div>
-        </li>
-      </ul>
-    </div>
-  </div>
-
-  <img *ngIf="territoryInfo.imgUrl" class="territory-detail-container-cell territory-detail-map" [src]="territoryInfo.imgUrl" alt="Alternate Text" />
-  <img *ngIf="!territoryInfo.imgUrl" class="territory-detail-container-cell territory-detail-map" src="./assets/img/testterritorio.png" alt="Alternate Text" />
+  <img *ngIf="territoryInfo.imgUrl" class="territory-detail-container-cell territory-detail-map" [src]="territoryInfo.imgUrl" alt="Mapa del territorio" />
+  <img *ngIf="!territoryInfo.imgUrl" class="territory-detail-container-cell territory-detail-map" src="./assets/img/testterritorio.png" alt="Mapa del territorio" />
 
   <div class="territory-detail-container-cell territory-detail-info">
+    <h2>{{territoryInfo.name}}</h2>
+    
+    <div class="info-grid">
+      <div class="form-group">
+        <label>Código</label>
+        <p class="form-control info">{{territoryInfo.code}}</p>
+      </div>
 
-    <h2 class="col-12">{{territoryInfo.name}}</h2>
+      <div class="form-group">
+        <label>Asignado a</label>
+        <p class="form-control info">{{territoryInfo.personName ?? 'Nadie'}}</p>
+      </div>
 
-    <div class="form-group mb-4 col-6">
-      <label>Código</label>
-      <p type="text" class="form-control info">{{territoryInfo.code}}</p>
+      <div class="form-group">
+        <label>URL Mapa</label>
+        <p class="form-control info"><a href="{{territoryInfo.mapUrl}}" target="_blank">Click aquí</a></p>
+      </div>
+
+      <div class="form-group" *ngIf="!territoryInfo.personName">
+        <label>No asignado desde</label>
+        <p class="form-control info">{{territoryInfo.lastPickedDateUtc | date:'medium'}}</p>
+      </div>
+
+      <div class="form-group" *ngIf="territoryInfo.personName">
+        <label>Fecha de entrega</label>
+        <p class="form-control info">{{territoryInfo.givenDateUtc | date:'medium'}}</p>
+      </div>
+
+      <div class="form-group">
+        <label>Veces entregado</label>
+        <p class="form-control info">{{territoryInfo.pickedCount}}</p>
+      </div>
+
+      <div class="form-group">
+        <label>Usuario</label>
+        <p class="form-control info">{{territoryInfo.lastUser}}</p>
+      </div>
     </div>
-
-    <div class="form-group mb-4 col-6">
-      <label>Asignado a</label>
-      <p type="text" class="form-control info">{{territoryInfo.personName ?? 'Nadie'}}</p>
-    </div>
-
-    <div class="form-group mb-4 col-6">
-      <label>URL Mapa</label>
-      <p type="text" class="form-control info"><a href="{{territoryInfo.mapUrl}}" target="_blank">Click aqui</a></p>
-    </div>
-
-    <div class="form-group mb-4 col-6" *ngIf="!territoryInfo.personName">
-      <label>No asignado desde</label>
-      <p type="text" class="form-control info">{{territoryInfo.lastPickedDateUtc | date:'medium'}}</p>
-    </div>
-
-    <div class="form-group mb-4 col-6" *ngIf="territoryInfo.personName">
-      <label>Fecha de entrega</label>
-      <p type="text" class="form-control info">{{territoryInfo.givenDateUtc | date:'medium'}}</p>
-    </div>
-
-    <div class="form-group mb-4 col-6">
-      <label>Veces entregado</label>
-      <p type="text" class="form-control info">{{territoryInfo.pickedCount}}</p>
-    </div>
-
-    <div class="form-group mb-4 col-6">
-      <label>Usuario</label>
-      <p type="text" class="form-control info">{{territoryInfo.lastUser}}</p>
-    </div>
-
-
   </div>
 
 
   <div class="territory-detail-container-cell territory-detail-actions">
-    <button class="btn btn-primary" (click)="openEditModal()"><i class="fa fa-pen-to-square me-2"></i>Editar</button>
-    <button class="btn btn-danger" (click)="openDeleteModal()"><i class="fa fa-trash me-2"></i>Eliminar</button>
-    <button class="btn btn-secondary" (click)="refreshTerritoryImage()"><i class="fa fa-images me-2"></i>Refrescar imagen</button>
-    <button *ngIf="!territoryInfo.personName" class="btn btn-secondary"><i class="fa fa-caret-up me-2"></i>Entregar territorio</button>
-    <button *ngIf="territoryInfo.personName" class="btn btn-secondary" (click)="openPickTerritoryConfirm()"><i class="fa fa-caret-down me-2"></i>Recoger territorio</button>
+    <button class="btn btn-primary" (click)="openEditModal()">
+      <i class="fa fa-pen-to-square me-2"></i>
+      <span class="d-none d-sm-inline">Editar</span>
+    </button>
+    <button class="btn btn-danger" (click)="openDeleteModal()">
+      <i class="fa fa-trash me-2"></i>
+      <span class="d-none d-sm-inline">Eliminar</span>
+    </button>
+    <button class="btn btn-secondary" (click)="refreshTerritoryImage()">
+      <i class="fa fa-images me-2"></i>
+      <span class="d-none d-sm-inline">Refrescar</span>
+    </button>
+    <button *ngIf="!territoryInfo.personName" class="btn btn-secondary">
+      <i class="fa fa-caret-up me-2"></i>
+      <span class="d-none d-sm-inline">Entregar</span>
+    </button>
+    <button *ngIf="territoryInfo.personName" class="btn btn-secondary" (click)="openPickTerritoryConfirm()">
+      <i class="fa fa-caret-down me-2"></i>
+      <span class="d-none d-sm-inline">Recoger</span>
+    </button>
+  </div>
+
+  <!-- Timeline (siempre horizontal) -->
+  <div class="territory-detail-container-cell timeline-base">
+    <div class="timeline-scroll" #timelineScroll>
+      <div class="timeline-items">
+        <div class="timeline-item" *ngFor="let timelineItem of territoryInfo.timelineItems">
+          <div class="timeline-content" [ngClass]="{
+            'type-unknown': timelineItem.type === 0,
+            'type-picked': timelineItem.type === 1,
+            'type-gave': timelineItem.type === 2,
+            'type-edited': timelineItem.type === 3,
+            'type-added': timelineItem.type === 4
+          }">
+            <div class="timeline-title">{{timelineItem.description}}</div>
+            <div class="timeline-date">{{timelineItem.date | timeago}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="territory-detail-container-cell territory-detail-statistics">

@@ -3,5 +3,5 @@ export enum TerritoryInfoTimelineType {
   Picked = 1,
   Gave = 2,
   Edited = 3,
-  Added = 4,
+  Added = 4
 }
