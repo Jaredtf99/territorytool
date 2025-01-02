@@ -69,7 +69,7 @@
   </div>
 
   <!-- Timeline (siempre horizontal) -->
-  <div class="territory-detail-container-cell timeline-base">
+  <div class="territory-detail-container-cell timeline-base" *ngIf="territoryInfo.timelineItems?.length">
     <div class="timeline-scroll" #timelineScroll>
       <div class="timeline-items">
         <div class="timeline-item" *ngFor="let timelineItem of territoryInfo.timelineItems">

@@ -2,7 +2,7 @@
   display: grid;
   height: 100%;
   grid-template-columns: 350px 1fr;
-  grid-template-rows: minmax(300px, auto) auto 150px auto;
+  grid-template-rows: minmax(300px, auto) auto auto auto;
   gap: 30px;
   grid-template-areas:
     "map info"
@@ -518,4 +518,13 @@
   border-width: 3px;
   border-style: solid;
   border-color: inherit;
+}
+
+/* Ajustar grid cuando no hay timeline */
+.territory-detail-container:not(:has(.timeline-base)) {
+  grid-template-rows: minmax(300px, auto) auto auto;
+  grid-template-areas:
+    "map info"
+    "actions actions"
+    "statistics statistics";
 }

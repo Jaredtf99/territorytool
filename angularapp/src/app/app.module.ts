@@ -36,13 +36,17 @@ import { ChangeTerritoryComponent } from './components/change-territory/change-t
 import { PickTerritoryComponent } from './components/pick-territory/pick-territory.component';
 import { GenerateReportComponent } from './components/generate-report/generate-report.component';
 import { NgSelectModule } from '@ng-select/ng-select';
-import { TimeagoModule } from "ngx-timeago";
+import { TimeagoModule, TimeagoIntl, TimeagoFormatter, TimeagoCustomFormatter } from "ngx-timeago";
 
 import { EditTerritoryModalComponent } from './components/edit-territory-modal/edit-territory-modal.component';
 import { DeleteTerritoryModalComponent } from './components/delete-territory-modal/delete-territory-modal.component';
 import { TerritoryDetailComponent } from './components/territory-detail/territory-detail.component';
 
 LOAD_WASM().subscribe((res: any) => console.log('LOAD_WASM', res));
+
+export class MyIntl extends TimeagoIntl {
+  // do extra stuff here...
+}
 
 @NgModule({
   declarations: [
@@ -104,7 +108,10 @@ LOAD_WASM().subscribe((res: any) => console.log('LOAD_WASM', res));
     }),
     CollapseModule.forRoot(),
     NgxScannerQrcodeModule,
-    TimeagoModule.forRoot(),
+    TimeagoModule.forRoot({
+      intl: { provide: TimeagoIntl, useClass: MyIntl },
+      formatter: { provide: TimeagoFormatter, useClass: TimeagoCustomFormatter },
+    }),
   ],
   providers: [UserService, PersonService, TerritoryService, AuthGuard, {
     provide: HTTP_INTERCEPTORS,
