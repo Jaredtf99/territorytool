@@ -177,10 +177,14 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
         public async Task<TerritoryStatistics> GetTerritoryStatistics(int territoryId)
         {
             // Obtener solo los conteos de transacciones de todos los territorios
-            var territoryUsages = await _context.Territory
-                .Select(t => t.Transactions.Count)
-                .OrderByDescending(count => count)
+            var territories = await _context.Territory
+                .Include(t => t.Transactions)
                 .ToListAsync();
+
+            var territoryUsages = territories
+                .Select(t => new { t.Id, Count = t.Transactions.Count })
+                .OrderByDescending(t => t.Count)
+                .ToList();
 
             var territory = await _context.Territory
                 .Include(t => t.Transactions)
@@ -195,50 +199,97 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                 TotalTerritories = totalTerritories
             };
 
-            // Calcular estadísticas de uso
-            var usageCount = territory.Transactions.Count;
+            // Obtener estadísticas globales de manera eficiente
+            var globalStats = await _context.Territory
+                .Where(t => t.Transactions.Any())
+                .Select(t => new
+                {
+                    FirstGivenDate = t.Transactions.Min(tr => tr.GivenDateUtc),
+                    Transactions = t.Transactions
+                        .Select(tr => new { 
+                            tr.GivenDateUtc, 
+                            tr.PickedDateUtc,
+                            tr.PersonId
+                        })
+                        .ToList()
+                })
+                .ToListAsync();
 
-            // Encontrar todos los territorios con más usos que el actual
-            var territoriesWithMoreUsage = territoryUsages.Count(x => x > usageCount);
-            // El ranking es el número de territorios con más usos + 1
-            stats.UsageRank = territoriesWithMoreUsage + 1;
+            // Inicializar medias globales incluso si el territorio no tiene historial
+            if (globalStats.Any())
+            {
+                var globalAssignedPercentages = globalStats
+                    .Where(t => t.FirstGivenDate != null)
+                    .Select(t =>
+                    {
+                        var territoryDays = (DateTime.UtcNow - t.FirstGivenDate).TotalDays;
+                        var territoryAssignedDays = t.Transactions
+                            .Sum(tr => ((tr.PickedDateUtc ?? DateTime.UtcNow) - tr.GivenDateUtc).TotalDays);
+                        return (territoryAssignedDays / territoryDays) * 100;
+                    });
+                stats.GlobalAverageAssignedTimePercentage = globalAssignedPercentages.Average();
 
-            stats.IsHighUsage = stats.UsageRank <= (totalTerritories * 0.25);
-            stats.IsLowUsage = stats.UsageRank > (totalTerritories * 0.75);
+                var globalReassignmentPeriods = globalStats
+                    .SelectMany(t => t.Transactions
+                        .Where((tr, i) => tr.PickedDateUtc.HasValue)
+                        .Select((tr, i) => 
+                            i < t.Transactions.Count - 1 
+                            ? (t.Transactions[i + 1].GivenDateUtc - tr.PickedDateUtc!.Value).TotalDays
+                            : (DateTime.UtcNow - tr.PickedDateUtc!.Value).TotalDays
+                        ));
+                stats.GlobalAverageReassignmentTime = globalReassignmentPeriods.Any() ? globalReassignmentPeriods.Average() : 0;
+
+                var globalHoldingPeriods = globalStats
+                    .SelectMany(t => t.Transactions
+                        .Where(tr => tr.PickedDateUtc.HasValue)
+                        .Select(tr => (tr.PickedDateUtc!.Value - tr.GivenDateUtc).TotalDays));
+                stats.GlobalAverageHoldingTime = globalHoldingPeriods.Any() ? globalHoldingPeriods.Average() : 0;
+
+                var globalUniqueUsers = globalStats
+                    .Select(t => t.Transactions
+                        .Select(tr => tr.PersonId)
+                        .Distinct()
+                        .Count());
+                stats.GlobalAverageUniqueUsersCount = globalUniqueUsers.Average();
+            }
 
             // Calcular tiempos promedio
             var histories = territory.Transactions.OrderBy(h => h.GivenDateUtc).ToList();
             if (histories.Any())
             {
-                // Calcular porcentaje de tiempo asignado
                 var firstTransaction = histories.First();
                 var totalDays = (DateTime.UtcNow - firstTransaction.GivenDateUtc).TotalDays;
-                var assignedDays = 0.0;
-                
+
+                // Calcular porcentaje de tiempo asignado del territorio actual
+                var assignedDays = histories.Sum(h => 
+                    ((h.PickedDateUtc ?? DateTime.UtcNow) - h.GivenDateUtc).TotalDays);
+                stats.AssignedTimePercentage = (assignedDays / totalDays) * 100;
+
+                // Calcular tiempo promedio de reasignación del territorio actual
+                var reassignmentPeriods = new List<double>();
                 for (int i = 0; i < histories.Count; i++)
                 {
                     var current = histories[i];
-                    var startDate = current.GivenDateUtc;
-                    var endDate = current.PickedDateUtc ?? DateTime.UtcNow;
-                    assignedDays += (endDate - startDate).TotalDays;
-                }
-                
-                stats.AssignedTimePercentage = (assignedDays / totalDays) * 100;
-
-                // Calcular tiempo promedio de reasignación
-                var reassignmentPeriods = new List<double>();
-                for (int i = 0; i < histories.Count - 1; i++)
-                {
-                    var current = histories[i];
-                    var next = histories[i + 1];
-
                     if (current.PickedDateUtc.HasValue)
-                        reassignmentPeriods.Add((next.GivenDateUtc - current.PickedDateUtc.Value).TotalDays);
-                }
+                    {
+                        double reassignmentTime;
+                        if (i < histories.Count - 1)
+                        {
+                            var next = histories[i + 1];
+                            reassignmentTime = (next.GivenDateUtc - current.PickedDateUtc.Value).TotalDays;
+                        }
+                        else if (territory.PersonId == null)
+                        {
+                            reassignmentTime = (DateTime.UtcNow - current.PickedDateUtc.Value).TotalDays;
+                        }
+                        else continue;
 
+                        reassignmentPeriods.Add(reassignmentTime);
+                    }
+                }
                 stats.AverageReassignmentTime = reassignmentPeriods.Any() ? reassignmentPeriods.Average() : 0;
 
-                // Calcular tiempo promedio que cada persona mantiene el territorio
+                // Calcular tiempo promedio de uso por persona del territorio actual
                 var holdingPeriods = histories
                     .Where(h => h.PickedDateUtc.HasValue)
                     .Select(h => (h.PickedDateUtc!.Value - h.GivenDateUtc).TotalDays);
@@ -247,73 +298,27 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                 // Calcular tiempo actual sin asignar
                 if (territory.PersonId == null)
                 {
-                    var lastPickup = histories.FirstOrDefault(h => h.PickedDateUtc.HasValue)?.PickedDateUtc;
+                    var lastPickup = histories.LastOrDefault(h => h.PickedDateUtc.HasValue)?.PickedDateUtc;
                     if (lastPickup.HasValue)
                         stats.CurrentUnassignedTime = (DateTime.UtcNow - lastPickup.Value).TotalDays;
                 }
 
-                // Calcular frecuencia de uso
-                stats.TotalTimesUsed = histories.Count;
-                stats.UsageFrequencyDays = totalDays / stats.TotalTimesUsed;
-
-                // Calcular tiempo desde último uso
-                var lastUsage = histories.LastOrDefault();
-                if (lastUsage != null)
-                {
-                    var lastDate = lastUsage.PickedDateUtc ?? DateTime.UtcNow;
-                    var daysAgo = (DateTime.UtcNow - lastDate).TotalDays;
-                    
-                    if (daysAgo < 30)
-                        stats.LastUsedAgo = $"hace {(int)daysAgo} días";
-                    else if (daysAgo < 365)
-                        stats.LastUsedAgo = $"hace {(int)(daysAgo / 30)} meses";
-                    else
-                        stats.LastUsedAgo = $"hace {(int)(daysAgo / 365)} años";
-                }
-
-                // Obtener medias globales de todos los territorios
-                var globalStats = await _context.Territory
-                    .Select(t => new
-                    {
-                        HoldingTimes = t.Transactions
-                            .Where(tr => tr.PickedDateUtc.HasValue)
-                            .Select(tr => (tr.PickedDateUtc!.Value - tr.GivenDateUtc).TotalDays),
-                        Transactions = t.Transactions
-                            .OrderBy(tr => tr.GivenDateUtc)
-                            .Select(tr => new { tr.GivenDateUtc, tr.PickedDateUtc })
-                    })
-                    .ToListAsync();
-
-                var globalAvgHolding = globalStats
-                    .SelectMany(s => s.HoldingTimes)
-                    .DefaultIfEmpty()
-                    .Average();
-
-                // Calcular tiempo promedio de reasignación global
-                var globalReassignmentTimes = new List<double>();
-                foreach (var territoryStats in globalStats)
-                {
-                    var transactions = territoryStats.Transactions.ToList();
-                    for (int i = 0; i < transactions.Count - 1; i++)
-                    {
-                        var current = transactions[i];
-                        var next = transactions[i + 1];
-                        if (current.PickedDateUtc.HasValue)
-                        {
-                            globalReassignmentTimes.Add(
-                                (next.GivenDateUtc - current.PickedDateUtc.Value).TotalDays);
-                        }
-                    }
-                }
-                var globalAvgReassignment = globalReassignmentTimes.Any() ? 
-                    globalReassignmentTimes.Average() : 0;
-
-                // Calcular comparativas con la media global
-                stats.AverageHoldingTimeVsGlobal = ((stats.AverageHoldingTime / globalAvgHolding) - 1) * 100;
-                stats.ReassignmentTimeVsGlobal = ((stats.AverageReassignmentTime / globalAvgReassignment) - 1) * 100;
-                stats.IsQuicklyReassigned = stats.AverageReassignmentTime < globalAvgReassignment;
-                stats.IsLongHeld = stats.AverageHoldingTime > globalAvgHolding;
+                // Calcular tasa de rotación (usuarios únicos)
+                stats.UniqueUsersCount = histories
+                    .Select(h => h.PersonId)
+                    .Distinct()
+                    .Count();
             }
+
+            // Calcular estadísticas de uso
+            var currentTerritoryRank = territoryUsages
+                .Select((t, index) => new { t.Id, Rank = index + 1 })
+                .First(t => t.Id == territoryId)
+                .Rank;
+            
+            stats.UsageRank = currentTerritoryRank;
+            stats.IsHighUsage = stats.UsageRank <= (totalTerritories * 0.25);
+            stats.IsLowUsage = stats.UsageRank > (totalTerritories * 0.75);
 
             return stats;
         }

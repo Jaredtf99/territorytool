@@ -620,3 +620,47 @@
 .tooltip-container:hover .tooltip-content {
   animation: tooltipFadeIn 0.2s ease forwards;
 }
+
+.comparison-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background-color: #6b7280;
+  color: white;
+  height: 24px;
+  line-height: 24px;
+}
+
+.comparison-badge small {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  font-weight: normal;
+  margin-right: 2px;
+  line-height: inherit;
+  display: inline-flex;
+  align-items: center;
+}
+
+.comparison-badge.above {
+  background-color: #28a745;
+}
+
+.comparison-badge.below {
+  background-color: #dc3545;
+}
+
+.stat-values {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.main-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #212529;
+}
