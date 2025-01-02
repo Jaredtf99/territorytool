@@ -82,6 +82,7 @@
   object-fit: cover;
   border-radius: 20px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  align-self: start;
 }
 
 /*  .territory-detail-map img {
@@ -522,9 +523,21 @@
 
 /* Ajustar grid cuando no hay timeline */
 .territory-detail-container:not(:has(.timeline-base)) {
-  grid-template-rows: minmax(300px, auto) auto auto;
+  grid-template-rows: minmax(300px, 1fr) auto auto;
   grid-template-areas:
     "map info"
     "actions actions"
     "statistics statistics";
+}
+
+/* Ajuste específico para móvil cuando no hay timeline */
+@media (max-width: 768px) {
+  .territory-detail-container:not(:has(.timeline-base)) {
+    grid-template-rows: 200px auto auto auto;
+    grid-template-areas:
+      "map"
+      "info"
+      "actions"
+      "statistics";
+  }
 }
