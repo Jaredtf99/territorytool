@@ -92,59 +92,95 @@
     <div class="statistics-container" *ngIf="territoryStats">
       
       <div class="stats-grid">
-        <div class="stat-item">
+        <div class="stat-item tooltip-container">
+          <i class="fa fa-info-circle info-corner"></i>
           <i class="fa fa-chart-line"></i>
-          <span class="stat-label">Ranking de Uso:</span>
+          <span class="stat-label">Ranking de Uso</span>
+          <span class="tooltip-content">
+            <span>Posición que ocupa este territorio en comparación con otros territorios según el número de veces que ha sido usado. Un ranking más bajo indica un territorio más utilizado.</span>
+          </span>
           <span class="stat-value">{{territoryStats.usageRank}} de {{territoryStats.totalTerritories}}</span>
           <span class="stat-badge" *ngIf="territoryStats.isHighUsage">Alto uso</span>
           <span class="stat-badge low-usage" *ngIf="territoryStats.isLowUsage">Bajo uso</span>
         </div>
 
-        <div class="stat-item">
+        <div class="stat-item tooltip-container">
+          <i class="fa fa-info-circle info-corner"></i>
           <i class="fa fa-clock"></i>
-          <span class="stat-label">Porcentaje de tiempo en uso:</span>
+          <span class="stat-label">Porcentaje de tiempo en uso</span>
+          <span class="tooltip-content">
+            <span>Porcentaje del tiempo total que el territorio ha estado asignado a alguien desde que se añadió al sistema.</span>
+          </span>
           <span class="stat-value">{{territoryStats.assignedTimePercentage | number:'1.0-1'}}%</span>
         </div>
 
-        <div class="stat-item">
+        <div class="stat-item tooltip-container">
+          <i class="fa fa-info-circle info-corner"></i>
           <i class="fa fa-hourglass-half"></i>
-          <span class="stat-label">Tiempo promedio de reasignación:</span>
+          <span class="stat-label">Tiempo promedio de reasignación</span>
+          <span class="tooltip-content">
+            <span>Tiempo promedio que transcurre desde que el territorio es devuelto hasta que vuelve a ser asignado a otra persona.</span>
+          </span>
           <span class="stat-value">{{territoryStats.averageReassignmentTime | number:'1.0-0'}} días</span>
         </div>
 
-        <div class="stat-item" *ngIf="territoryStats.currentUnassignedTime">
+        <div class="stat-item tooltip-container" *ngIf="territoryStats.currentUnassignedTime">
+          <i class="fa fa-info-circle info-corner"></i>
           <i class="fa fa-calendar"></i>
-          <span class="stat-label">Tiempo actual sin asignar:</span>
+          <span class="stat-label">Tiempo actual sin asignar</span>
+          <span class="tooltip-content">
+            <span>Días transcurridos desde la última vez que este territorio fue devuelto.</span>
+          </span>
           <span class="stat-value">{{territoryStats.currentUnassignedTime | number:'1.0-0'}} días</span>
         </div>
 
-        <div class="stat-item">
+        <div class="stat-item tooltip-container">
+          <i class="fa fa-info-circle info-corner"></i>
           <i class="fa fa-rotate-left"></i>
-          <span class="stat-label">Tiempo promedio de uso:</span>
+          <span class="stat-label">Tiempo promedio de uso</span>
+          <span class="tooltip-content">
+            <span>Promedio de días que cada persona mantiene este territorio antes de devolverlo.</span>
+          </span>
           <span class="stat-value">{{territoryStats.averageHoldingTime | number:'1.0-0'}} días</span>
         </div>
 
-        <div class="stat-item">
+        <div class="stat-item tooltip-container">
+          <i class="fa fa-info-circle info-corner"></i>
           <i class="fa fa-calendar-check"></i>
-          <span class="stat-label">Veces usado:</span>
+          <span class="stat-label">Veces usado</span>
+          <span class="tooltip-content">
+            <span>Número total de veces que este territorio ha sido asignado.</span>
+          </span>
           <span class="stat-value">{{territoryStats.totalTimesUsed}}</span>
         </div>
 
-        <div class="stat-item">
+        <div class="stat-item tooltip-container">
+          <i class="fa fa-info-circle info-corner"></i>
           <i class="fa fa-clock-rotate-left"></i>
-          <span class="stat-label">Frecuencia de uso:</span>
+          <span class="stat-label">Frecuencia de uso</span>
+          <span class="tooltip-content">
+            <span>Promedio de días que transcurren entre cada uso del territorio.</span>
+          </span>
           <span class="stat-value">Cada {{territoryStats.usageFrequencyDays | number:'1.0-0'}} días</span>
         </div>
 
-        <div class="stat-item">
+        <div class="stat-item tooltip-container">
+          <i class="fa fa-info-circle info-corner"></i>
           <i class="fa fa-history"></i>
-          <span class="stat-label">Último uso:</span>
+          <span class="stat-label">Último uso</span>
+          <span class="tooltip-content">
+            <span>Tiempo transcurrido desde la última vez que este territorio fue usado.</span>
+          </span>
           <span class="stat-value">{{territoryStats.lastUsedAgo}}</span>
         </div>
 
-        <div class="stat-item comparison">
+        <div class="stat-item tooltip-container comparison">
+          <i class="fa fa-info-circle info-corner"></i>
           <i class="fa fa-scale-balanced"></i>
           <span class="stat-label">Tiempo de uso vs. Media</span>
+          <span class="tooltip-content">
+            <span>Porcentaje por encima o por debajo de la media global en cuanto al tiempo que las personas mantienen este territorio.</span>
+          </span>
           <span class="stat-value" [class.above-average]="territoryStats.averageHoldingTimeVsGlobal > 0"
                                     [class.below-average]="territoryStats.averageHoldingTimeVsGlobal < 0">
             {{territoryStats.averageHoldingTimeVsGlobal > 0 ? '+' : ''}}
@@ -153,9 +189,13 @@
           <span class="stat-badge" *ngIf="territoryStats.isLongHeld">Uso prolongado</span>
         </div>
 
-        <div class="stat-item comparison">
+        <div class="stat-item tooltip-container comparison">
+          <i class="fa fa-info-circle info-corner"></i>
           <i class="fa fa-clock-rotate-left"></i>
           <span class="stat-label">Reasignación vs. Media</span>
+          <span class="tooltip-content">
+            <span>Porcentaje por encima o por debajo de la media global en cuanto al tiempo que tarda en ser reasignado este territorio.</span>
+          </span>
           <span class="stat-value" [class.above-average]="territoryStats.reassignmentTimeVsGlobal > 0"
                                     [class.below-average]="territoryStats.reassignmentTimeVsGlobal < 0">
             {{territoryStats.reassignmentTimeVsGlobal > 0 ? '+' : ''}}
