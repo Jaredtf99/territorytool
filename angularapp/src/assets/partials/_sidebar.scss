@@ -1,16 +1,22 @@
 .wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+
   main {
     position: relative;
+    flex: 1;
+    display: flex;
 
     .sidebar {
-      height: 100%;
+      height: calc(100vh - #{$navbar-height});
       width: $sidebar-width;
-      position: absolute;
+      position: fixed;
       transition: left .3s ease;
       left: -$sidebar-width;
-      top: 0;
+      top: $navbar-height;
       z-index: 111;
-      overflow: auto;
+      overflow-y: auto;
 
       > div {
         border-bottom: 1px solid;
@@ -114,6 +120,12 @@
           }
         }
       }
+    }
+
+    .pages {
+      flex: 1;
+      padding: 1rem;
+      margin-top: 0;
     }
 
     @media (min-width: 768px) {
