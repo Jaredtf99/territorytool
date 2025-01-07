@@ -47,6 +47,10 @@ export class TerritoryDetailComponent implements OnInit {
     });
   }
 
+  viewTransactions()
+  {
+    this.router.navigate(['/territory', this.territoryId, 'transactions']);
+  }
   getTerritoryInfo() {
     this.territoryService.getTerritoryDetailInfo(this.territoryId).subscribe(
       {

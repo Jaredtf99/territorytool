@@ -10,6 +10,7 @@ import { NgxScannerQrcodeModule, LOAD_WASM } from 'ngx-scanner-qrcode';
 import { UserService } from './shared/user.service';
 import { PersonService } from './shared/person.service';
 import { TerritoryService } from './shared/territory.service';
+import { TerritoryTransactionService } from './services/territory-transaction.service';
 
 import { AppComponent } from './app.component';
 import { HomeComponent } from './components/home/home.component';
@@ -41,6 +42,8 @@ import { TimeagoModule, TimeagoIntl, TimeagoFormatter, TimeagoCustomFormatter } 
 import { EditTerritoryModalComponent } from './components/edit-territory-modal/edit-territory-modal.component';
 import { DeleteTerritoryModalComponent } from './components/delete-territory-modal/delete-territory-modal.component';
 import { TerritoryDetailComponent } from './components/territory-detail/territory-detail.component';
+import { TerritoryTransactionsComponent } from './components/territory-transactions/territory-transactions.component';
+import { EditTransactionModalComponent } from './components/edit-transaction-modal/edit-transaction-modal.component';
 
 LOAD_WASM().subscribe((res: any) => console.log('LOAD_WASM', res));
 
@@ -71,6 +74,8 @@ export class MyIntl extends TimeagoIntl {
     EditTerritoryModalComponent,
     DeleteTerritoryModalComponent,
     TerritoryDetailComponent,
+    TerritoryTransactionsComponent,
+    EditTransactionModalComponent,
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -86,6 +91,7 @@ export class MyIntl extends TimeagoIntl {
           { path: 'home', component: HomeComponent, },
           { path: 'territories', component: TerritoriesComponent },
           { path: 'territory/:id', component: TerritoryDetailComponent },
+          { path: 'territory/:id/transactions', component: TerritoryTransactionsComponent },
           { path: 'add-territory', component: AddTerritoryComponent, data: { permittedRoles: ['SUPERADMIN', 'ADMIN'] } },
           { path: 'change-territory', component: ChangeTerritoryComponent },
           { path: 'pick-territory', component: PickTerritoryComponent },
@@ -113,7 +119,7 @@ export class MyIntl extends TimeagoIntl {
       formatter: { provide: TimeagoFormatter, useClass: TimeagoCustomFormatter },
     }),
   ],
-  providers: [UserService, PersonService, TerritoryService, AuthGuard, {
+  providers: [UserService, PersonService, TerritoryService, TerritoryTransactionService, AuthGuard, {
     provide: HTTP_INTERCEPTORS,
     useClass: AuthInterceptor,
     multi: true,

@@ -18,6 +18,7 @@ public static class DependencyInjection
         services.AddScoped<IActionLogRepository, ActionLogRepository>();
         services.AddScoped<IPersonRepository, PersonRepository>();
         services.AddScoped<ITerritoryRepository, TerritoryRepository>();
+        services.AddScoped<ITransactionRepository, TransactionRepository>();
     }
 
     public static void RegisterFacadeServices(this IServiceCollection services)
@@ -26,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<IUserActionLogFacade, UserActionLogFacade>();
         services.AddScoped<IUserConfigurationFacade, UserConfigurationFacade>();
         services.AddScoped<ITerritoryFacade, TerritoryFacade>();
+        services.AddScoped<ITransactionFacade, TransactionFacade>();
     }
 
     public static IServiceCollection AddWebApiServices(this IServiceCollection services)

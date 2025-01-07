@@ -21,6 +21,8 @@ namespace TerritoryTool.ServerSide.Domain.Enums
         GiveTerritory = 11,
         PickTerritory = 12,
         RefreshTerritoryImage = 13,
+        EditTransaction = 14,
+        DeleteTransaction = 15,
 
     }
 }

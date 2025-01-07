@@ -27,5 +27,6 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Interfaces
 
         Task<TerritoryStatistics> GetTerritoryStatistics(int territoryId);
 
+        IEnumerable<Transaction> GetTerritoryTransactions(int territoryId);
     }
 }

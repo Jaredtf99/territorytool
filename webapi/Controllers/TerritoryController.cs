@@ -33,14 +33,16 @@ namespace TerritoryTool.ServerSide.Controllers
         private readonly ITerritoryFacade _territoryFacade;
         private readonly IPersonRepository _personRepository;
         private readonly IUserActionLogFacade _userActionLogFacade;
+        private readonly ITransactionFacade _transactionFacade;
 
-        public TerritoryController(ITerritoryRepository territoryRepository, ITerritoryFacade territoryFacade, ILogger<ActionLogController> logger, IUserActionLogFacade userActionLogFacade, IPersonRepository personRepository)
+        public TerritoryController(ITerritoryRepository territoryRepository, ITerritoryFacade territoryFacade, ILogger<ActionLogController> logger, IUserActionLogFacade userActionLogFacade, IPersonRepository personRepository, ITransactionFacade transactionFacade)
         {
             _territoryRepository = territoryRepository;
             _territoryFacade = territoryFacade;
             _logger = logger;
             _userActionLogFacade = userActionLogFacade;
             _personRepository = personRepository;
+            _transactionFacade = transactionFacade;
         }
 
         [HttpGet("all")]
@@ -326,6 +328,20 @@ namespace TerritoryTool.ServerSide.Controllers
             {
                 var stats = await _territoryRepository.GetTerritoryStatistics(id);
                 return Ok(stats);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+        }
+
+        [HttpGet("{territoryId}/transactions")]
+        public async Task<IActionResult> GetTerritoryTransactions(int territoryId)
+        {
+            try
+            {
+                var transactions = await _transactionFacade.GetTerritoryTransactions(territoryId);
+                return Ok(transactions);
             }
             catch (KeyNotFoundException)
             {

@@ -67,6 +67,45 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
         }
 
 
+        public IEnumerable<Transaction> GetTerritoryTransactions(int territoryId)
+        {
+            return _context.Transaction
+                .Where(tr => tr.TerritoryId == territoryId)
+                .Select(tr => new Transaction
+                {
+                    Id = tr.Id,
+                    TerritoryId = tr.TerritoryId,
+                    PersonId = tr.PersonId,
+                    GivenBy = tr.GivenBy,
+                    GivenDateUtc = tr.GivenDateUtc,
+                    PickedBy = tr.PickedBy,
+                    PickedDateUtc = tr.PickedDateUtc,
+                    IsAutomaticGivenDate = tr.IsAutomaticGivenDate,
+                    IsAutomaticPickedDate = tr.IsAutomaticPickedDate,
+                    Territory = new Territory 
+                    { 
+                        Id = tr.Territory.Id,
+                        Name = tr.Territory.Name 
+                    },
+                    Person = new Person 
+                    { 
+                        Id = tr.Person.Id,
+                        Name = tr.Person.Name 
+                    },
+                    GivenByNavigation = new AspNetUsers 
+                    { 
+                        Id = tr.GivenByNavigation.Id,
+                        UserName = tr.GivenByNavigation.UserName 
+                    },
+                    PickedByNavigation = tr.PickedBy != null ? new AspNetUsers 
+                    { 
+                        Id = tr.PickedByNavigation.Id,
+                        UserName = tr.PickedByNavigation.UserName 
+                    } : null
+                })
+                .ToList();
+        }
+
 
         public IEnumerable<Territory> SearchTerritories(string search, bool onlyFreeTerritories, bool onlyGivenTerritories)
         {

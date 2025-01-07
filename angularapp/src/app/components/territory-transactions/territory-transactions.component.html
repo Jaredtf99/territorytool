@@ -1,0 +1,38 @@
+<div class="container">
+  <h2>Historial de Asignaciones del Territorio</h2>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Fecha de Entrega</th>
+        <th>Entregado Por</th>
+        <th>Fecha de Devolución</th>
+        <th>Devuelto Por</th>
+        <th>Publicador</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let transaction of transactions">
+        <td>{{transaction.givenDateUtc | date:'medium'}}</td>
+        <td>{{transaction.givenBy}}</td>
+        <td>{{transaction.pickedDateUtc | date:'medium'}}</td>
+        <td>{{transaction.pickedBy}}</td>
+        <td>{{transaction.personName}}</td>
+        <td>
+          <button class="btn btn-sm btn-info me-2" (click)="openEditTransactionModal(transaction.transactionId)">
+            Editar
+          </button>
+          <button class="btn btn-sm btn-danger" (click)="deleteTransaction(transaction.transactionId)">
+            Eliminar
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div> 
+
+<edit-transaction-modal 
+  #editTransactionModal
+  (transactionUpdated)="onTransactionUpdated()">
+</edit-transaction-modal>

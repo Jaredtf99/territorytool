@@ -1,0 +1,44 @@
+<div class="modal fade" id="editTransaction" tabindex="-1" role="dialog" aria-labelledby="editTransactionLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editTransactionLabel">Editar transaccion</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+
+
+        <div class="form-group mb-2">
+          <label>Persona</label>
+    
+          <ng-select [items]="persons$ | async"
+                     [minTermLength]="3"
+                     [loading]="personsLoading"
+                     typeToSearchText="Introduce 2 o más caracteres"
+                     [typeahead]="personsInput$"
+                     bindLabel="name"
+                     [(ngModel)]="selectedPerson"
+                     id="changeTerritoryNgSelectPerson">
+          </ng-select>
+        </div>
+
+        <div class="form-group">
+          <label>Fecha entregado</label>    
+          <input [(ngModel)]="this.givenDateFormatted" type="date" class="form-control item"/>
+        </div>
+
+        <div class="form-group">
+          <label>Recogido</label>
+    
+          <input [(ngModel)]="this.pickedDateFormatted"  type="date" class="form-control item"  />
+    
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" (click)="editTransaction()">Editar</button>
+      </div>
+    </div>
+  </div>
+</div>
