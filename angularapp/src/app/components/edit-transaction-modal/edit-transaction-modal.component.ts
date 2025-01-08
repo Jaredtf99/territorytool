@@ -73,10 +73,10 @@ export class EditTransactionModalComponent {
     $('#editTransaction').modal('hide');
 
     this.transactionInfo.givenDateUtc = new Date(this.givenDateFormatted!)
-
     this.transactionInfo.pickedDateUtc = this.pickedDateFormatted
       ? new Date(this.pickedDateFormatted)
       : undefined;
+      this.transactionInfo.personId = this.selectedPerson.id;
 
     this.territoryTransactionService.updateTransaction(this.transactionId, this.transactionInfo!).subscribe(
       {

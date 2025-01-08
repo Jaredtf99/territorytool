@@ -45,15 +45,36 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             _territoryRepo = territoryRepo;
         }
 
+        public async Task DeleteTransaction(int id)
+        {
+            var transaction = await _transactionRepo.DeleteTransaction(id);
+
+            if (transaction.PickedDateUtc == null)
+            {
+                var territory = _territoryRepo.GetTerritoryById(transaction.TerritoryId);
+                territory.PersonId = null;
+                _territoryRepo.EditTerritory(territory);
+            }
+        }
+
         public async Task<TransactionInfo> UpdateTransaction(int id, TransactionData transactionData)
         {
-             var transaction = await _transactionRepo.GetTransaction(id) ?? throw new KeyNotFoundException();
+            var transaction = await _transactionRepo.GetTransaction(id) ?? throw new KeyNotFoundException();
+
+            bool updateTerritoryPersonNeeded = transaction.PersonId != transactionData.PersonId && transaction.PickedDateUtc == null;
 
             transaction.PersonId = transactionData.PersonId;
             transaction.GivenDateUtc = transactionData.GivenDateUtc;
             transaction.PickedDateUtc = transactionData.PickedDateUtc;
 
             await _transactionRepo.UpdateTransaction(transaction);
+
+            if (updateTerritoryPersonNeeded)
+            {
+                var territory = _territoryRepo.GetTerritoryById(transaction.TerritoryId);
+                territory.PersonId = transactionData.PersonId;
+                _territoryRepo.EditTerritory(territory);
+            }
 
             return ConvertTransactionToTransactionInfo(await _transactionRepo.GetTransactionWithIncludes(id));
         }

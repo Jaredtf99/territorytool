@@ -8,6 +8,7 @@ namespace TerritoryTool.ServerSide.Domain.Classes
     public class PersonInfo
     {
         public string Name { get; set; }
+        public int Id { get; set; }
         public List<PersonInfoTransaction> TerritoriesInUse { get; set; }
     }
 }

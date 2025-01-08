@@ -111,6 +111,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             PersonInfo personInfo = new PersonInfo();
 
             personInfo.Name = person.Name;
+            personInfo.Id = person.Id;
 
             if (person.Transactions != null)
                 personInfo.TerritoriesInUse = ConvertTransactionToPersonInfoTransactionList(person.Transactions.Where(x => x.PickedDateUtc == null));

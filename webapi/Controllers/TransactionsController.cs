@@ -74,7 +74,7 @@ namespace TerritoryTool.ServerSide.Controllers
             var userId = SecurityHelper.GetLoggedUserId(User);
             try
             {   
-                var transaction = await _transactionRepository.DeleteTransaction(id);
+                await _transactionFacade.DeleteTransaction(id);
                 _userActionLogFacade.AddNewActionLog(ActionType.DeleteTransaction, $"Transaction {id} deleted", userId, true);
 
                 return NoContent();

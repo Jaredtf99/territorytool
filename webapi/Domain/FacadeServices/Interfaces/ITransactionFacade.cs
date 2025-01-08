@@ -15,5 +15,6 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces
         Task<TransactionInfo> UpdateTransaction(int id, TransactionData transactionData);
         Task<IEnumerable<TransactionInfo>> GetTerritoryTransactions(int territoryId);
         Task<TransactionInfo> GetTransaction(int transactionId);
+        Task DeleteTransaction(int id);
     }
 }
