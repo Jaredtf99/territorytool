@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using System.Linq.Expressions;
 using TerritoryTool.ServerSide.Persistence.Entities;
 
 namespace TerritoryTool.ServerSide.Persistence
@@ -224,6 +226,24 @@ namespace TerritoryTool.ServerSide.Persistence
                     .HasForeignKey(d => d.TerritoryId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
+        }
+
+        public class DateTimeToUtcConverter : ValueConverter<DateTime, DateTime>
+        {
+            public DateTimeToUtcConverter() : base(Serialize, Deserialize, null)
+            {
+            }
+
+            static Expression<Func<DateTime, DateTime>> Deserialize =
+                    x => x.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(x, DateTimeKind.Utc) : x;
+            static Expression<Func<DateTime, DateTime>> Serialize = x => x;
+        }
+
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            configurationBuilder
+                .Properties<DateTime>()
+                .HaveConversion<DateTimeToUtcConverter>();
         }
     }
 }
