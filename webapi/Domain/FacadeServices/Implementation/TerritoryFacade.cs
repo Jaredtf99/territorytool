@@ -280,6 +280,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             foreach (var transaction in territory.Transactions)
             {
                 TerritoryInfoTimeline t = new TerritoryInfoTimeline();
+                t.Id = transaction.Id;
                 t.Date = transaction.GivenDateUtc;
                 t.Description = $"Entregado a {transaction.Person.Name}";
                 t.Type = TerritoryInfoTimelineType.Gave;
@@ -288,6 +289,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
                 if (transaction.PickedDateUtc != null)
                 {
                     TerritoryInfoTimeline tr = new TerritoryInfoTimeline();
+                    tr.Id = transaction.Id;
                     tr.Date = transaction.PickedDateUtc.Value;
                     tr.Description = $"Devuelto";
                     tr.Type = TerritoryInfoTimelineType.Picked;

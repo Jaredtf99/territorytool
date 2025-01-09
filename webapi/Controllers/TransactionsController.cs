@@ -21,13 +21,11 @@ namespace TerritoryTool.ServerSide.Controllers
     {
         private readonly ILogger _logger;
 
-        private readonly ITransactionRepository _transactionRepository;
         private readonly IUserActionLogFacade _userActionLogFacade;
         private readonly ITransactionFacade _transactionFacade;
 
-        public TransactionsController(ITransactionRepository transactionRepository, ILogger<TransactionsController> logger, IUserActionLogFacade userActionLogFacade, ITransactionFacade transactionFacade)
+        public TransactionsController(ILogger<TransactionsController> logger, IUserActionLogFacade userActionLogFacade, ITransactionFacade transactionFacade)
         {
-            _transactionRepository = transactionRepository;
             _logger = logger;
             _userActionLogFacade = userActionLogFacade;
             _transactionFacade = transactionFacade;

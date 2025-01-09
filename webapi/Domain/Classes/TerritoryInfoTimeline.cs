@@ -7,6 +7,7 @@ namespace TerritoryTool.ServerSide.Domain.Classes
 {
     public class TerritoryInfoTimeline
     {
+        public int Id { get; set; }
         public string Description { get; set; }
         public TerritoryInfoTimelineType Type { get; set; }
         public DateTime Date { get; set; }

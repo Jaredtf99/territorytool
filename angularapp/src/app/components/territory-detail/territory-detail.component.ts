@@ -9,6 +9,8 @@ import { TerritoryDetail } from '../../classes/TerritoryDetail';
 import { TerritoryEditInfo } from '../../classes/TerritoryEditInfo';
 import { EditTerritoryModalComponent } from '../edit-territory-modal/edit-territory-modal.component';
 import { DeleteTerritoryModalComponent } from '../delete-territory-modal/delete-territory-modal.component';
+import { TerritoryTransactionService } from 'src/app/services/territory-transaction.service';
+import { EditTransactionModalComponent } from '../edit-transaction-modal/edit-transaction-modal.component';
 
 declare var $: any;
 
@@ -27,8 +29,16 @@ export class TerritoryDetailComponent implements OnInit {
   territoryStats: any;
 
   @ViewChild('timelineScroll') timelineScroll!: ElementRef;
+  @ViewChild('editTransactionModal') editTransactionModal!: EditTransactionModalComponent;
 
-  constructor(private route: ActivatedRoute, public territoryService: TerritoryService, private toastr: ToastrService, private spinner: NgxSpinnerService, private router: Router) {
+  constructor(
+    private route: ActivatedRoute, 
+    public territoryService: TerritoryService, 
+    private toastr: ToastrService, 
+    private spinner: NgxSpinnerService, 
+    private router: Router,
+    private transactionService: TerritoryTransactionService
+  ) {
 
   }
 
@@ -174,6 +184,26 @@ export class TerritoryDetailComponent implements OnInit {
     slider.addEventListener('mouseup', onMouseUp);
     slider.addEventListener('mousemove', onMouseMove);
   }
+
+  editTransaction(transactionId: number) {
+    this.editTransactionModal.transactionId = transactionId;
+    this.editTransactionModal.openModal();
+  }
+  
+  onTransactionUpdated(): void {
+    this.getTerritoryInfo();
+  }
+
+  deleteTransaction(id: number) {
+    if (confirm('¿Estás seguro de que deseas eliminar esta transacción?')) {
+      this.transactionService.deleteTransaction(id)
+        .subscribe(() => {
+          this.toastr.success('Transaccion eliminada');
+          this.getTerritoryInfo();
+        });
+    }
+  }
+
 
 }
 

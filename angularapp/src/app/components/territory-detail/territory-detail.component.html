@@ -86,6 +86,16 @@
           }">
             <div class="timeline-title">{{timelineItem.description}}</div>
             <div class="timeline-date">{{timelineItem.date | timeago}}</div>
+            
+            <!-- Botones de editar y borrar -->
+            <div *ngIf="timelineItem.type === 1 || timelineItem.type === 2">
+              <button class="btn btn-sm" (click)="editTransaction(timelineItem.id!)">
+                <i class="fa fa-pen-to-square"></i>
+              </button>
+              <button class="btn text-danger btn-sm" (click)="deleteTransaction(timelineItem.id!)">
+                <i class="fa fa-trash"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -220,3 +230,8 @@
     </div>
   </div>
 </div>
+
+<edit-transaction-modal 
+  #editTransactionModal
+  (transactionUpdated)="onTransactionUpdated()">
+</edit-transaction-modal>
