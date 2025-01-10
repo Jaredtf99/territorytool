@@ -78,11 +78,28 @@ export class PersonsComponent {
         if (territoriesInUse.length > 0) {
           row.getElement().appendChild(holderEl);
 
+          var subTableData = row.getData().TerritoriesInUse;
+
+          const processedData = subTableData.map((r: any) => ({
+            ...r,
+            GivenDate: preprocessDate(r.GivenDate)
+          }));
+
           var subTable = new Tabulator(tableEl, {
             layout: "fitColumns",
-            data: row.getData().TerritoriesInUse,
+            data: processedData,
             columns: [
-              { title: "Fecha", field: "GivenDate", formatter: "datetime", sorter: "date", formatterParams: { inputFormat: "yyyy-MM-dd'T'TT" } },
+              { 
+                title: "Fecha", 
+                field: "GivenDate", 
+                formatter: "datetime", 
+                sorter: "date", 
+                formatterParams: 
+                { 
+                   inputFormat: "dd/MM/yyyy',' HH:mm:ss",
+                  outputFormat: "dd/MM/yyyy HH:mm:ss",
+                },
+              },
               { title: "Territorio", field: "TerritoryName" },
               { title: "Código", field: "TerritoryCode" },
             ]
@@ -94,6 +111,7 @@ export class PersonsComponent {
 
   }
 
+  
   openDeleteUserModal(nameToDelete: string) {
     $('#deletePerson').modal('show');
     this.personNameToDelete = nameToDelete;
@@ -119,4 +137,14 @@ export class PersonsComponent {
   }
 
 
+}
+
+function convertUTCToLocal(utcDate: string): string {
+  const date = new Date(utcDate); // Parsear la fecha
+  return date.toLocaleString("en-GB"); // Convertir a la zona horaria local del navegador
+}
+function preprocessDate(dateString : string) : string {
+  // Reemplaza los milisegundos largos (más de tres dígitos) con solo los primeros tres
+  let date = dateString.replace(/\.(\d{3})\d*Z$/, '.$1Z');
+  return convertUTCToLocal(date);
 }

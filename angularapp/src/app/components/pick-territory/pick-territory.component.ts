@@ -67,9 +67,12 @@ export class PickTerritoryComponent implements AfterViewInit {
     const year = date.getFullYear();
     const month = ('0' + (date.getMonth() + 1)).slice(-2);
     const day = ('0' + date.getDate()).slice(-2);
+    const hours = ('0' + date.getHours()).slice(-2);
+    const minutes = ('0' + date.getMinutes()).slice(-2);
 
-    return `${year}-${month}-${day}`;
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   }
+
 
   ngAfterViewInit() {
 
@@ -107,11 +110,9 @@ export class PickTerritoryComponent implements AfterViewInit {
       this.spinner.show();
       const currentDate = new Date();
 
-      let customDate = this.f['date'].value;
-
-      if (this.f['customDate'].value) {
-        customDate += `T${currentDate.getHours()}:${currentDate.getMinutes()}`;
-      }
+      let customDate = this.f['date']
+      ? new Date(this.f['date'].value)
+      : undefined;
 
       this.territoryService.pickTerritory(this.f['selectedTerritory'].value.code, this.f['customDate'].value, customDate).subscribe({
         next: resp => {

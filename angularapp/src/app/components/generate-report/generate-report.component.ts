@@ -15,7 +15,7 @@ export class GenerateReportComponent {
   constructor(private formBuilder: FormBuilder, private toastr: ToastrService, private territoryService: TerritoryService, private spinner: NgxSpinnerService) {
 
     const currentDate = new Date();
-    const formattedDate = this.formatDate(currentDate);
+    const formattedDate = this.formatDate(currentDate, false);
 
     this.generateReportForm = this.formBuilder.group({
       startDate: [formattedDate, Validators.required],
@@ -24,12 +24,21 @@ export class GenerateReportComponent {
 
   }
 
-  private formatDate(date: Date): string {
+  private formatDate(date: Date, withTime: boolean): string {
     const year = date.getFullYear();
     const month = ('0' + (date.getMonth() + 1)).slice(-2);
     const day = ('0' + date.getDate()).slice(-2);
+    const hours = ('0' + date.getHours()).slice(-2);
+    const minutes = ('0' + date.getMinutes()).slice(-2);
 
-    return `${year}-${month}-${day}`;
+    let dateformatted = `${year}-${month}-${day}`;
+    
+    if (withTime){
+      dateformatted += `T${hours}:${minutes}`
+    }
+    
+
+    return dateformatted;
   }
 
   get f() { return this.generateReportForm.controls; }
@@ -41,7 +50,9 @@ export class GenerateReportComponent {
 
       this.spinner.show();
 
-      this.territoryService.generateExcel(this.f['startDate'].value, this.f['endDate'].value).subscribe((data: Blob) => {
+      let startDate = new Date(`${this.f['startDate'].value}T00:00`);
+      let endDate = new Date(`${this.f['endDate'].value}T00:00`);
+      this.territoryService.generateExcel(startDate, endDate).subscribe((data: Blob) => {
         const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const link = document.createElement('a');
         link.href = window.URL.createObjectURL(blob);

@@ -139,7 +139,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
             PersonInfoTransaction personInfoTransaction = new PersonInfoTransaction();
 
-            personInfoTransaction.GivenDate = new DateTime(transaction.GivenDateUtc.Year, transaction.GivenDateUtc.Month, transaction.GivenDateUtc.Day, transaction.GivenDateUtc.Hour, transaction.GivenDateUtc.Minute, transaction.GivenDateUtc.Second);
+            personInfoTransaction.GivenDate = transaction.GivenDateUtc;
             personInfoTransaction.TerritoryName = transaction.Territory.Name;
             personInfoTransaction.TerritoryCode = transaction.Territory.Code;
             return personInfoTransaction;
