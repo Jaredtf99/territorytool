@@ -5,6 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Xml.Linq;
 using TerritoryTool.ServerSide.Controllers.Models.Person;
+using TerritoryTool.ServerSide.Domain.Classes;
 using TerritoryTool.ServerSide.Persistence.Entities;
 using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
 
@@ -355,6 +356,35 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             stats.IsLowUsage = stats.UsageRank > (totalTerritories * 0.75);
 
             return stats;
+        }
+
+        public async Task<IEnumerable<TerritorySuggestionInfo>> GetTerritoriesSuggestions(int count)
+        {
+            var territories = await _context.Territory
+                .Where(t => t.PersonId == null)
+                .Select(t => new
+                {
+                    Territory = t,
+                    LastPickedDate = t.Transactions
+                        .Where(tr => tr.PickedDateUtc != null)
+                        .OrderByDescending(tr => tr.PickedDateUtc)
+                        .Select(tr => tr.PickedDateUtc)
+                        .FirstOrDefault()
+                })
+                .OrderBy(t => t.LastPickedDate)
+                .ThenBy(t => t.Territory.Transactions.Count)
+                .Take(count)
+                .ToListAsync();
+
+
+
+            return territories.Select(x => new TerritorySuggestionInfo { 
+                Code = x.Territory.Code,
+                Id = x.Territory.Id,
+                LastPickedDate = x.LastPickedDate,
+                MapUrl = x.Territory.MapUrl,
+                Name = x.Territory.Name
+            });
         }
 
     }

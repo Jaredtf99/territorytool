@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using TerritoryTool.ServerSide.Controllers.Models.Person;
+using TerritoryTool.ServerSide.Domain.Classes;
 using TerritoryTool.ServerSide.Persistence.Entities;
 
 namespace TerritoryTool.ServerSide.Persistence.Repositories.Interfaces
@@ -28,5 +29,7 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Interfaces
         Task<TerritoryStatistics> GetTerritoryStatistics(int territoryId);
 
         IEnumerable<Transaction> GetTerritoryTransactions(int territoryId);
+
+        Task<IEnumerable<TerritorySuggestionInfo>> GetTerritoriesSuggestions(int count);
     }
 }

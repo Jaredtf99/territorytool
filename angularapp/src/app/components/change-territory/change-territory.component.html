@@ -6,6 +6,47 @@
       <i class="fa-solid fa-elevator"></i>
     </div>
 
+    <div class="territory-suggestions">
+      <h3 class="suggestions-title">
+        <i class="fas fa-lightbulb me-2"></i>Territorios recomendados
+      </h3>
+      
+      <!-- Skeleton loader -->
+      <div class="territory-list" *ngIf="loadingSuggestions">
+        <div class="territory-skeleton" *ngFor="let i of [1,2,3]">
+          <div class="skeleton-code skeleton-animate"></div>
+          <div class="skeleton-name skeleton-animate"></div>
+          <div class="skeleton-status skeleton-animate"></div>
+        </div>
+      </div>
+
+      <!-- Contenido real -->
+      <div class="territory-list" *ngIf="!loadingSuggestions">
+        <div class="territory-item" 
+             *ngFor="let territory of territorySuggestions; let i = index" 
+             [class.selected]="selectedTerritory?.code === territory.code"
+             [class.featured]="i === 0"
+             (click)="selectSuggestedTerritory(territory)">
+          <div class="territory-info">
+            <span class="territory-code">{{territory.code}}</span>
+            <h4 class="territory-name">{{territory.name}}</h4>
+            <div class="territory-status">
+              <i class="fas fa-clock"></i>
+              <span *ngIf="!territory.lastPickedDate" class="not-used">
+                Nunca usado
+              </span>
+              <span *ngIf="territory.lastPickedDate" class="last-used">
+                {{territory.lastPickedDate | timeago}}
+              </span>
+            </div>
+          </div>
+          <span *ngIf="i === 0" class="featured-star">
+            <i class="fas fa-star"></i>
+          </span>
+        </div>
+      </div>
+    </div>
+
     <div class="form-group mb-4">
       <label>Territorio</label>
 

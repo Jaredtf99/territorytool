@@ -8,6 +8,7 @@ import { Territory } from '../../classes/Territory';
 import { Observable, Subject, catchError, concat, distinctUntilChanged, of, switchMap, tap } from 'rxjs';
 import { PersonService } from '../../shared/person.service';
 import { AppService } from '../../shared/app.service';
+import { TerritorySuggestion } from 'src/app/classes/TerritorySuggestion';
 
 
 declare var $: any;
@@ -31,6 +32,10 @@ export class ChangeTerritoryComponent implements AfterViewInit {
   personsLoading = false;
   personsInput$ = new Subject<string>();
   selectedPerson!: any | null;
+
+  territorySuggestions!: TerritorySuggestion[];
+  loadingSuggestions = true;
+
 
   @ViewChild('action') action!: NgxScannerQrcodeComponent;
 
@@ -101,6 +106,7 @@ export class ChangeTerritoryComponent implements AfterViewInit {
 
     this.loadTerritories();
     this.loadPersons();
+    this.loadTerritorySuggestions();
 
     const modalElement = document.querySelector('#modalScanner');
 
@@ -156,6 +162,9 @@ export class ChangeTerritoryComponent implements AfterViewInit {
           this.toastr.success('Territorio entregado');
           this.resetTerritoryForm();
           this.submitted = false;
+          this.loadTerritories();
+          this.loadPersons();
+          this.loadTerritorySuggestions();      
         },
         error: err => {
           this.spinner.hide();
@@ -165,6 +174,27 @@ export class ChangeTerritoryComponent implements AfterViewInit {
     }
 
   }
+
+  loadTerritorySuggestions() {
+    this.loadingSuggestions = true;
+    
+    this.territoryService.getTerritorySuggestions().subscribe({
+      next: resp => {
+        this.territorySuggestions = resp.sort((a, b) => {
+          if (!a.lastPickedDate && b.lastPickedDate) return -1;
+          if (a.lastPickedDate && !b.lastPickedDate) return 1;
+          if (!a.lastPickedDate && !b.lastPickedDate) return 0;
+          return new Date(a.lastPickedDate!).getTime() - new Date(b.lastPickedDate!).getTime();
+        });
+        this.loadingSuggestions = false;
+      },
+      error: err => {
+        this.loadingSuggestions = false;
+      }
+    });
+  }
+
+
 
   public onEvent(e: ScannerQRCodeResult[], action?: any): void {
 
@@ -200,5 +230,15 @@ export class ChangeTerritoryComponent implements AfterViewInit {
     this.action[fn]().subscribe((r: any) => alert);
   }
 
+  selectSuggestedTerritory(territory: TerritorySuggestion) {
+    this.selectedTerritory = {
+      code: territory.code,
+      name: territory.name
+    } as Territory;
+    
+    this.giveTerritoryForm.patchValue({
+      selectedTerritory: this.selectedTerritory
+    });
+  }
 
 }

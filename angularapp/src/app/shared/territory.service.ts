@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http'
 import { Observable } from 'rxjs';
 import { Territory } from '../classes/Territory';
 import { TerritoryDetail } from '../classes/TerritoryDetail';
+import { TerritorySuggestion } from '../classes/TerritorySuggestion';
 
 
 @Injectable()
@@ -78,6 +79,10 @@ export class TerritoryService {
   }
   searchGivenTerritories(term: string): Observable<Territory[]> {
     return this.http.get<Territory[]>(`${this.baseUrl}/territories?search=${term}&onlyGivenTerritories=true`).pipe()
+  }
+
+  getTerritorySuggestions(): Observable<TerritorySuggestion[]> {
+    return this.http.get<TerritorySuggestion[]>(`${this.baseUrl}/territories/give-suggestions`).pipe()
   }
 
   getTerritoryByMapUrl(mapUrl: string): Observable<Territory> {

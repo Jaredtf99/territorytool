@@ -349,6 +349,16 @@ namespace TerritoryTool.ServerSide.Controllers
             }
         }
 
+        [HttpGet("give-suggestions")]
+        public async Task<IActionResult> GetGiveSuggestions()
+        {
+            _logger.LogInformation("Searching territory suggestions...");
+
+            var territories = await _territoryRepository.GetTerritoriesSuggestions(3);
+
+            return Ok(territories);
+        }
+
         private IEnumerable<TerritoryInfo> ConvertTerritoryToTerritoryInfoList(IEnumerable<Territory> territories)
         {
             List<TerritoryInfo> retval = new List<TerritoryInfo>();
