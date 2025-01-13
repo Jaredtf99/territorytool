@@ -24,9 +24,9 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
 
         public Person? GetPersonByName(string name)
         {
-            name = name.ToLower();
+            name = name;
 
-            return _context.Person.FirstOrDefault(x => x.Name.ToLower() == name);
+            return _context.Person.FirstOrDefault(x => x.Name == name);
         }
 
         public IEnumerable<Person> SearchPersonsByName(string name)
