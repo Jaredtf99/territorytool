@@ -1,10 +1,22 @@
 <div *ngIf="territoryInfo" class="territory-detail-container">
 
-  <img *ngIf="territoryInfo.imgUrl" class="territory-detail-container-cell territory-detail-map" [src]="territoryInfo.imgUrl" alt="Mapa del territorio" />
-  <img *ngIf="!territoryInfo.imgUrl" class="territory-detail-container-cell territory-detail-map" src="./assets/img/testterritorio.png" alt="Mapa del territorio" />
+  <!-- Contenedor del mapa con botón de actualizar -->
+  <div class="territory-detail-container-cell territory-detail-map-container">
+    <img *ngIf="territoryInfo.imgUrl" class="territory-detail-map" [src]="territoryInfo.imgUrl" alt="Mapa del territorio" />
+    <img *ngIf="!territoryInfo.imgUrl" class="territory-detail-map" src="./assets/img/testterritorio.png" alt="Mapa del territorio" />
+    
+    <button class="map-action-button" (click)="refreshTerritoryImage()" title="Actualizar mapa">
+      <i class="fa fa-rotate"></i>
+    </button>
+  </div>
 
   <div class="territory-detail-container-cell territory-detail-info">
-    <h2>{{territoryInfo.name}}</h2>
+    <div class="card-header">
+      <h3>
+        <i class="fa fa-map-location-dot"></i>
+        {{territoryInfo.name}}
+      </h3>
+    </div>
     
     <div class="info-grid">
       <div class="form-group">
@@ -42,43 +54,42 @@
         <p class="form-control info">{{territoryInfo.lastUser}}</p>
       </div>
     </div>
+
+    <!-- Botones principales -->
+    <div class="territory-actions">
+      <div class="action-group">
+        <button *ngIf="!territoryInfo.personName" class="btn btn-primary" (click)="giveTerritory()">
+          <i class="fa fa-share me-2"></i>
+          <span>Entregar</span>
+        </button>
+        <button *ngIf="territoryInfo.personName" class="btn btn-primary" (click)="pickTerritory()">
+          <i class="fa fa-reply me-2"></i>
+          <span>Recoger</span>
+        </button>
+        <button class="btn btn-outline-primary" (click)="openEditModal()">
+          <i class="fa fa-pen-to-square me-2"></i>
+          <span>Editar</span>
+        </button>
+        <button class="btn btn-outline-danger" (click)="openDeleteModal()">
+          <i class="fa fa-trash me-2"></i>
+          <span>Eliminar</span>
+        </button>
+      </div>
+    </div>
   </div>
 
-
-  <div class="territory-detail-container-cell territory-detail-actions">
-    <!-- Acciones principales (entregar/recoger) - Primera posición -->
-    <button *ngIf="!territoryInfo.personName" class="btn btn-primary" (click)="giveTerritory()">
-      <i class="fa fa-share me-2"></i>
-      <span class="d-none d-sm-inline">Entregar</span>
-    </button>
-    <button *ngIf="territoryInfo.personName" class="btn btn-primary" (click)="pickTerritory()">
-      <i class="fa fa-reply me-2"></i>
-      <span class="d-none d-sm-inline">Recoger</span>
-    </button>
-
-    <!-- Acciones de consulta frecuente - Segunda posición -->
-    <button class="btn btn-outline-secondary" (click)="viewTransactions()">
-      <i class="fa fa-clock-rotate-left me-2"></i>
-      <span class="d-none d-sm-inline">Historial</span>
-    </button>
-    <button class="btn btn-outline-secondary" (click)="refreshTerritoryImage()">
-      <i class="fa fa-rotate me-2"></i>
-      <span class="d-none d-sm-inline">Actualizar mapa</span>
-    </button>
-
-    <!-- Acciones de administración - Última posición -->
-    <button class="btn btn-outline-primary" (click)="openEditModal()">
-      <i class="fa fa-pen-to-square me-2"></i>
-      <span class="d-none d-sm-inline">Editar</span>
-    </button>
-    <button class="btn btn-outline-danger" (click)="openDeleteModal()">
-      <i class="fa fa-trash me-2"></i>
-      <span class="d-none d-sm-inline">Eliminar</span>
-    </button>
-  </div>
-
-  <!-- Timeline (siempre horizontal) -->
+  <!-- Timeline con botón de historial integrado -->
   <div class="territory-detail-container-cell timeline-base" *ngIf="territoryInfo.timelineItems?.length">
+    <div class="timeline-header">
+      <h3>
+        <i class="fa fa-clock-rotate-left"></i>
+        Timeline
+      </h3>
+      <button class="timeline-action-button" (click)="viewTransactions()" title="Ver detalles de transacciones">
+        <i class="fa fa-list-ul"></i>
+        <span>Ver transacciones</span>
+      </button>
+    </div>
     <div class="timeline-scroll" #timelineScroll>
       <div class="timeline-items">
         <div class="timeline-item" *ngFor="let timelineItem of territoryInfo.timelineItems">
@@ -108,6 +119,12 @@
   </div>
 
   <div class="territory-detail-container-cell territory-detail-statistics">
+    <div class="card-header">
+      <h3>
+        <i class="fa fa-chart-simple"></i>
+        Estadísticas
+      </h3>
+    </div>
     <div class="statistics-container" *ngIf="territoryStats">
       
       <div class="stats-grid">
@@ -116,7 +133,7 @@
           <i class="fa fa-chart-line"></i>
           <span class="stat-label">Posición</span>
           <span class="tooltip-content">
-            <span>Posición en el ranking de territorios más utilizados. Cuanto más bajo, más se usa.</span>
+            <span>ición en el ranking de territorios más utilizados. Cuanto más bajo, más se usa.</span>
           </span>
           <div class="stat-values">
             <div class="main-value">{{territoryStats.usageRank}}º</div>

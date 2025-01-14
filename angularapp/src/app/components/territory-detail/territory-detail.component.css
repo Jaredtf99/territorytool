@@ -1,12 +1,11 @@
 .territory-detail-container {
   display: grid;
-  height: 100%;
+  height: auto;
   grid-template-columns: 350px 1fr;
-  grid-template-rows: minmax(300px, auto) auto auto auto;
+  grid-template-rows: minmax(300px, auto) auto auto;
   gap: 30px;
   grid-template-areas:
     "map info"
-    "actions actions"
     "timeline timeline"
     "statistics statistics";
   padding: 35px;
@@ -24,13 +23,12 @@
 @media (max-width: 768px) {
   .territory-detail-container {
     grid-template-columns: 1fr;
-    grid-template-rows: 200px auto auto 150px auto;
+    grid-template-rows: auto auto auto auto;
     gap: 20px;
     padding: 20px;
     grid-template-areas:
       "map"
       "info"
-      "actions"
       "timeline"
       "statistics";
   }
@@ -50,6 +48,11 @@
   .territory-detail-info {
     padding-right: 0;
   }
+
+  /* Asegurar que el contenedor padre también permite scroll */
+  :host {
+    display: block;
+  }
 }
 
 /* Media query para tablets */
@@ -65,7 +68,7 @@
   max-width: 100%;
   box-sizing: border-box;
   background-color: #fff;
-  border-radius: 30px;
+  border-radius: 20px;
   box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.075);
   margin: 0;
 }
@@ -75,34 +78,137 @@
   overflow-y: auto;
 }
 
-.territory-detail-map {
+.territory-detail-map-container {
   grid-area: map;
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+}
+
+.territory-detail-map {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  align-self: start;
 }
 
-/*  .territory-detail-map img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-*/
-.territory-detail-actions {
-  grid-area: actions;
+/* Botón de actualizar mapa */
+.map-action-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   display: flex;
-  justify-content: flex-start;
   align-items: center;
-  width: 100%;
-  background: none;
-  box-shadow: none;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.territory-detail-actions button {
-  margin-right: 10px;
+.map-action-button:hover {
+  background: white;
+  transform: scale(1.05);
+}
+
+.map-action-button i {
+  font-size: 1rem;
+  color: #4a5568;
+}
+
+/* Timeline header */
+.timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  border-radius: 0;
+  position: relative;
+  z-index: 2;
+  box-shadow: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.timeline-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeline-header h3 i {
+  font-size: 0.9em;
+  color: #718096;
+}
+
+.timeline-action-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  color: #4a5568;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  box-shadow: none;
+  position: relative;
+  z-index: 2;
+}
+
+.timeline-action-button:hover {
+  background: #edf2f7;
+  color: #2d3748;
+  border-color: #cbd5e0;
+}
+
+/* Simplificar los botones principales */
+.territory-actions {
+  margin-top: 20px;
+  padding: 15px 30px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.action-group {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+}
+
+.action-group button {
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 12px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .timeline-action-button {
+    padding: 6px 12px;
+    border-radius: 12px;
+  }
+
+  .timeline-action-button span {
+    display: inline;
+    font-size: 0.85rem;
+  }
+
+
+
 }
 
 .territory-detail-info {
@@ -188,10 +294,26 @@
 .territory-detail-statistics {
   grid-area: statistics;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.territory-detail-statistics.territory-detail-container-cell {
+  background-color: #fff;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.075);
+  border-radius: 20px;
+}
+
+.territory-detail-statistics .card-header {
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .statistics-container {
-  padding: 20px;
+  padding: 20px 30px;
+  position: relative;
+  flex: 1;
+  background-color: #fff;
 }
 
 .stats-grid {
@@ -203,7 +325,7 @@
 .stat-item {
   background-color: #f8f9fa;
   padding: 15px;
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -266,13 +388,15 @@
   --text-primary: #2c3e50;
   --text-secondary: #6c757d;
   background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border-radius: 20px;
   position: relative;
   overflow: hidden;
   grid-area: timeline;
-  margin-top: 20px;
-  padding: 0;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.075);
+  
+  display: flex;
+  flex-direction: column;
+
 }
 
 /* Efecto de gradiente en los bordes */
@@ -283,7 +407,7 @@
   top: 0;
   bottom: 0;
   width: 50px;
-  z-index: 2;
+  z-index: 3;
   pointer-events: none;
 }
 
@@ -304,12 +428,14 @@
   overflow-y: hidden;
   display: flex;
   align-items: center;
-  padding: 0 30px;
+  padding: 30px 20px 50px 20px;
   position: relative;
+  z-index: 1;
   cursor: grab;
   user-select: none;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
+  background: #fff;
 }
 
 .timeline-scroll.active {
@@ -431,9 +557,7 @@
     padding: 10px 12px;
   }
 
-  .timeline-scroll {
-    padding: 0 15px;
-  }
+
 }
 
 /* Ajustes para tablets */
@@ -532,7 +656,7 @@
   grid-template-rows: minmax(300px, 1fr) auto auto;
   grid-template-areas:
     "map info"
-    "actions actions"
+    "timeline timeline"
     "statistics statistics";
 }
 
@@ -543,7 +667,7 @@
     grid-template-areas:
       "map"
       "info"
-      "actions"
+      "timeline"
       "statistics";
   }
 }
@@ -566,7 +690,7 @@
 .tooltip-container {
   cursor: help;
   position: relative;
-  z-index: 2;
+  overflow: visible;
 }
 
 .tooltip-content {
@@ -580,7 +704,7 @@
   padding: 12px 16px;
   background: #2d3748;
   color: white;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 0.875rem;
   line-height: 1.4;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
@@ -604,7 +728,6 @@
   visibility: visible;
   opacity: 1;
 }
-
 /* Animación suave al mostrar */
 @keyframes tooltipFadeIn {
   from {
@@ -627,7 +750,7 @@
   gap: 6px;
   font-size: 14px;
   padding: 2px 8px;
-  border-radius: 12px;
+  border-radius: 8px;
   background-color: #6b7280;
   color: white;
   height: 24px;
@@ -664,3 +787,197 @@
   font-weight: bold;
   color: #212529;
 }
+.territory-actions {
+  margin-top: 20px;
+  padding: 15px 30px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.action-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Separador vertical entre grupos */
+.action-group:not(:last-child)::after {
+  content: '';
+  height: 24px;
+  width: 1px;
+  background-color: #e2e8f0;
+  margin: 0 8px;
+}
+
+.action-group button {
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 12px;
+}
+
+.primary-actions button {
+  padding: 6px 16px;
+  font-size: 0.95rem;
+  height: 36px;
+}
+
+.action-group button i {
+  font-size: 0.9rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .territory-actions {
+    padding: 12px 15px;
+    flex-wrap: wrap;
+  }
+
+  .action-group:not(:last-child)::after {
+    display: none;
+  }
+
+  .action-group button {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+  }
+
+  .action-group button i {
+    font-size: 0.85rem;
+  }
+}
+
+.territory-actions-sidebar {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: white;
+  padding: 15px;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.territory-actions-sidebar .action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.territory-actions-sidebar button {
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  position: relative;
+}
+
+.territory-actions-sidebar button span {
+  display: none;
+  position: absolute;
+  right: calc(100% + 10px);
+  background: #2d3748;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.territory-actions-sidebar button:hover span {
+  display: block;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .territory-actions-sidebar {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    top: auto;
+    transform: none;
+    flex-direction: row;
+    border-radius: 25px;
+  }
+
+  .territory-actions-sidebar .action-group {
+    flex-direction: row;
+  }
+}
+
+/* Estilo común para los headers de las tarjetas */
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  border-radius: 20px 20px 0px 0px;
+  position: relative;
+  box-shadow: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.card-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-header h3 i {
+  font-size: 0.9em;
+  color: #718096;
+}
+
+/* Ajustes específicos para la sección de información */
+.territory-detail-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.territory-detail-info .info-grid {
+  padding: 20px 30px;
+}
+
+/* Ajustes específicos para la sección de estadísticas */
+.statistics-container {
+  padding: 20px 30px;
+  border-radius: 0px 0px 20px 20px;
+}
+
+/* Eliminar estilos antiguos que ya no necesitamos */
+.territory-detail-info h2 {
+  display: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .card-header {
+    padding: 12px 15px;
+  }
+
+  .territory-detail-info .info-grid,
+  .statistics-container {
+    padding: 15px 20px;
+  }
+}
+
+
