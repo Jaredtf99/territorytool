@@ -9,6 +9,7 @@ import { Observable, Subject, catchError, concat, distinctUntilChanged, of, swit
 import { PersonService } from '../../shared/person.service';
 import { AppService } from '../../shared/app.service';
 import { TerritorySuggestion } from 'src/app/classes/TerritorySuggestion';
+import { ActivatedRoute } from '@angular/router';
 
 
 declare var $: any;
@@ -55,7 +56,8 @@ export class ChangeTerritoryComponent implements AfterViewInit {
     private territoryService: TerritoryService,
     private personService: PersonService,
     private spinner: NgxSpinnerService,
-    private appService: AppService
+    private appService: AppService,
+    private route: ActivatedRoute
   ) {
 
     const currentDate = new Date();
@@ -70,6 +72,25 @@ export class ChangeTerritoryComponent implements AfterViewInit {
 
     this.loadPersons();
     this.loadTerritories();
+
+    this.route.params.subscribe(params => {
+      if (params['territoryCode']) {
+        this.spinner.show();
+        this.territoryService.getTerritoryByCode(params['territoryCode']).subscribe({
+          next: (territory) => {
+            this.selectedTerritory = territory;
+            this.giveTerritoryForm.patchValue({
+              selectedTerritory: territory
+            });
+            this.spinner.hide();
+          },
+          error: (err) => {
+            this.spinner.hide();
+            this.toastr.error('Error cargando el territorio');
+          }
+        });
+      }
+    });
 
   }
 

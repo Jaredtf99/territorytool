@@ -101,6 +101,8 @@ namespace TerritoryTool.ServerSide.Controllers
         /// <summary>
         /// Devuelve un territorio por el mapUrl
         /// </summary>
+        /// <param name="mapUrl">MapUrl del territorio</param>
+        /// <returns></returns>
         [HttpGet("map")]
         public ActionResult GetTerritoryByMap(string mapUrl)
         {
@@ -114,6 +116,21 @@ namespace TerritoryTool.ServerSide.Controllers
             return Ok(ConvertTerritoryToTerritoryInfo(territory));
         }
 
+        /// <summary>
+        /// Devuelve un territorio por el codigo
+        /// </summary>
+        /// <param name="code">Codigo del territorio</param>
+        /// <returns></returns>
+        [HttpGet("code")]
+        public ActionResult GetTerritoryByCode(string code)
+        {
+            var territory = _territoryRepository.GetTerritoryByCode(code);
+
+            if (territory == null)
+                return NotFound();
+
+            return Ok(ConvertTerritoryToTerritoryInfo(territory));
+        }
 
         [HttpPost]
         [Authorize(Roles = "SUPERADMIN,ADMIN")]

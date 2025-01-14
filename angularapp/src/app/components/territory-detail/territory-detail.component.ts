@@ -95,23 +95,7 @@ export class TerritoryDetailComponent implements OnInit {
   }
 
   pickTerritory() {
-    this.spinner.show();
-
-    this.territoryService.pickTerritory(this.territoryInfo!.code!, false, undefined).subscribe(
-      {
-        next: res => {
-          $('#pickTerritory').modal('hide');
-          this.toastr.success('Territorio entregado');
-          this.getTerritoryInfo();
-        },
-        error: err => {
-          $('#pickTerritory').modal('hide');
-          this.toastr.error('Error entregando el territorio');
-          this.spinner.hide();
-          console.error(err);
-        }
-      });
-
+    this.router.navigate(['/pick-territory', this.territoryInfo!.code]);
   }
 
   refreshTerritoryImage() {
@@ -204,6 +188,9 @@ export class TerritoryDetailComponent implements OnInit {
     }
   }
 
+  giveTerritory() {
+    this.router.navigate(['/change-territory', this.territoryInfo!.code]);
+  }
 
 }
 

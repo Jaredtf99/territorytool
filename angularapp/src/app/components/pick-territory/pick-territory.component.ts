@@ -7,6 +7,7 @@ import { Territory } from '../../classes/Territory';
 import { Observable, Subject, catchError, concat, distinctUntilChanged, of, switchMap, tap } from 'rxjs';
 import { NgxScannerQrcodeComponent, ScannerQRCodeConfig, ScannerQRCodeResult } from 'ngx-scanner-qrcode';
 import { AppService } from '../../shared/app.service';
+import { ActivatedRoute } from '@angular/router';
 
 declare var $: any;
 
@@ -40,11 +41,31 @@ export class PickTerritoryComponent implements AfterViewInit {
     private toastr: ToastrService,
     private territoryService: TerritoryService,
     private spinner: NgxSpinnerService,
-    private appService: AppService
+    private appService: AppService,
+    private route: ActivatedRoute
   ) {
 
     this.resetTerritoryForm();
     this.loadTerritories();
+
+    this.route.params.subscribe(params => {
+      if (params['territoryCode']) {
+        this.spinner.show();
+        this.territoryService.getTerritoryByCode(params['territoryCode']).subscribe({
+          next: (territory) => {
+            this.selectedTerritory = territory;
+            this.pickTerritoryForm.patchValue({
+              selectedTerritory: territory
+            });
+            this.spinner.hide();
+          },
+          error: (err) => {
+            this.spinner.hide();
+            this.toastr.error('Error cargando el territorio');
+          }
+        });
+      }
+    });
 
   }
 

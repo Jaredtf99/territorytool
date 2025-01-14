@@ -89,6 +89,10 @@ export class TerritoryService {
     return this.http.get<Territory>(`${this.baseUrl}/territories/map?mapUrl=${encodeURIComponent(mapUrl)}`).pipe()
   }
 
+  getTerritoryByCode(code: string): Observable<Territory> {
+    return this.http.get<Territory>(`${this.baseUrl}/territories/code?code=${encodeURIComponent(code)}`).pipe()
+  }
+
   giveTerritory(territoryCode: string, personName: string, isCustomDate: boolean, customDate: Date | undefined): Observable<any> {
     const body = { territoryCode, personName, isCustomDate, customDate };
 
