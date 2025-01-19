@@ -13,5 +13,6 @@ namespace TerritoryTool.ServerSide.Domain.Classes
         public string MapUrl { get; set; }
         public string? ImgUrl { get; set; }
         public DateTime? LastPickedDate { get; set; }
+        public DateTime? GivenDate{ get; set; }
     }
 }

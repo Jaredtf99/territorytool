@@ -50,15 +50,16 @@
     <div class="form-group mb-4">
       <label>Territorio</label>
 
-      <ng-select [items]="territories$ | async"
-                 [minTermLength]="3"
-                 [loading]="territoriesLoading"
-                 typeToSearchText="Introduce 2 o más caracteres"
-                 [typeahead]="territoriesInput$"
-                 bindLabel="name"
-                 formControlName="selectedTerritory"
-                 [(ngModel)]="selectedTerritory"
-                 id="changeTerritoryNgSelectTerritories">
+      <ng-select id="changeTerritoryNgSelectTerritories"
+                [items]="territories$ | async"
+                [loading]="territoriesLoading"
+                typeToSearchText="Introduce 2 o más caracteres"
+                [typeahead]="territoriesInput$"
+                bindLabel="name"
+                formControlName="selectedTerritory"
+                [(ngModel)]="selectedTerritory"
+                (change)="onTerritorySelect($event)"
+                [ngClass]="{ 'is-invalid': submitted && f['selectedTerritory'].errors }">
         <ng-template ng-label-tmp let-item="item">
           <span>{{item.name}}</span>
         </ng-template>
@@ -94,6 +95,9 @@
       </div>
 
       <input *ngIf="f['customDate'].value" type="datetime-local" class="form-control item" formControlName="date" />
+      <div *ngIf="f['date'].errors && f['customDate'].value" class="invalid-feedback d-block">
+        <div *ngIf="f['date'].errors?.['dateBeforeLastPicked']">La fecha no puede ser anterior a la última fecha de recogida</div>
+      </div>
 
     </div>
 
@@ -101,7 +105,7 @@
     <div class="form_buttons">
       <button type="submit" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modalScanner" (click)="startQrScanner()"><i class="fa fa-qrcode me-2"></i>Escanear QR</button>
 
-      <button type="submit" class="btn btn-primary">Entregar territorio</button>
+      <button type="submit" class="btn btn-primary" [disabled]="!giveTerritoryForm.valid">Entregar territorio</button>
     </div>
 
   </form>

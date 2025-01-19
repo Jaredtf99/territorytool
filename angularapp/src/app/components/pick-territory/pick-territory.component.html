@@ -17,6 +17,7 @@
                  bindLabel="name"
                  formControlName="selectedTerritory"
                  [(ngModel)]="selectedTerritory"
+                 (change)="onTerritorySelect($event)"
                  id="pickTerritoryNgSelectTerritories">
         <ng-template ng-label-tmp let-item="item">
           <span>{{item.name}}</span>
@@ -35,13 +36,17 @@
       </div>
 
       <input *ngIf="f['customDate'].value" type="datetime-local" class="form-control item" formControlName="date" />
+      <div *ngIf="f['date'].errors && f['customDate'].value" class="invalid-feedback d-block">
+        <div *ngIf="f['date'].errors?.['futureDate']">La fecha no puede ser posterior a la fecha actual</div>
+        <div *ngIf="f['date'].errors?.['beforeGivenDate']">La fecha no puede ser anterior a la fecha de entrega</div>
+      </div>
 
     </div>
 
     <div class="form_buttons">
       <button type="submit" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modalScanner" (click)="startQrScanner()"><i class="fa fa-qrcode me-2"></i>Escanear QR</button>
 
-      <button type="submit" class="btn btn-primary">Recoger territorio</button>
+      <button type="submit" class="btn btn-primary" [disabled]="!pickTerritoryForm.valid">Recoger territorio</button>
     </div>
 
   </form>

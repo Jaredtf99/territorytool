@@ -1,5 +1,5 @@
 import { Component, ViewChild, AfterViewInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, AbstractControl, ValidatorFn, ValidationErrors } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { TerritoryService } from '../../shared/territory.service';
 import { NgxSpinnerService } from 'ngx-spinner';
@@ -69,6 +69,19 @@ export class PickTerritoryComponent implements AfterViewInit {
 
   }
 
+  onTerritorySelect(event: any) {
+    if (event) {
+      this.territoryService.getTerritoryByCode(event.code).subscribe({
+        next: (territory) => {
+          this.selectedTerritory = territory;
+          this.pickTerritoryForm.patchValue({
+            selectedTerritory: territory
+          });
+        }
+      });
+    }
+  }
+
   private resetTerritoryForm() {
     const currentDate = new Date();
     const formattedDate = this.formatDate(currentDate);
@@ -76,12 +89,53 @@ export class PickTerritoryComponent implements AfterViewInit {
     this.pickTerritoryForm = this.formBuilder.group({
       selectedTerritory: ['', Validators.required],
       customDate: [false, Validators.required],
-      date: [formattedDate],
+      date: [formattedDate]
     });
+  
+    // Apply validators based on initial customDate value
+    const dateControl = this.pickTerritoryForm.get('date');
+    if (this.pickTerritoryForm.get('customDate')?.value) {
+      dateControl?.setValidators([Validators.required, this.dateValidator()]);
+      dateControl?.updateValueAndValidity();
+    }
 
     this.appService.clearXButtonFromNgSelect("pickTerritoryNgSelectTerritories");
     this.loadTerritories();
 
+        // Suscribirse a los cambios de customDate para actualizar los validadores de date
+    this.pickTerritoryForm.get('customDate')?.valueChanges.subscribe((customDate: boolean) => {
+      const dateControl = this.pickTerritoryForm.get('date');
+      if (customDate) {
+        dateControl?.setValidators([Validators.required, this.dateValidator()]);
+      } else {
+        dateControl?.clearValidators();
+      }
+      dateControl?.updateValueAndValidity();
+    });
+    
+    
+  }
+
+  private dateValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (!this.pickTerritoryForm?.get('customDate')?.value) {
+        return null;
+      }
+
+      const date = new Date(control.value);
+        const now = new Date();
+
+        // Si hay un territorio seleccionado, validar contra su fecha de entrega
+        const territory = this.pickTerritoryForm?.get('selectedTerritory')?.value as Territory;
+        if (territory && territory.givenDateUtc) {
+          const givenDate = new Date(territory.givenDateUtc);
+          if (date < givenDate) {
+            return { beforeGivenDate: true };
+          }
+        }
+
+        return null;
+    };
   }
 
   private formatDate(date: Date): string {

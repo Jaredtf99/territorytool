@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Data;
@@ -84,7 +84,21 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             return transaction;
         }
 
+        public async Task<Transaction?> GetTerritoryActiveTransactionAsync(int territoryId)
+        {
+            return await _context.Transaction
+                .Where(t => t.TerritoryId == territoryId && t.PickedDateUtc == null)
+                .Include(t => t.Person)
+                .FirstOrDefaultAsync();
+        }
 
-
+        public async Task<Transaction?> GetTerritoryLastCompletedTransactionAsync(int territoryId)
+        {
+            return await _context.Transaction
+                .Where(t => t.TerritoryId == territoryId && t.PickedDateUtc != null)
+                .OrderByDescending(t => t.PickedDateUtc)
+                .Include(t => t.Person)
+                .FirstOrDefaultAsync();
+        }
     }
 }

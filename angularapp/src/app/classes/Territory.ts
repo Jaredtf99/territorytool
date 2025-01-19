@@ -6,4 +6,5 @@ export class Territory {
   imgUrl?: string;
   personName?: string;
   givenDateUtc?: Date;
+  lastPickedDateUtc?: Date;
 }

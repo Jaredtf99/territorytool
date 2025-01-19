@@ -14,5 +14,6 @@ namespace TerritoryTool.ServerSide.Domain.Classes
         public string? ImgUrl { get; set; }
         public string? PersonName { get; set; }
         public DateTime? GivenDateUtc { get; set; }
+        public DateTime? LastPickedDateUtc { get; set; }
     }
 }

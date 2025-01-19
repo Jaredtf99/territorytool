@@ -31,18 +31,26 @@ namespace TerritoryTool.ServerSide.Controllers
 
         private readonly ITerritoryRepository _territoryRepository;
         private readonly ITerritoryFacade _territoryFacade;
+        private readonly ITransactionRepository _transactionRepository;
         private readonly IPersonRepository _personRepository;
         private readonly IUserActionLogFacade _userActionLogFacade;
         private readonly ITransactionFacade _transactionFacade;
 
-        public TerritoryController(ITerritoryRepository territoryRepository, ITerritoryFacade territoryFacade, ILogger<ActionLogController> logger, IUserActionLogFacade userActionLogFacade, IPersonRepository personRepository, ITransactionFacade transactionFacade)
+        public TerritoryController(ITerritoryRepository territoryRepository, 
+        ITerritoryFacade territoryFacade, 
+        ILogger<ActionLogController> logger, 
+        IUserActionLogFacade userActionLogFacade,
+        IPersonRepository personRepository,
+        ITransactionRepository transactionRepository,
+        ITransactionFacade transactionFacade)
         {
             _territoryRepository = territoryRepository;
             _territoryFacade = territoryFacade;
             _logger = logger;
             _userActionLogFacade = userActionLogFacade;
             _personRepository = personRepository;
-            _transactionFacade = transactionFacade;
+            _transactionFacade = transactionFacade; 
+            _transactionRepository = transactionRepository;
         }
 
         [HttpGet("all")]
@@ -56,12 +64,14 @@ namespace TerritoryTool.ServerSide.Controllers
         }
 
         [HttpGet("{idTerritory}")]
-        public ActionResult GetTerritory(int idTerritory)
+        public async Task<ActionResult> GetTerritory(int idTerritory)
         {
             var territory = _territoryRepository.GetTerritoryById(idTerritory);
 
             if (territory == null)
                 return NotFound();
+
+            await LoadLastAndActiveTransactions(territory);
 
             return Ok(ConvertTerritoryToTerritoryInfo(territory));
         }
@@ -84,7 +94,7 @@ namespace TerritoryTool.ServerSide.Controllers
         /// <summary>
         /// Devuelve una lista de territorios en base al filtro de busqueda por texto
         /// </summary>
-        /// <param name="search">Termino de b�squeda</param>
+        /// <param name="search">Termino de busqueda</param>
         /// <param name="onlyFreeTerritories">Flag para obtener solo los territorios libres</param>
         /// <returns></returns>
         [HttpGet]
@@ -104,7 +114,7 @@ namespace TerritoryTool.ServerSide.Controllers
         /// <param name="mapUrl">MapUrl del territorio</param>
         /// <returns></returns>
         [HttpGet("map")]
-        public ActionResult GetTerritoryByMap(string mapUrl)
+        public async Task<ActionResult> GetTerritoryByMap(string mapUrl)
         {
             mapUrl = HttpUtility.UrlDecode(mapUrl);
 
@@ -113,8 +123,12 @@ namespace TerritoryTool.ServerSide.Controllers
             if (territory == null)
                 return NotFound();
 
+            await LoadLastAndActiveTransactions(territory);
+
             return Ok(ConvertTerritoryToTerritoryInfo(territory));
         }
+
+        
 
         /// <summary>
         /// Devuelve un territorio por el codigo
@@ -122,12 +136,14 @@ namespace TerritoryTool.ServerSide.Controllers
         /// <param name="code">Codigo del territorio</param>
         /// <returns></returns>
         [HttpGet("code")]
-        public ActionResult GetTerritoryByCode(string code)
+        public async Task<ActionResult> GetTerritoryByCode(string code)
         {
             var territory = _territoryRepository.GetTerritoryByCode(code);
 
             if (territory == null)
                 return NotFound();
+
+            await LoadLastAndActiveTransactions(territory);
 
             return Ok(ConvertTerritoryToTerritoryInfo(territory));
         }
@@ -220,6 +236,20 @@ namespace TerritoryTool.ServerSide.Controllers
             if (personToGive == null)
                 return BadRequest("No existe la persona a la que entregar el territorio");
 
+            // Validar que la fecha de entrega no sea anterior a la última fecha de recogida
+            var lastTransaction = _territoryRepository.GetTerritoryTransactions(territoryToGive.Id)
+                .OrderByDescending(t => t.PickedDateUtc)
+                .FirstOrDefault();
+
+            if (lastTransaction != null && lastTransaction.PickedDateUtc.HasValue)
+            {
+                var givenDate = info.IsCustomDate ? info.CustomDate!.Value : DateTime.UtcNow;
+                if (givenDate < lastTransaction.PickedDateUtc.Value)
+                {
+                    return BadRequest("La fecha de entrega no puede ser anterior a la última fecha de recogida");
+                }
+            }
+
             Transaction giveTransaction = new Transaction
             {
                 GivenBy = userId,
@@ -229,7 +259,6 @@ namespace TerritoryTool.ServerSide.Controllers
                 TerritoryId = territoryToGive.Id
             };
 
-            //TODO: validaciones. No se puede dar un territorio para una fecha en la que ya estaba asignado a alguien 
             _territoryRepository.GiveTerritory(giveTransaction);
 
             _userActionLogFacade.AddNewActionLog(ActionType.GiveTerritory, $"Given territory ({territoryToGive.Code}) {territoryToGive.Name} to {personToGive.Name}. IsCustomDate: {info.IsCustomDate}", userId, true);
@@ -255,7 +284,25 @@ namespace TerritoryTool.ServerSide.Controllers
                 return BadRequest("El territorio no esta asignado a nadie");
 
             DateTime pickedDate = info.IsCustomDate ? info.CustomDate!.Value : DateTime.UtcNow;
-            //TODO: validaciones. No se puede recoger un territorio con una fecha ANTERIOR a la de entrega 
+
+            // Validar que la fecha de recogida no sea posterior a la fecha de entrega
+            var currentTransaction = _territoryRepository.GetTerritoryTransactions(territoryToPick.Id)
+                .OrderByDescending(t => t.GivenDateUtc)
+                .FirstOrDefault();
+
+            if (currentTransaction != null)
+            {
+                if (pickedDate > DateTime.UtcNow)
+                {
+                    return BadRequest("La fecha de recogida no puede ser posterior a la fecha actual");
+                }
+
+                if (pickedDate < currentTransaction.GivenDateUtc)
+                {
+                    return BadRequest("La fecha de recogida no puede ser anterior a la fecha de entrega");
+                }
+            }
+
             _territoryRepository.PickTerritory(territoryToPick.Id, userId, !info.IsCustomDate, pickedDate);
 
             _userActionLogFacade.AddNewActionLog(ActionType.GiveTerritory, $"Picked territory ({territoryToPick.Code}) {territoryToPick.Name}. IsCustomDate: {info.IsCustomDate}", userId, true);
@@ -376,6 +423,18 @@ namespace TerritoryTool.ServerSide.Controllers
             return Ok(territories);
         }
 
+        private async Task LoadLastAndActiveTransactions(Territory territory)
+        {
+            var activeTransaction = await _transactionRepository.GetTerritoryActiveTransactionAsync(territory.Id);
+            var lastTransaction = await _transactionRepository.GetTerritoryLastCompletedTransactionAsync(territory.Id);
+
+            territory.Transactions = new List<Transaction>();
+            if (activeTransaction != null)
+                territory.Transactions.Add(activeTransaction);
+            if (lastTransaction != null)
+                territory.Transactions.Add(lastTransaction);
+        }
+
         private IEnumerable<TerritoryInfo> ConvertTerritoryToTerritoryInfoList(IEnumerable<Territory> territories)
         {
             List<TerritoryInfo> retval = new List<TerritoryInfo>();
@@ -404,6 +463,7 @@ namespace TerritoryTool.ServerSide.Controllers
             territoryInfo.Name = territory.Name;
             territoryInfo.Id = territory.Id;
             territoryInfo.GivenDateUtc = territory.Transactions?.FirstOrDefault(x => x.PickedDateUtc == null)?.GivenDateUtc;
+            territoryInfo.LastPickedDateUtc = territory.Transactions?.OrderByDescending(x => x.PickedDateUtc)?.FirstOrDefault()?.PickedDateUtc;
 
 
             if (territory.ImgUrl != null)

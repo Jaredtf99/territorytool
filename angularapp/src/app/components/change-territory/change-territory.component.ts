@@ -1,6 +1,6 @@
 import { NgxScannerQrcodeComponent, ScannerQRCodeConfig, ScannerQRCodeResult } from 'ngx-scanner-qrcode';
 import { Component, ViewChild, AfterViewInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, AbstractControl, ValidatorFn, ValidationErrors } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { TerritoryService } from '../../shared/territory.service';
 import { NgxSpinnerService } from 'ngx-spinner';
@@ -67,8 +67,15 @@ export class ChangeTerritoryComponent implements AfterViewInit {
       selectedTerritory: ['', Validators.required],
       selectedPerson: ['', Validators.required],
       customDate: [false, Validators.required],
-      date: [formattedDate],
+      date: [formattedDate]
     });
+
+    // Apply validators based on initial customDate value
+    const dateControl = this.giveTerritoryForm.get('date');
+    if (this.giveTerritoryForm.get('customDate')?.value) {
+      dateControl?.setValidators([Validators.required, this.dateValidator()]);
+      dateControl?.updateValueAndValidity();
+    }
 
     this.loadPersons();
     this.loadTerritories();
@@ -92,6 +99,39 @@ export class ChangeTerritoryComponent implements AfterViewInit {
       }
     });
 
+    // Suscribirse a los cambios de customDate para actualizar los validadores de date
+    this.giveTerritoryForm.get('customDate')?.valueChanges.subscribe((customDate: boolean) => {
+      const dateControl = this.giveTerritoryForm.get('date');
+      if (customDate) {
+        dateControl?.setValidators([Validators.required, this.dateValidator()]);
+      } else {
+        dateControl?.clearValidators();
+      }
+      dateControl?.updateValueAndValidity();
+    });
+
+  }
+
+  private dateValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (!this.giveTerritoryForm?.get('customDate')?.value) {
+        return null;
+      }
+
+      const date = new Date(control.value);
+      const now = new Date();
+      
+      // Si hay un territorio seleccionado, validar contra su última fecha de recogida
+      const territory = this.giveTerritoryForm?.get('selectedTerritory')?.value as Territory;
+      if (territory && territory.lastPickedDateUtc) {
+        const lastPickedDate = new Date(territory.lastPickedDateUtc);
+        if (date < lastPickedDate) {
+          return { dateBeforeLastPicked: true };
+        }
+      }
+
+      return null;
+    };
   }
 
   private resetTerritoryForm() {
@@ -102,8 +142,15 @@ export class ChangeTerritoryComponent implements AfterViewInit {
       selectedTerritory: [null, Validators.required],
       selectedPerson: [null, Validators.required],
       customDate: [false, Validators.required],
-      date: [formattedDate],
+      date: [formattedDate]
     });
+
+    // Apply validators based on initial customDate value
+    const dateControl = this.giveTerritoryForm.get('date');
+    if (this.giveTerritoryForm.get('customDate')?.value) {
+      dateControl?.setValidators([Validators.required, this.dateValidator()]);
+      dateControl?.updateValueAndValidity();
+    }
 
     this.appService.clearXButtonFromNgSelect("changeTerritoryNgSelectTerritories");
     this.appService.clearXButtonFromNgSelect("changeTerritoryNgSelectPerson");
@@ -149,8 +196,20 @@ export class ChangeTerritoryComponent implements AfterViewInit {
           catchError(() => of([])), // empty list on error
           tap(() => this.territoriesLoading = false)
         ))
-
       );
+  }
+
+  onTerritorySelect(event: any) {
+    if (event) {
+      this.territoryService.getTerritoryByCode(event.code).subscribe({
+        next: (territory) => {
+          this.selectedTerritory = territory;
+          this.giveTerritoryForm.patchValue({
+            selectedTerritory: territory
+          });
+        }
+      });
+    }
   }
 
   private loadPersons() {
@@ -254,7 +313,8 @@ export class ChangeTerritoryComponent implements AfterViewInit {
   selectSuggestedTerritory(territory: TerritorySuggestion) {
     this.selectedTerritory = {
       code: territory.code,
-      name: territory.name
+      name: territory.name,
+      lastPickedDateUtc: territory.lastPickedDate
     } as Territory;
     
     this.giveTerritoryForm.patchValue({

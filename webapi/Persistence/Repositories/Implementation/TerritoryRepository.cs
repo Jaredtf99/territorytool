@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Data;
@@ -114,7 +114,8 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             //TODO: hacer una busqueda por proximidad, en vez de un contains
             return _context.Territory.Where(x => (x.Name.ToLower().Contains(search) || search.Contains(x.Name.ToLower()) || x.Code.ToLower().Contains(search)) &&
                                                  (onlyFreeTerritories ? x.PersonId == null : true) &&
-                                                 (onlyGivenTerritories ? x.PersonId != null : true));
+                                                 (onlyGivenTerritories ? x.PersonId != null : true))
+                                                 .ToList();
         }
 
 
@@ -369,6 +370,11 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                         .Where(tr => tr.PickedDateUtc != null)
                         .OrderByDescending(tr => tr.PickedDateUtc)
                         .Select(tr => tr.PickedDateUtc)
+                        .FirstOrDefault(),
+                    GivenDate = t.Transactions
+                        .Where(tr => tr.PickedDateUtc == null)
+                        .OrderByDescending(tr => tr.GivenDateUtc)
+                        .Select(tr => tr.GivenDateUtc)
                         .FirstOrDefault()
                 })
                 .OrderBy(t => t.LastPickedDate)
@@ -376,12 +382,11 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                 .Take(count)
                 .ToListAsync();
 
-
-
             return territories.Select(x => new TerritorySuggestionInfo { 
                 Code = x.Territory.Code,
                 Id = x.Territory.Id,
                 LastPickedDate = x.LastPickedDate,
+                GivenDate = x.GivenDate,
                 MapUrl = x.Territory.MapUrl,
                 Name = x.Territory.Name
             });
