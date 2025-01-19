@@ -1,7 +1,5 @@
 <h1>Territorios</h1>
 
-<p *ngIf="!territories"><em>Cargando...</em></p>
-
 <div class="filters-container">
   <div class="filters">
     <input class="filters_item me-sm-2 col-12 col-sm-auto mb-3 mb-sm-0" type="text" name="filterName" placeholder="Nombre" #ctrl="ngModel" [(ngModel)]="filterName" (change)="getTerritories()" />
