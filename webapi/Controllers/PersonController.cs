@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using TerritoryTool.ServerSide.Controllers.Models.Person;
 using TerritoryTool.ServerSide.Domain.Classes;
 using TerritoryTool.ServerSide.Domain.Enums;
+using TerritoryTool.ServerSide.Domain.Exceptions;
 using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
 using TerritoryTool.ServerSide.Domain.Helpers;
 using TerritoryTool.ServerSide.Persistence.Entities;
@@ -40,7 +41,14 @@ namespace TerritoryTool.ServerSide.Controllers
             var userId = SecurityHelper.GetLoggedUserId(User);
             _logger.LogInformation("Adding person...");
 
-            _personFacade.AddNewPerson(personInfo.Name, userId);
+            try
+            {
+                _personFacade.AddNewPerson(personInfo.Name, userId);
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
 
             return Ok();
         }

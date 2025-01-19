@@ -8,18 +8,30 @@
     <div class="row">
       <div class="form-group col-6">
         <label>Desde</label>
-        <input type="date" class="form-control item" formControlName="startDate" />
+        <input type="date" class="form-control item" formControlName="startDate" 
+               [ngClass]="{ 'is-invalid': (f['startDate'].invalid && (f['startDate'].dirty || f['startDate'].touched)) || generateReportForm.errors?.['dateRange'] }">
+        <div *ngIf="f['startDate'].invalid && (f['startDate'].dirty || f['startDate'].touched)" class="invalid-feedback d-block">
+          Introduce una fecha válida
+        </div>
       </div>
 
       <div class="form-group col-6">
         <label>Hasta</label>
-        <input type="date" class="form-control item" formControlName="endDate" />
+        <input type="date" class="form-control item" formControlName="endDate" 
+               [ngClass]="{ 'is-invalid': (f['endDate'].invalid && (f['endDate'].dirty || f['endDate'].touched)) || generateReportForm.errors?.['dateRange'] }">
+        <div *ngIf="f['endDate'].invalid && (f['endDate'].dirty || f['endDate'].touched)" class="invalid-feedback d-block">
+          Introduce una fecha válida
+        </div>
       </div>
 
     </div>
 
+    <div *ngIf="generateReportForm.errors?.['dateRange']" class="invalid-feedback d-block">
+      La fecha "Desde" no puede ser mayor que la fecha "Hasta".
+    </div>
+
     <div class="form_buttons">
-      <button type="submit" class="btn btn-primary">Generar reporte</button>
+      <button type="submit" class="btn btn-primary" [disabled]="generateReportForm.invalid">Generar reporte</button>
     </div>
 
   </form>

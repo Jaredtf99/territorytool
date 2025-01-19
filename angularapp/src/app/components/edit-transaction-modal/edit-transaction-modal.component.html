@@ -2,42 +2,53 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="editTransactionLabel">Editar transaccion</h5>
+        <h5 class="modal-title" id="editTransactionLabel">Editar transacción</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
+        <form [formGroup]="editForm">
+          <div class="form-group mb-3">
+            <label>Persona</label>
+            <ng-select [items]="persons$ | async"
+                      [minTermLength]="3"
+                      [loading]="personsLoading"
+                      typeToSearchText="Introduce 2 o más caracteres"
+                      [typeahead]="personsInput$"
+                      bindLabel="name"
+                      formControlName="person"
+                      [ngClass]="{ 'is-invalid': f['person'].invalid && (f['person'].dirty || f['person'].touched) }">
+            </ng-select>
+            <div *ngIf="f['person'].invalid && (f['person'].dirty || f['person'].touched)" class="invalid-feedback d-block">
+              <div *ngIf="f['person'].errors?.['required']">Selecciona una persona</div>
+            </div>
+          </div>
 
+          <div class="form-group mb-3">
+            <label>Fecha entregado</label>
+            <input type="datetime-local" class="form-control" formControlName="givenDate"
+                  [ngClass]="{ 'is-invalid': f['givenDate'].invalid && (f['givenDate'].dirty || f['givenDate'].touched) }">
+            <div *ngIf="f['givenDate'].invalid && (f['givenDate'].dirty || f['givenDate'].touched)" class="invalid-feedback d-block">
+              <div *ngIf="f['givenDate'].errors?.['required']">Introduce la fecha de entrega</div>
+              <div *ngIf="f['givenDate'].errors?.['invalidDates']">Fecha inválida</div>
+            </div>
+          </div>
 
-        <div class="form-group mb-2">
-          <label>Persona</label>
-    
-          <ng-select [items]="persons$ | async"
-                     [minTermLength]="3"
-                     [loading]="personsLoading"
-                     typeToSearchText="Introduce 2 o más caracteres"
-                     [typeahead]="personsInput$"
-                     bindLabel="name"
-                     [(ngModel)]="selectedPerson"
-                     id="changeTerritoryNgSelectPerson">
-          </ng-select>
-        </div>
+          <div class="form-group mb-3">
+            <label>Recogido</label>
+            <input type="datetime-local" class="form-control" formControlName="pickedDate"
+                  [ngClass]="{ 'is-invalid': f['pickedDate'].invalid && (f['pickedDate'].dirty || f['pickedDate'].touched) }">
+            <div *ngIf="f['pickedDate'].invalid && (f['pickedDate'].dirty || f['pickedDate'].touched)" class="invalid-feedback d-block">
+              <div *ngIf="f['pickedDate'].errors?.['invalidDates']">Fecha inválida</div>
+              <div *ngIf="f['pickedDate'].errors?.['territoryInUse']">El territorio ya está en uso</div>
+              <div *ngIf="f['pickedDate'].errors?.['dateRange']">La fecha "Desde" no puede ser mayor que la fecha "Hasta".</div>
+            </div>
+          </div>
 
-        <div class="form-group">
-          <label>Fecha entregado</label>    
-          <input [(ngModel)]="this.givenDateFormatted" type="datetime-local" class="form-control item"/>
-        </div>
-
-        <div class="form-group">
-          <label>Recogido</label>
-    
-          <input [(ngModel)]="this.pickedDateFormatted"  type="datetime-local" class="form-control item"  />
-    
-        </div>
-
+        </form>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-        <button type="button" class="btn btn-primary" (click)="editTransaction()">Editar</button>
+        <button type="button" class="btn btn-primary" [disabled]="editForm.invalid" (click)="editTransaction()">Editar</button>
       </div>
     </div>
   </div>

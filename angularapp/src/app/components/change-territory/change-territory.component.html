@@ -94,7 +94,7 @@
         <input type="checkbox" class="ikxBAC" formControlName="customDate">
       </div>
 
-      <input *ngIf="f['customDate'].value" type="datetime-local" class="form-control item" formControlName="date" />
+      <input *ngIf="f['customDate'].value" type="datetime-local" class="form-control item" formControlName="date" [ngClass]="{ 'is-invalid': f['date'].invalid && (f['date'].dirty || f['date'].touched) }"/>
       <div *ngIf="f['date'].errors && f['customDate'].value" class="invalid-feedback d-block">
         <div *ngIf="f['date'].errors?.['dateBeforeLastPicked']">La fecha no puede ser anterior a la última fecha de recogida</div>
       </div>

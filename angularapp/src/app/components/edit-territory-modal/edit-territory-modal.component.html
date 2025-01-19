@@ -6,41 +6,38 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-
-        <div class="form-group mb-4">
-          <label>Nombre</label>
-          <input type="text" class="form-control item" #ctrl="ngModel" [(ngModel)]="territoryInfo.name">
-
-          <div *ngIf="territoryInfo.name === null || territoryInfo.name === ''" class="alert alert-danger mt-2">
-            Introduce el nombre del territorio
+        <form [formGroup]="editForm">
+          <div class="form-group mb-4">
+            <label>Nombre</label>
+            <input type="text" class="form-control item" formControlName="name" [ngClass]="{ 'is-invalid': editForm.get('name')?.invalid && (editForm.get('name')?.dirty || editForm.get('name')?.touched) }">
+            <div *ngIf="editForm.get('name')?.invalid && (editForm.get('name')?.dirty || editForm.get('name')?.touched)" class="invalid-feedback d-block">
+              <div *ngIf="editForm.get('name')?.hasError('required')">Introduce el nombre del territorio</div>
+              <div *ngIf="editForm.get('name')?.hasError('nameExists')">El nombre ya existe</div>
+            </div>
           </div>
-        </div>
 
-
-        <div class="form-group mb-4">
-          <label>Código</label>
-          <input type="text" class="form-control item" #ctrl="ngModel" [(ngModel)]="territoryInfo.code">
-
-          <div *ngIf="territoryInfo.code === null || territoryInfo.code === ''" class="alert alert-danger mt-2">
-            Introduce el código del territorio
+          <div class="form-group mb-4">
+            <label>Código</label>
+            <input type="text" class="form-control item" formControlName="code" [ngClass]="{ 'is-invalid': editForm.get('code')?.invalid && (editForm.get('code')?.dirty || editForm.get('code')?.touched) }">  
+            <div *ngIf="editForm.get('code')?.invalid && (editForm.get('code')?.dirty || editForm.get('code')?.touched)" class="invalid-feedback d-block">
+              <div *ngIf="editForm.get('code')?.hasError('required')">Introduce el código del territorio</div>
+              <div *ngIf="editForm.get('code')?.hasError('codeExists')">El código ya existe</div>
+            </div>
           </div>
-        </div>
 
-
-        <div class="form-group mb-4">
-          <label>URL del mapa</label>
-          <input type="text" class="form-control item" #ctrl="ngModel" [(ngModel)]="territoryInfo.mapUrl">
-
-          <div *ngIf="territoryInfo.mapUrl === null || territoryInfo.mapUrl === ''" class="alert alert-danger mt-2">
-            Introduce la URL del mapa
+          <div class="form-group mb-4">
+            <label>URL del mapa</label>
+            <input type="text" class="form-control item" formControlName="mapUrl" [ngClass]="{ 'is-invalid': editForm.get('mapUrl')?.invalid && (editForm.get('mapUrl')?.dirty || editForm.get('mapUrl')?.touched) }">
+            <div *ngIf="editForm.get('mapUrl')?.invalid && (editForm.get('mapUrl')?.dirty || editForm.get('mapUrl')?.touched)" class="invalid-feedback d-block">
+              <div *ngIf="editForm.get('mapUrl')?.hasError('required')">Introduce la URL del mapa</div>
+              <div *ngIf="editForm.get('mapUrl')?.hasError('mapUrlExists')">La URL del mapa ya existe</div>
+            </div>
           </div>
-        </div>
-
-
+        </form>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-        <button type="button" class="btn btn-primary" [disabled]="territoryInfo.name === null || territoryInfo.name === '' || territoryInfo.code === null || territoryInfo.code === '' || territoryInfo.mapUrl === null || territoryInfo.mapUrl === ''" (click)="editTerritory()">Editar</button>
+        <button type="button" class="btn btn-primary" [disabled]="editForm.invalid" (click)="editTerritory()">Editar</button>
       </div>
     </div>
   </div>

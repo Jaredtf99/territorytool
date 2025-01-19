@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using TerritoryTool.ServerSide.Controllers.Models.Transactions;
 using TerritoryTool.ServerSide.Domain.Classes;
 using TerritoryTool.ServerSide.Domain.Enums;
+using TerritoryTool.ServerSide.Domain.Exceptions;
 using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
 using TerritoryTool.ServerSide.Domain.Helpers;
 using TerritoryTool.ServerSide.Persistence;
@@ -58,6 +59,11 @@ namespace TerritoryTool.ServerSide.Controllers
                 _userActionLogFacade.AddNewActionLog(ActionType.EditTransaction, $"Transaction {id} updated with data: {JsonConvert.SerializeObject(transactionData)}", userId, true);
 
                 return Ok(transaction);
+            }
+            catch (DomainException ex)
+            {
+                _userActionLogFacade.AddNewActionLog(ActionType.EditTransaction, $"Transaction {id} updated with data: {JsonConvert.SerializeObject(transactionData)}", userId, false);
+                return BadRequest(ex.Message);
             }
             catch (KeyNotFoundException)
             {

@@ -50,13 +50,13 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
         {
 
             if (_territoryRepo.GetTerritoryByCode(code) != null)
-                throw new DomainException("Ya existe un territorio con el mismo código");
+                throw new DomainException("CODE_EXIST");
 
             if (_territoryRepo.GetTerritoryByName(name) != null)
-                throw new DomainException("Ya existe un territorio con el mismo nombre");
+                throw new DomainException("NAME_EXIST");
 
             if (_territoryRepo.GetTerritoryByMapUrl(mapUrl) != null)
-                throw new DomainException("Ya existe un territorio con la misma URL del mapa");
+                throw new DomainException("MAPURL_EXIST");
 
             Territory territoryAdded = _territoryRepo.AddNewTerritory(code, name, mapUrl);
 

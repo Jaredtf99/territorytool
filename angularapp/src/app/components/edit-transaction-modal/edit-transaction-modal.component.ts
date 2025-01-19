@@ -1,4 +1,5 @@
-import { Component, ElementRef, EventEmitter, Input, Output,  } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, Output } from '@angular/core';
+import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { NgxSpinnerService } from "ngx-spinner";
 import { TerritoryTransactionService } from 'src/app/services/territory-transaction.service';
@@ -17,44 +18,48 @@ export class EditTransactionModalComponent {
   @Input() transactionId!: number;
   @Output() transactionUpdated: EventEmitter<void> = new EventEmitter<void>();
 
-  transactionInfo: TerritoryTransaction = new TerritoryTransaction(); 
+  editForm: FormGroup;
 
   persons$!: Observable<any[]>;
   personsLoading = false;
   personsInput$ = new Subject<string>();
-  selectedPerson!: any | null;
 
-  givenDateFormatted: string | undefined;
-  pickedDateFormatted: string | undefined;
-
-  constructor(private personService: PersonService, private toastr: ToastrService, private spinner: NgxSpinnerService, public territoryTransactionService: TerritoryTransactionService) {
+  constructor(
+    private fb: FormBuilder,
+    private personService: PersonService,
+    private toastr: ToastrService,
+    private spinner: NgxSpinnerService,
+    public territoryTransactionService: TerritoryTransactionService
+  ) {
+    this.editForm = this.fb.group({
+      person: [null, Validators.required],
+      givenDate: ['', Validators.required],
+      pickedDate: ['']
+    }, { validators: this.dateRangeValidator });
   }
+
+  get f() { return this.editForm.controls; }
 
   openModal(): void {
     this.spinner.show();
     this.loadPersons();
 
-     this.territoryTransactionService.getTransaction(this.transactionId).subscribe(
-      {
-        next: res => {
-          this.transactionInfo = res;
-          this.selectedPerson = { name: res.personName, id: res.personId };
+    this.territoryTransactionService.getTransaction(this.transactionId).subscribe({
+      next: res => {
+        this.editForm.patchValue({
+          person: { name: res.personName, id: res.personId },
+          givenDate: this.formatDate(new Date(res.givenDateUtc)),
+          pickedDate: res.pickedDateUtc ? this.formatDate(new Date(res.pickedDateUtc)) : null
+        });
 
-        this.givenDateFormatted = this.formatDate(new Date(this.transactionInfo.givenDateUtc));
-        if (this.transactionInfo.pickedDateUtc) {
-          this.pickedDateFormatted = this.formatDate(new Date(this.transactionInfo.pickedDateUtc));
-        }
-
-          $('#editTransaction').modal('show');
-        },
-        complete: () => {
-          this.spinner.hide();
-        }
-      })
-    
+        $('#editTransaction').modal('show');
+      },
+      complete: () => {
+        this.spinner.hide();
+      }
+    });
   }
 
-  //TODO: Sacar esto a un componente, y utilizar el mismo en todas las pantallas. Lo mismo con el de territorios
   private loadPersons() {
     this.persons$ =
       this.personsInput$.pipe(
@@ -64,44 +69,60 @@ export class EditTransactionModalComponent {
           catchError(() => of([])), // empty list on error
           tap(() => this.personsLoading = false)
         ))
-
       );
   }
+
   editTransaction() {
+
+    if (this.editForm.invalid) {
+      return;
+    }
+
     this.spinner.show();
 
-    $('#editTransaction').modal('hide');
+    const transactionData = new TerritoryTransaction();
+    transactionData.personId = this.editForm.value.person.id;
+    transactionData.givenDateUtc = new Date(this.editForm.value.givenDate);
+    transactionData.pickedDateUtc = this.editForm.value.pickedDate ? new Date(this.editForm.value.pickedDate) : undefined;
 
-    this.transactionInfo.givenDateUtc = new Date(this.givenDateFormatted!)
-    this.transactionInfo.pickedDateUtc = this.pickedDateFormatted
-      ? new Date(this.pickedDateFormatted)
-      : undefined;
-      this.transactionInfo.personId = this.selectedPerson.id;
-
-    this.territoryTransactionService.updateTransaction(this.transactionId, this.transactionInfo!).subscribe(
-      {
-        next: res => {
-          this.transactionUpdated.emit();
-          this.toastr.success('Transaccion editada');
-        },
-        error: err => {
-          if (err.error === "CODE_EXIST")
-            this.toastr.error("El código ya existe");
-          else if (err.error === "NAME_EXIST")
-            this.toastr.error("El nombre ya existe");
-          else if (err.error === "MAPURL_EXIST")
-            this.toastr.error("La URL del mapa ya existe");
-          else {
-            this.toastr.error("Error desconocido");
-          }
-        },
-        complete: () => {
-          this.spinner.hide();
-        }
+    this.territoryTransactionService.updateTransaction(this.transactionId, transactionData).subscribe({
+      next: res => {
+        this.transactionUpdated.emit();
+        this.toastr.success('Transacción editada');
+        $('#editTransaction').modal('hide');
+      },
+      error: err => {
+        this.spinner.hide();
+        this.handleError(err);
+      },
+      complete: () => {
+        this.spinner.hide();
       }
-    );
+    });
   }
 
+  private handleError(error: any): void {
+    if (error.error === "INVALID_DATES") {
+      this.editForm.get('givenDate')?.setErrors({ invalidDates: true });
+      this.editForm.get('pickedDate')?.setErrors({ invalidDates: true });
+    } else if (error.error === "TERRITORY_ALREADY_IN_USE") {
+      this.editForm.get('pickedDate')?.setErrors({ territoryInUse: true });
+    } else {
+      this.toastr.error("Error desconocido");
+    }
+  }
+
+   // Validador personalizado para el rango de fechas
+   dateRangeValidator(control: AbstractControl): ValidationErrors | null {
+    const startDate = control.get('givenDate')?.value;
+    const endDate = control.get('pickedDate')?.value;
+
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      return { dateRange: true };
+    }
+    return null;
+  }
+  
   private formatDate(date: Date): string {
     const year = date.getFullYear();
     const month = ('0' + (date.getMonth() + 1)).slice(-2);
@@ -111,6 +132,4 @@ export class EditTransactionModalComponent {
 
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   }
-
-
 }

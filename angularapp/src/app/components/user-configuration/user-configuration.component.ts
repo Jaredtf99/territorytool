@@ -19,35 +19,36 @@ export class UserConfigurationComponent implements OnInit {
   changePassword() {
     this.submitted = true;
 
-    if (this.userService.changePasswordForm.valid) {
-      this.spinner.show();
-      this.userService.changePassword().subscribe(
-        {
-          next: res => {
-            this.spinner.hide();
-            this.userService.changePasswordForm.reset();
-            this.toastr.success("Contraseña cambiada");
-          },
-          error: err => {
-            this.spinner.hide();
-            err.error.split(',').forEach((error: string) => {
-              switch (error) {
-                case 'PasswordMismatch':
-                  this.toastr.error("La contraseña no es correcta");
-                  break;
-                case 'PasswordTooShort':
-                  this.toastr.error("La contraseña debe tener al menos 4 caracteres");
-                  break;
-                default:
-                  this.toastr.error('Error cambiando la contraseña');
-                  console.log(err);
-                  break;
-              }
-            });
-          }
-
-        });
+    if (this.userService.changePasswordForm.invalid) {
+      return;
     }
-  }
 
+    this.spinner.show();
+    this.userService.changePassword().subscribe(
+      {
+        next: res => {
+          this.spinner.hide();
+          this.userService.changePasswordForm.reset();
+          this.toastr.success("Contraseña cambiada");
+          this.submitted = false;
+        },
+        error: err => {
+          this.spinner.hide();
+          err.error.split(',').forEach((error: string) => {
+            switch (error) {
+              case 'PasswordMismatch':
+                this.userService.changePasswordForm.get('OldPassword')?.setErrors({ passwordMismatch: true });
+                break;
+              case 'PasswordTooShort':
+                this.userService.changePasswordForm.get('NewPasswords.Password')?.setErrors({ minlength: true });
+                break;
+              default:
+                this.toastr.error('Error cambiando la contraseña');
+                console.log(err);
+                break;
+            }
+          });
+        }
+      });
+  }
 }

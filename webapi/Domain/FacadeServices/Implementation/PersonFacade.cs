@@ -10,6 +10,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using TerritoryTool.ServerSide.Domain.Classes;
 using TerritoryTool.ServerSide.Domain.Enums;
+using TerritoryTool.ServerSide.Domain.Exceptions;
 using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
 using TerritoryTool.ServerSide.Persistence;
 using TerritoryTool.ServerSide.Persistence.Entities;
@@ -37,6 +38,13 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
         public bool AddNewPerson(string name, string idLoggedUser)
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(name));
+
+            var existingPerson = _personRepo.GetPersonByName(name);
+
+            if (existingPerson != null)
+            {
+                throw new DomainException("PERSON_ALREADY_EXISTS");
+            }
 
             Person person = new Person { Name = name };
 

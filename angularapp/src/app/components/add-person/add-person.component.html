@@ -9,15 +9,17 @@
 
     <div class="form-group">
       <label>Nombre</label>
-      <input type="text" class="form-control item" formControlName="name" [ngClass]="{ 'is-invalid': (f['name'].dirty || f['name'].touched) && f['name'].errors && submitted}">
-
-      <div *ngIf="(f['name'].dirty || f['name'].touched) && f['name'].errors && submitted" class="alert alert-danger mt-2">
-        <div *ngIf="f['name'].errors['required']">Introduce el nombre del hermano</div>
+      <input type="text" class="form-control item" formControlName="name" 
+             [ngClass]="{ 'is-invalid': (f['name'].invalid && (f['name'].dirty || f['name'].touched)) }">
+      
+      <div *ngIf="f['name'].invalid && (f['name'].dirty || f['name'].touched)" class="invalid-feedback d-block">
+        <div *ngIf="f['name'].hasError('required')">Introduce el nombre del hermano</div>
+        <div *ngIf="f['name'].hasError('personExists')">El hermano ya existe</div>
       </div>
     </div>
 
     <div class="form_buttons">
-      <button type="submit" class="btn btn-primary">Registrar</button>
+      <button type="submit" class="btn btn-primary" [disabled]="addPersonForm.invalid">Registrar</button>
     </div>
 
   </form>

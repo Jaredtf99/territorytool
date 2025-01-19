@@ -6,6 +6,7 @@ import { User } from '../../classes/User';
 import { ToastrService } from 'ngx-toastr';
 import { NgxSpinnerService } from "ngx-spinner";
 import { CellComponent, TabulatorFull as Tabulator } from 'tabulator-tables';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 declare var $: any;
 
@@ -22,13 +23,19 @@ export class UsersComponent implements OnInit {
   public idUserToDelete = '';
   public rolesCanIChange: string[] = [];
   public defaultRoleIndex = 0;
+  public editForm: FormGroup;
 
-  constructor(public http: HttpClient, @Inject('BASE_URL') public baseUrl: string, public userService: UserService, private toastr: ToastrService, private spinner: NgxSpinnerService) {
+  constructor(public http: HttpClient, @Inject('BASE_URL') public baseUrl: string, public userService: UserService, private toastr: ToastrService, private spinner: NgxSpinnerService, private fb: FormBuilder) {
 
     this.role = userService.getRole();
     this.spinner.show();
 
     this.setRolesCanIChange();
+
+    this.editForm = this.fb.group({
+      userName: ['', Validators.required],
+      role: ['', Validators.required]
+    });
 
     this.getUsersData();
   }
@@ -112,7 +119,12 @@ export class UsersComponent implements OnInit {
 
   openEditModal(idToEdit: any) {
     $('#editUser').modal('show');
-    Object.assign(this.userToEdit, this.users.filter(user => user.UserID === idToEdit)[0]);
+    const user = this.users.filter(user => user.UserID === idToEdit)[0];
+    this.userToEdit = user;
+    this.editForm.patchValue({
+      userName: user.UserName,
+      role: user.Role
+    });
   }
 
   selectedRoleEventHandler(roleIndex: number) {
@@ -120,11 +132,14 @@ export class UsersComponent implements OnInit {
   }
 
   editUser() {
+    if (this.editForm.invalid) {
+      return;
+    }
+
     this.spinner.show();
 
-    let uEdit = this.userToEdit;
-
-    this.userService.editUser(uEdit.UserID!, uEdit.UserName!, uEdit.Role!).subscribe({
+    const formValue = this.editForm.value;
+    this.userService.editUser(this.userToEdit.UserID!, formValue.userName, formValue.role).subscribe({
       next: res => {
         this.toastr.success('Usuario editado');
         Object.assign(this.users.filter(user => user.UserID === this.userToEdit.UserID)[0], this.userToEdit);
@@ -133,20 +148,19 @@ export class UsersComponent implements OnInit {
         this.spinner.hide();
       },
       error: error => {
-        if (error.error === "INVALID_PARAMETERS")
-          this.toastr.error("Datos invalidos, vuelva a intentarlo");
-        else if (error.error === "USER_NOT_EXISTS")
-          this.toastr.error("No hemos encontrado el usuario que quieres editar...");
-        else if (error.error === "USERNAME_IN_USE")
-          this.toastr.error("El nombre de usuario ya esta en uso");
-        else {
-          this.toastr.error("Error desconocido");
-          console.error(error.error);
-        }
-
+        this.handleEditError(error);
         this.spinner.hide();
       }
     });
+  }
+
+  private handleEditError(error: any): void {
+    if (error.error === "USERNAME_IN_USE") {
+      this.editForm.get('userName')?.setErrors({ usernameExists: true });
+    } else {
+      this.toastr.error("Error desconocido");
+      console.error(error.error);
+    }
   }
 
   openDeleteUserModal(idToDelete: string) {

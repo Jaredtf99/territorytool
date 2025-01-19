@@ -1,4 +1,5 @@
 import { Component, ElementRef, EventEmitter, Input, Output } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { TerritoryEditInfo } from '../../classes/TerritoryEditInfo';
 import { NgxSpinnerService } from "ngx-spinner";
@@ -11,11 +12,33 @@ declare var $: any;
   templateUrl: './edit-territory-modal.component.html'
 })
 export class EditTerritoryModalComponent {
+  @Input() set territoryInfo(value: TerritoryEditInfo) {
+    this._territoryInfo = value;
+    this.initializeForm();
+  }
+  get territoryInfo(): TerritoryEditInfo {
+    return this._territoryInfo;
+  }
+  private _territoryInfo!: TerritoryEditInfo;
 
-  @Input() territoryInfo!: TerritoryEditInfo;
   @Output() territoryUpdated: EventEmitter<void> = new EventEmitter<void>();
 
-  constructor(private toastr: ToastrService, private spinner: NgxSpinnerService, public territoryService: TerritoryService, private el: ElementRef) {
+  editForm!: FormGroup;
+
+  constructor(
+    private toastr: ToastrService,
+    private spinner: NgxSpinnerService,
+    public territoryService: TerritoryService,
+    private el: ElementRef,
+    private fb: FormBuilder
+  ) {}
+
+  initializeForm(): void {
+    this.editForm = this.fb.group({
+      name: [this.territoryInfo.name, Validators.required],
+      code: [this.territoryInfo.code, Validators.required],
+      mapUrl: [this.territoryInfo.mapUrl, Validators.required]
+    });
   }
 
   openModal(): void {
@@ -23,32 +46,47 @@ export class EditTerritoryModalComponent {
   }
 
   editTerritory() {
+    if (this.editForm.invalid) {
+      return;
+    }
+
     this.spinner.show();
-
-    $('#editTerritory').modal('hide');
-
-    let tEdit = this.territoryInfo;
-    this.territoryService.editTerritory(tEdit.id!, tEdit.mapUrl!, tEdit.name!, tEdit.code!).subscribe(
-      {
-        next: res => {
-          this.territoryUpdated.emit();
-          this.spinner.hide();
-          this.toastr.success('Territorio editado');
-        },
-        error: err => {
-          this.spinner.hide();
-          if (err.error === "CODE_EXIST")
-            this.toastr.error("El código ya existe");
-          else if (err.error === "NAME_EXIST")
-            this.toastr.error("El nombre ya existe");
-          else if (err.error === "MAPURL_EXIST")
-            this.toastr.error("La URL del mapa ya existe");
-          else {
-            this.toastr.error("Error desconocido");
-          }
-        }
+    const formValue = this.editForm.value;
+    this.territoryService.editTerritory(
+      this.territoryInfo.id!,
+      formValue.mapUrl,
+      formValue.name,
+      formValue.code
+    ).subscribe({
+      next: res => {
+        $('#editTerritory').modal('hide');
+        this.territoryUpdated.emit();
+        this.spinner.hide();
+        this.toastr.success('Territorio editado');
+      },
+      error: err => {
+        this.spinner.hide();
+        this.handleEditError(err);
       }
-    );
+    });
   }
 
+  private handleEditError(err: any): void {
+    const error = err.error;
+
+    // Limpiar errores previos
+    this.editForm.get('name')?.setErrors(null);
+    this.editForm.get('code')?.setErrors(null);
+    this.editForm.get('mapUrl')?.setErrors(null);
+
+    if (error === "CODE_EXIST") {
+      this.editForm.get('code')?.setErrors({ codeExists: true });
+    } else if (error === "NAME_EXIST") {
+      this.editForm.get('name')?.setErrors({ nameExists: true });
+    } else if (error === "MAPURL_EXIST") {
+      this.editForm.get('mapUrl')?.setErrors({ mapUrlExists: true });
+    } else {
+      this.toastr.error("Error desconocido");
+    }
+  }
 }

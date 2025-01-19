@@ -15,7 +15,6 @@ let qrCodeScanner = this;
 })
 export class AddTerritoryComponent implements AfterViewInit {
   addTerritoryForm: FormGroup;
-  submitted = false;
   @ViewChild('action') action!: NgxScannerQrcodeComponent;
 
   public config: ScannerQRCodeConfig = {
@@ -50,7 +49,6 @@ export class AddTerritoryComponent implements AfterViewInit {
 
 
   addTerritory() {
-    this.submitted = true;
 
     if (!this.addTerritoryForm.invalid) {
 
@@ -61,15 +59,33 @@ export class AddTerritoryComponent implements AfterViewInit {
           this.spinner.hide();
           this.toastr.success('Territorio guardado');
           this.addTerritoryForm.reset();
-          this.submitted = false;
         },
         error: err => {
           this.spinner.hide();
-          this.toastr.error('Error inesperado');
+          this.handleAddError(err);
         }
       });
     }
 
+  }
+
+  private handleAddError(err: any): void {
+    const error = err.error;
+
+    // Limpiar errores previos
+    this.addTerritoryForm.get('name')?.setErrors(null);
+    this.addTerritoryForm.get('code')?.setErrors(null);
+    this.addTerritoryForm.get('mapUrl')?.setErrors(null);
+
+    if (error === "CODE_EXIST") {
+      this.addTerritoryForm.get('code')?.setErrors({ codeExists: true });
+    } else if (error === "NAME_EXIST") {
+      this.addTerritoryForm.get('name')?.setErrors({ nameExists: true });
+    } else if (error === "MAPURL_EXIST") {
+      this.addTerritoryForm.get('mapUrl')?.setErrors({ mapUrlExists: true });
+    } else {
+      this.toastr.error("Error desconocido");
+    }
   }
 
   public onEvent(e: ScannerQRCodeResult[], action?: any): void {

@@ -8,43 +8,41 @@
 
     <div class="form-group mb-4">
       <label>Nombre de usuario</label>
-      <input type="text" class="form-control item" formControlName="UserName" [ngClass]="{ 'is-invalid': (userService.formModel.get('UserName')!.dirty || userService.formModel.get('UserName')!.touched) && userService.formModel.get('UserName')!.errors && submitted}">
-
-      <div *ngIf="(userService.formModel.get('UserName')!.dirty || userService.formModel.get('UserName')!.touched) && userService.formModel.get('UserName')!.errors && submitted" class="alert alert-danger mt-2">
+      <input type="text" class="form-control item" formControlName="UserName" 
+             [ngClass]="{ 'is-invalid': (userService.formModel.get('UserName')!.invalid && (userService.formModel.get('UserName')!.dirty || userService.formModel.get('UserName')!.touched)) }">
+      
+      <div *ngIf="userService.formModel.get('UserName')!.invalid && (userService.formModel.get('UserName')!.dirty || userService.formModel.get('UserName')!.touched )" class="invalid-feedback d-block">
         <div *ngIf="userService.formModel.get('UserName')!.errors!['required']">Introduce el nombre de usuario</div>
+        <div *ngIf="userService.formModel.get('UserName')!.errors!['usernameExists']">El nombre de usuario ya existe</div>
       </div>
     </div>
 
-
     <div formGroupName="Passwords">
-
       <div class="form-group mb-4">
         <label>Contraseña</label>
-        <input type="password" class="form-control item" formControlName="Password" [ngClass]="{ 'is-invalid': (userService.formModel.get('Passwords.Password')!.dirty || userService.formModel.get('Passwords.Password')!.touched) && userService.formModel.get('Passwords.Password')!.errors && submitted}">
-
-        <div *ngIf="(userService.formModel.get('Passwords.Password')!.dirty || userService.formModel.get('Passwords.Password')!.touched) && userService.formModel.get('Passwords.Password')!.errors && submitted" class="alert alert-danger mt-2">
+        <input type="password" class="form-control item" formControlName="Password" 
+               [ngClass]="{ 'is-invalid': (userService.formModel.get('Passwords.Password')!.invalid && (userService.formModel.get('Passwords.Password')!.dirty || userService.formModel.get('Passwords.Password')!.touched)) }">
+        
+        <div *ngIf="userService.formModel.get('Passwords.Password')!.invalid && (userService.formModel.get('Passwords.Password')!.dirty || userService.formModel.get('Passwords.Password')!.touched)" class="invalid-feedback d-block">
           <div *ngIf="userService.formModel.get('Passwords.Password')!.errors!['required']">Introduce una contraseña</div>
-          <div *ngIf="userService.formModel.get('Passwords.Password')!.errors!['minlength']">La contraseña debe tener minimo 4 caracteres</div>
+          <div *ngIf="userService.formModel.get('Passwords.Password')!.errors!['minlength']">La contraseña debe tener mínimo 4 caracteres</div>
         </div>
-
       </div>
-
 
       <div class="form-group mb-4">
         <label>Repite la contraseña</label>
-        <input type="password" class="form-control item" formControlName="ConfirmPassword" [ngClass]="{ 'is-invalid': (userService.formModel.get('Passwords.ConfirmPassword')!.dirty || userService.formModel.get('Passwords.ConfirmPassword')!.touched) && userService.formModel.get('Passwords.ConfirmPassword')!.errors && submitted}">
-
-        <div *ngIf="(userService.formModel.get('Passwords.ConfirmPassword')!.dirty || userService.formModel.get('Passwords.ConfirmPassword')!.touched) && userService.formModel.get('Passwords.ConfirmPassword')!.errors && submitted" class="alert alert-danger mt-2">
+        <input type="password" class="form-control item" formControlName="ConfirmPassword" 
+               [ngClass]="{ 'is-invalid': (userService.formModel.get('Passwords.ConfirmPassword')!.invalid && (userService.formModel.get('Passwords.ConfirmPassword')!.dirty || userService.formModel.get('Passwords.ConfirmPassword')!.touched)) }">
+        
+        <div *ngIf="userService.formModel.get('Passwords.ConfirmPassword')!.invalid && (userService.formModel.get('Passwords.ConfirmPassword')!.dirty || userService.formModel.get('Passwords.ConfirmPassword')!.touched)" class="invalid-feedback d-block">
           <div *ngIf="userService.formModel.get('Passwords.ConfirmPassword')!.errors!['required']">Repite la contraseña</div>
           <div *ngIf="userService.formModel.get('Passwords.ConfirmPassword')!.errors!['passwordMismatch']">Las contraseñas no coinciden</div>
         </div>
-
       </div>
-
     </div>
 
     <div class="form_buttons">
-      <button type="submit" class="btn btn-primary">Regístrate</button>
+      <button type="submit" class="btn btn-primary" [disabled]="userService.formModel.invalid">Regístrate</button>
     </div>
 
   </form>

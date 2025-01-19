@@ -98,7 +98,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             _logger.LogInformation("Registering user...");
 
             IdentityResult result = null;
-
+            
             var registerInfo = new ApplicationUser()
             {
                 UserName = userName,

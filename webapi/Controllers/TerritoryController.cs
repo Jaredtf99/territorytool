@@ -292,11 +292,6 @@ namespace TerritoryTool.ServerSide.Controllers
 
             if (currentTransaction != null)
             {
-                if (pickedDate > DateTime.UtcNow)
-                {
-                    return BadRequest("La fecha de recogida no puede ser posterior a la fecha actual");
-                }
-
                 if (pickedDate < currentTransaction.GivenDateUtc)
                 {
                     return BadRequest("La fecha de recogida no puede ser anterior a la fecha de entrega");
@@ -313,6 +308,11 @@ namespace TerritoryTool.ServerSide.Controllers
         [HttpPost("generate-excel")]
         public IActionResult GenerateExcel(GenerateTerritoryModel info)
         {
+            if (info.Start > info.End)
+            {
+                return BadRequest("START_DATE_GREATER_THAN_END");
+            }
+
             var transactions = _territoryRepository.GetAllTransactionsForReport(info.Start, info.End);
 
             var transactionsGroupedByTerritory = transactions.GroupBy(x => new { x.Territory.Name, x.Territory.Code });

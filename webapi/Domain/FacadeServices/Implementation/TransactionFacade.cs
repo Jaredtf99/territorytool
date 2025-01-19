@@ -61,6 +61,18 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
         {
             var transaction = await _transactionRepo.GetTransaction(id) ?? throw new KeyNotFoundException();
 
+            var activeTransactionTerritory = await _transactionRepo.GetTerritoryActiveTransactionAsync(transaction.TerritoryId);
+
+            if (transactionData.GivenDateUtc > transactionData.PickedDateUtc)
+            {
+                throw new DomainException("INVALID_DATES");
+            }
+
+            if (activeTransactionTerritory != null && transactionData.PickedDateUtc == null)
+            {
+                throw new DomainException("TERRITORY_ALREADY_IN_USE");
+            }
+
             bool updateTerritoryPersonNeeded = transaction.PersonId != transactionData.PersonId && transaction.PickedDateUtc == null;
 
             transaction.PersonId = transactionData.PersonId;
