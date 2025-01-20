@@ -44,6 +44,7 @@ import { DeleteTerritoryModalComponent } from './components/delete-territory-mod
 import { TerritoryDetailComponent } from './components/territory-detail/territory-detail.component';
 import { TerritoryTransactionsComponent } from './components/territory-transactions/territory-transactions.component';
 import { EditTransactionModalComponent } from './components/edit-transaction-modal/edit-transaction-modal.component';
+import { TerritoryCardComponent } from './components/territory-card/territory-card.component';
 
 LOAD_WASM().subscribe((res: any) => console.log('LOAD_WASM', res));
 
@@ -72,6 +73,7 @@ export class MyIntl extends TimeagoIntl {
     PickTerritoryComponent,
     GenerateReportComponent,
     EditTerritoryModalComponent,
+    TerritoryCardComponent,
     DeleteTerritoryModalComponent,
     TerritoryDetailComponent,
     TerritoryTransactionsComponent,

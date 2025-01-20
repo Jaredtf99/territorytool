@@ -13,7 +13,9 @@ declare var $: any;
 
 @Component({
   selector: 'app-territories',
-  templateUrl: './territories.component.html'
+  templateUrl: './territories.component.html',
+  styleUrls: ["./territories.component.scss"],
+
 })
 export class TerritoriesComponent {
 
