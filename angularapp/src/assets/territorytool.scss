@@ -27,8 +27,7 @@ body {
 
     .pages {
       overflow: scroll;
-      padding-top: $navbar-height;
-      margin-top: 16px;
+      padding-top: calc($navbar-height + 16px);
     }
 
     .overlay {
