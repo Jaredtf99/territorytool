@@ -22,9 +22,17 @@ body {
   height: auto;
   padding-top: $navbar-height;
 
+  @media (min-width: 768px) {
+    height: 100%;
+  }
+
   main {
     display: flex;
     height: auto;
+
+    @media (min-width: 768px) {
+      height: 100%;
+    }
 
     .pages {
       overflow: auto;
