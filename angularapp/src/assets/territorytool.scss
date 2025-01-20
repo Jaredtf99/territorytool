@@ -20,7 +20,6 @@ body {
 
 .wrapper {
   height: 100%;
-  padding-top: $navbar-height;
 
   main {
     display: flex;
@@ -28,6 +27,7 @@ body {
 
     .pages {
       overflow: scroll;
+      padding-top: calc($navbar-height + 16px);
     }
 
     .overlay {
