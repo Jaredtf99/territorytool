@@ -19,15 +19,15 @@ body {
 }
 
 .wrapper {
-  height: 100%;
+  height: auto;
   padding-top: $navbar-height;
 
   main {
     display: flex;
-    height: 100%;
+    height: auto;
 
     .pages {
-      overflow: scroll;
+      overflow: auto;
     }
 
     .overlay {
