@@ -1,113 +1,86 @@
 .territory-card {
   width: 280px;
-  margin: 12px;
   background-color: #ffffff;
-  border-radius: 12px;
+  border-radius: 20px;
   overflow: hidden;
   position: relative;
   border: 1px solid rgba(108, 122, 230, 0.1);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  
+  &:hover {
+    transform: translateY(-5px) scale(1.00);
+    box-shadow: 0 12px 24px rgba(108,122,230,0.2);
+    
+    .card-image img {
+      transform: scale(1.05);
+    }
+  }
 
   .card-image {
     position: relative;
     height: 160px;
     overflow: hidden;
-
+    
     img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+      will-change: transform;
     }
 
-    .card-overlay {
+    .action-buttons {
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient( to bottom, rgba(45, 55, 72, 0.2), rgba(45, 55, 72, 0.8) );
-      opacity: 0;
-      transition: opacity 0.3s ease;
+      top: 8px;
+      right: 8px;
       display: flex;
-      justify-content: center;
-      align-items: center;
+      gap: 8px;
+      z-index: 2;
 
-      &.show-overlay {
-        opacity: 1;
-      }
-
-      .action-buttons {
+      .action-btn {
+        width: 32px;
+        height: 32px;
+        border: none;
+        border-radius: 10px;
         display: flex;
-        gap: 12px;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        background-color: rgba(255, 255, 255, 0.9);
+        transition: all 0.2s ease;
+        
+        i {
+          font-size: 14px;
+        }
 
-        .action-btn {
-          width: 40px;
-          height: 40px;
-          border: none;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          background-color: rgba(255, 255, 255, 0.9);
-
+        &.edit-btn {
           i {
-            font-size: 16px;
-            transition: transform 0.2s ease;
-          }
-
-          &:hover {
-            transform: scale(1.1);
-
-            i {
-              transform: scale(1.1);
-            }
-          }
-
-          &.edit-btn {
-            i {
-              color: #6C7AE6;
-            }
-
-            &:hover {
-              background-color: #6C7AE6;
-
-              i {
-                color: white;
-              }
-            }
-          }
-
-          &.delete-btn {
-            i {
-              color: #E53E3E;
-            }
-
-            &:hover {
-              background-color: #E53E3E;
-
-              i {
-                color: white;
-              }
-            }
+            color: RGBA(var(--bs-primary-rgb), var(--bs-bg-opacity, 1));
           }
         }
-      }
-    }
-  }
 
-  &:hover {
-    .card-image {
-      img {
-        transform: scale(1.1);
+        &.delete-btn {
+          i {
+            color: #E53E3E;
+          }
+        }
+
+        &:hover {
+          transform: scale(1.05);
+        }
       }
     }
   }
 
   .card-content {
     padding: 16px;
-    background: linear-gradient( to bottom, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 1) );
+    background: #ffffff;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
 
     .card-header {
       display: flex;
@@ -120,16 +93,22 @@
         font-size: 1.1rem;
         font-weight: 600;
         color: #2D3748;
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .territory-code {
         padding: 4px 8px;
-        background-color: #6C7AE6;
+        background-color: RGBA(var(--bs-primary-rgb), var(--bs-bg-opacity, 1));
         color: white;
-        border-radius: 6px;
+        border-radius: 13px;
         font-size: 0.8rem;
         font-weight: 500;
         letter-spacing: 0.5px;
+        white-space: nowrap;
+        margin-left: 8px;
       }
     }
 
@@ -139,23 +118,46 @@
       gap: 8px;
       font-size: 0.9rem;
 
-      .person-name, .given-date {
+      .info-row {
         display: flex;
         align-items: center;
-        gap: 8px;
-        color: #4A5568;
+        width: 100%;
+
+        &__person {
+          flex: 1;
+          min-width: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          gap: 8px;
+          color: #4A5568;
+          margin-right: 8px;
+        }
 
         i {
           font-size: 0.9rem;
-          color: #6C7AE6;
+          color: RGBA(var(--bs-primary-rgb), var(--bs-bg-opacity, 1));
           opacity: 0.8;
+          width: 16px;
+          text-align: center;
+          margin-right: 4px;
         }
-      }
 
-      .given-date {
-        font-size: 0.8rem;
-        color: #718096;
+        .person-name, .given-date {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .given-date {
+          flex: 0 0 50%;
+          max-width: 50%;
+          text-align: right;
+          font-size: 0.8rem;
+          color: #718096;
+        }
       }
     }
   }
 }
+

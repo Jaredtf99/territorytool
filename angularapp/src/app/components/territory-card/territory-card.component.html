@@ -1,23 +1,14 @@
 <div class="territory-card"
-     [@cardHover]="cardState"
-     (mouseenter)="onCardHover()"
-     (mouseleave)="onCardLeave()"
      (click)="onCardClick()">
   <div class="card-image">
     <img [src]="territory.imgUrl || './assets/img/testterritorio.png'" [alt]="territory.name">
-    <div class="card-overlay" [class.show-overlay]="showButtons">
-      <div class="action-buttons" *ngIf="showButtons">
-        <button class="action-btn edit-btn"
-                (click)="onEditClick($event)"
-                [@buttonAnimation]>
-          <i class="fas fa-edit"></i>
-        </button>
-        <button class="action-btn delete-btn"
-                (click)="onDeleteClick($event)"
-                [@buttonAnimation]>
-          <i class="fas fa-trash-alt"></i>
-        </button>
-      </div>
+    <div class="action-buttons">
+      <button class="action-btn edit-btn" (click)="onEditClick($event)">
+        <i class="fas fa-edit"></i>
+      </button>
+      <button class="action-btn delete-btn" (click)="onDeleteClick($event)">
+        <i class="fas fa-trash-alt"></i>
+      </button>
     </div>
   </div>
   <div class="card-content">
@@ -26,14 +17,13 @@
       <span class="territory-code">{{ territory.code }}</span>
     </div>
     <div class="card-info">
-      <span class="person-name">
-        <i class="fas fa-user"></i>
-        {{ territory.personName }}
-      </span>
-      <span *ngIf="territory.givenDateUtc" class="given-date">
-        <i class="fas fa-clock"></i>
-        {{ territory.givenDateUtc | timeago }}
-      </span>
+      <div class="info-row">
+        <div class="info-row__person" *ngIf="territory.personName">
+          <i class="fas fa-user"></i>
+          <span class="person-name">{{ territory.personName }}</span>
+        </div>
+        <span *ngIf="territory.givenDateUtc" class="given-date">{{ territory.givenDateUtc | timeago }}</span>
+      </div>
     </div>
   </div>
 </div>
