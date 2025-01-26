@@ -33,7 +33,7 @@ export class HomeComponent implements OnInit {
     this.territoryService.getAllTerritories(
       undefined,
       true,
-      undefined,
+      3,
       undefined,
       undefined,
       fourMonthsAgo

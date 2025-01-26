@@ -22,6 +22,10 @@
           <span class="badge bg-primary me-2">{{territory.code}}</span>
           <div>
             <div class="territory-name">{{territory.name}}</div>
+            <small class="text-muted d-block">
+              <i class="fa fa-user me-1"></i>
+              {{territory.personName}}
+            </small>
             <small class="text-muted">
               Asignado el: {{getTimeAgo(territory.givenDateUtc!)}}
             </small>
