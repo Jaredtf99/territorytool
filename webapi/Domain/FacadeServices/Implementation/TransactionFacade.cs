@@ -68,7 +68,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
                 throw new DomainException("INVALID_DATES");
             }
 
-            if (activeTransactionTerritory != null && transactionData.PickedDateUtc == null)
+            if (activeTransactionTerritory != null && activeTransactionTerritory.Id != id && transactionData.PickedDateUtc == null)
             {
                 throw new DomainException("TERRITORY_ALREADY_IN_USE");
             }
