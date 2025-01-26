@@ -26,7 +26,7 @@ public class UpdateTerritoryImagesJob : IJob
         try
         {
             _logger.LogInformation("Iniciando actualización diaria de imágenes de territorios");
-            var territories = _territoryRepository.GetAllTerritories(null, null, null, true);
+            var territories = _territoryRepository.GetAllTerritories(null, null, null, true, null, null);
             
             foreach (var territory in territories)
             {

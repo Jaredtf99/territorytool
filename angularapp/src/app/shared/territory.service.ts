@@ -26,7 +26,9 @@ export class TerritoryService {
     term: string | undefined,
     inUse: boolean | undefined,
     orderByEnum: number | undefined,
-    orderAscending: boolean | undefined
+    orderAscending: boolean | undefined,
+    lastGivenDateFrom: Date | undefined,
+    lastGivenDateTo: Date | undefined,
   ): Observable<Territory[]> {
 
     let params = new HttpParams();
@@ -46,6 +48,14 @@ export class TerritoryService {
     if (orderAscending !== undefined) {
       params = params.set('orderByAscending', String(orderAscending));
     }
+
+    if (lastGivenDateFrom !== undefined) {
+      params = params.set('lastGivenDateFrom', lastGivenDateFrom.toISOString());
+    }
+    if (lastGivenDateTo !== undefined) {
+      params = params.set('lastGivenDateTo', lastGivenDateTo.toISOString());
+    }
+
 
     return this.http.get<Territory[]>(`${this.baseUrl}/territories/all`, { params });  }
 

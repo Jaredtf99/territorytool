@@ -51,7 +51,7 @@ export class TerritoriesComponent {
     if (this.free) apiFilterInUse = false;
 
     this.spinner.show();
-    this.territoryService.getAllTerritories(this.filterName, apiFilterInUse, this.orderBy, this.sortAscending).subscribe(
+    this.territoryService.getAllTerritories(this.filterName, apiFilterInUse, this.orderBy, this.sortAscending, undefined, undefined).subscribe(
       {
         next: res => {
           this.territories = res;

@@ -6,5 +6,7 @@
         public bool? InUse { get; set; }
         public FilterTerritoriesOrderByEnum? OrderBy { get; set; }
         public bool OrderByAscending { get; set; } = true;
+        public DateTime? LastGivenDateFrom { get; set; }
+        public DateTime? LastGivenDateTo { get; set; }
     }
 }

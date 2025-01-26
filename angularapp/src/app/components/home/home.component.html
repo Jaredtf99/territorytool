@@ -1,1 +1,37 @@
+<div class="dashboard-container">
+  <!-- Sección de territorios antiguos -->
+  <div class="dashboard-section card-style">
+    <div class="section-header">
+      <h3>
+        <i class="fa fa-clock-rotate-left me-2"></i>
+        Territorios con 4+ meses
+      </h3>
+      <small  *ngIf="oldTerritories.length != 0" class="text-muted">Total: {{oldTerritories.length}}</small>
+    </div>
 
+    <div *ngIf="oldTerritories.length === 0" class="empty-state">
+      <i class="fa fa-check-circle text-success me-2"></i>
+      ¡Todos los territorios están al día!
+    </div>
+
+    <div *ngIf="oldTerritories.length != 0" class="territory-list">
+      <div *ngFor="let territory of oldTerritories" 
+           class="territory-item"
+           (click)="navigateToDetail(territory.id!)">
+        <div class="territory-info">
+          <span class="badge bg-primary me-2">{{territory.code}}</span>
+          <div>
+            <div class="territory-name">{{territory.name}}</div>
+            <small class="text-muted">
+              Asignado el: {{getTimeAgo(territory.givenDateUtc!)}}
+            </small>
+          </div>
+        </div>
+        <div class="territory-meta">
+          <i class="fa fa-user-clock me-2"></i>
+          <span>{{territory.givenDateUtc! | timeago}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

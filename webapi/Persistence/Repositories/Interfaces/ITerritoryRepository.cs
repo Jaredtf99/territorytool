@@ -11,7 +11,7 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Interfaces
         Territory? GetTerritoryByName(string name);
         Territory? GetTerritoryByCode(string code);
         Territory? GetTerritoryByMapUrl(string mapUrl);
-        IEnumerable<Territory> GetAllTerritories(string? term, bool? inUse, FilterTerritoriesOrderByEnum? orderBy, bool orderAscending);
+        IEnumerable<Territory> GetAllTerritories(string? term, bool? inUse, FilterTerritoriesOrderByEnum? orderBy, bool orderAscending, DateTime? lastGivenDateFrom, DateTime? lastGivenDateTo);
         IEnumerable<Territory> SearchTerritories(string search, bool onlyFreeTerritories, bool onlyGivenTerritories);
 
         Territory AddNewTerritory(string code, string name, string mapUrl);

@@ -22,7 +22,13 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             _logger = logger;
         }
 
-        public IEnumerable<Territory> GetAllTerritories(string? term, bool? inUse, FilterTerritoriesOrderByEnum? orderBy, bool orderAscending)
+        public IEnumerable<Territory> GetAllTerritories(   
+            string? term, 
+            bool? inUse, 
+            FilterTerritoriesOrderByEnum? orderBy, 
+            bool orderAscending, 
+            DateTime? lastGivenDateFrom, 
+            DateTime? lastGivenDateTo)
         {
             var query = _context.Territory.AsQueryable();
 
@@ -39,6 +45,17 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                 else
                     query = query.Where(x => x.PersonId == null);
             }
+
+            if (lastGivenDateFrom != null) 
+            {
+                query = query.Where(x => x.Transactions.OrderByDescending(t => t.GivenDateUtc).FirstOrDefault()!.GivenDateUtc > lastGivenDateFrom.Value);
+            }
+
+            if (lastGivenDateTo != null) 
+            {
+                query = query.Where(x => lastGivenDateTo.Value > x.Transactions.OrderByDescending(t => t.GivenDateUtc).FirstOrDefault()!.GivenDateUtc);
+            }
+
 
             if (orderBy != null)
             {

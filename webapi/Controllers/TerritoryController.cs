@@ -58,7 +58,7 @@ namespace TerritoryTool.ServerSide.Controllers
         {
             _logger.LogInformation("Returning all territories...");
 
-            var territories = _territoryRepository.GetAllTerritories(filter.Term, filter.InUse, filter.OrderBy, filter.OrderByAscending);
+            var territories = _territoryRepository.GetAllTerritories(filter.Term, filter.InUse, filter.OrderBy, filter.OrderByAscending, filter.LastGivenDateFrom, filter.LastGivenDateTo);
 
             return ConvertTerritoryToTerritoryInfoList(territories);
         }
