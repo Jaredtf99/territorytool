@@ -12,6 +12,12 @@ export class TerritoryCardComponent {
   @Output() deleteClicked = new EventEmitter<any>()
   @Output() cardClicked = new EventEmitter<any>()
 
+  get isOldDate(): boolean {
+    if (!this.territory.givenDateUtc) return false;
+    const fourMonthsAgo = new Date();
+    fourMonthsAgo.setMonth(fourMonthsAgo.getMonth() - 4);
+    return new Date(this.territory.givenDateUtc) < fourMonthsAgo;
+  }
 
   onEditClick(event: Event) {
     event.stopPropagation()

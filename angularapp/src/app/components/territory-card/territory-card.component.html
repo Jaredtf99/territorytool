@@ -22,7 +22,11 @@
           <i class="fas fa-user"></i>
           <span class="person-name">{{ territory.personName }}</span>
         </div>
-        <span *ngIf="territory.givenDateUtc" class="given-date">{{ territory.givenDateUtc | timeago }}</span>
+        <span *ngIf="territory.givenDateUtc" 
+              class="given-date" 
+              [ngClass]="{'old-date': isOldDate}">
+          {{ territory.givenDateUtc | timeago }}
+        </span>
       </div>
     </div>
   </div>
