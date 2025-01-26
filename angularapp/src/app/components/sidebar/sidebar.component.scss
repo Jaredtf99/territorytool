@@ -1,0 +1,13 @@
+.menu-items {
+  li a i {
+    width: 1.25em; /* Ancho fijo */
+    text-align: center; /* Centrar icono */
+    margin-right: 0.75rem;
+  }
+  
+  /* Ajustar iconos específicos */
+  .fa-map-location-dot { font-size: 0.95em; }
+  .fa-hand-holding-hand { font-size: 0.9em; }
+  .fa-box-open { font-size: 0.95em; }
+  .fa-map-circle-plus { font-size: 0.9em; }
+}
