@@ -140,18 +140,18 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             //TODO: sacar apiImage a un externalService
             //TODO: Lanzar excepciones si no va bien
 
-            const string MapApiImage = "https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/{0},{1},16.31,0,25/300x200@2x?access_token={2}&attribution=false&logo=false";
+            const string MapApiImage = "https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/[{0},{1},{2},{3}]/300x200@2x?access_token={4}&attribution=false&logo=false";
             _logger.LogInformation($"Buscando coordenadas de la url del mapa del territorio {territory.Name} ({territory.Code})");
 
-            Coordinate? coordinate = await GetCoordsFromMapUrl(territory.MapUrl);
+            var boundingBox = await GetBoundingBoxFromMapUrl(territory.MapUrl);
 
-            if (coordinate != null)
+            if (boundingBox != null)
             {
                 byte[] imageBytes = null;
 
                 using (HttpClient httpClient = new HttpClient())
                 {
-                    string url = string.Format(MapApiImage, coordinate.Longitude.ToString().Replace(",", "."), coordinate.Latitude.ToString().Replace(",", "."), _appSettings.MapBoxApiKey);
+                    string url = string.Format(MapApiImage, boundingBox.Value.Southwest.Longitude.ToString().Replace(",", "."), boundingBox.Value.Southwest.Latitude.ToString().Replace(",", "."), boundingBox.Value.Northeast.Longitude.ToString().Replace(",", "."), boundingBox.Value.Northeast.Latitude.ToString().Replace(",", "."), _appSettings.MapBoxApiKey);
 
                     HttpResponseMessage response = await httpClient.GetAsync(url);
 
@@ -185,10 +185,8 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             return rutaImagen;
         }
 
-        private async Task<Coordinate?> GetCoordsFromMapUrl(string mapUrl)
+        private async Task<(Coordinate Southwest, Coordinate Northeast)?> GetBoundingBoxFromMapUrl(string mapUrl)
         {
-            Coordinate coordinate = null;
-
             using (HttpClient httpClient = new HttpClient())
             {
                 HttpResponseMessage response = await httpClient.GetAsync(mapUrl);
@@ -197,37 +195,77 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
                 {
                     string content = await response.Content.ReadAsStringAsync();
 
-                    //Regex para sacar las coordenadas del html de google
-                    string pattern = @"\[(-?\d+(\.\d+)?),(-?\d+(\.\d+)?)\]";
-                    Regex regex = new Regex(pattern);
+                    var perimeter = GetMapPerimeterCoordinates(content);
 
-                    Match? match = regex.Matches(content).FirstOrDefault(x => x.Length > 5);
-
-                    if (match != null)
+                    if (perimeter == null)
                     {
-                        string coordenadasString = match.Value;
-                        coordenadasString = coordenadasString.Replace("[", "").Replace("]", "");
-
-                        var coordenadas = coordenadasString.Split(',');
-
-                        decimal lat = decimal.Parse(coordenadas[0], NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo);
-                        decimal lon = decimal.Parse(coordenadas[1], NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo);
-
-                        coordinate = new Coordinate(lat, lon);
+                        _logger.LogError($"No se han podido encontrar las coordenadas");
+                        return null;
                     }
                     else
                     {
-                        _logger.LogError($"No se han podido encontrar las coordenadas");
+                        return GetBoundingBox(perimeter);
                     }
 
                 }
                 else
                 {
                     _logger.LogError($"Error en la solicitud a google para obtener coordenadas del mapa. Código de estado: {response.StatusCode}");
+                    return null;
                 }
             }
 
-            return coordinate;
+        }
+
+        public static List<Coordinate> GetMapPerimeterCoordinates(string htmlContent)
+        {
+            var coordinates = new List<Coordinate>();
+
+            // Regex mejorada para capturar coordenadas con formato decimal
+            var regex = new Regex(@"\[(\d+\.\d+),(-?\d+\.\d+)\]");
+            var matches = regex.Matches(htmlContent);
+
+            foreach (Match match in matches)
+            {
+                if (match.Groups.Count != 3) continue;
+
+                try
+                {
+                    var latitude = decimal.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+                    var longitude = decimal.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
+                    coordinates.Add(new Coordinate(latitude, longitude));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error parsing coordinates: {ex.Message}");
+                }
+            }
+
+            return coordinates;
+        }
+
+        public static (Coordinate Southwest, Coordinate Northeast) GetBoundingBox(List<Coordinate> coordinates)
+        {
+            if (coordinates == null || coordinates.Count == 0)
+                throw new ArgumentException("La lista de coordenadas no puede estar vacía");
+
+            decimal minLat = coordinates[0].Latitude;
+            decimal maxLat = coordinates[0].Latitude;
+            decimal minLon = coordinates[0].Longitude;
+            decimal maxLon = coordinates[0].Longitude;
+
+            foreach (var coord in coordinates)
+            {
+                minLat = Math.Min(minLat, coord.Latitude);
+                maxLat = Math.Max(maxLat, coord.Latitude);
+                minLon = Math.Min(minLon, coord.Longitude);
+                maxLon = Math.Max(maxLon, coord.Longitude);
+            }
+
+            return (
+                new Coordinate(minLat, minLon),  // Esquina suroeste
+                new Coordinate(maxLat, maxLon)   // Esquina noreste
+            );
         }
 
         private TerritoryInfo? ConvertTerritoryToTerritoryInfo(Territory? territory, string resourceUrl = "")
