@@ -61,6 +61,27 @@
 
 
 <div class="territories-container">
+  <!-- Skeleton Loading -->
+  <div *ngIf="isLoading" class="skeleton-container">
+    <div class="skeleton-card" *ngFor="let item of [1,2,3]">
+      <div class="skeleton-image-container">
+        <div class="skeleton-image"></div>
+      </div>
+      <div class="skeleton-content">
+        <div class="skeleton-header">
+          <div class="skeleton-title"></div>
+          <div class="skeleton-code"></div>
+        </div>
+        <div class="skeleton-info">
+          <div class="skeleton-line">
+            <div class="skeleton-person"></div>
+            <div class="skeleton-date"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <app-territory-card *ngFor="let territory of territoriesFiltered"
                       [territory]="territory"
                       (editClicked)="openEditModal($event)"

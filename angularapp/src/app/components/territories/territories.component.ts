@@ -26,6 +26,7 @@ export class TerritoriesComponent {
   public territoriesFiltered!: Territory[];
   public territoryToEdit: TerritoryEditInfo = new TerritoryEditInfo();
   public idTerritoryToDelete = 0;
+  isLoading: boolean = true;
 
   orderBy = 1;
 
@@ -50,16 +51,16 @@ export class TerritoriesComponent {
     if (this.inUse) apiFilterInUse = true;
     if (this.free) apiFilterInUse = false;
 
-    this.spinner.show();
+    this.isLoading = true;
     this.territoryService.getAllTerritories(this.filterName, apiFilterInUse, this.orderBy, this.sortAscending, undefined, undefined).subscribe(
       {
         next: res => {
           this.territories = res;
           this.territoriesFiltered = res;
-          this.spinner.hide();
+          this.isLoading = false;
         },
         error: err => {
-          this.spinner.hide();
+          this.isLoading = false;
           console.error(err);
         }
       });
@@ -93,6 +94,5 @@ export class TerritoriesComponent {
   territoryDeleteCallback() {
     this.getTerritories();
   }
-
 
 }
