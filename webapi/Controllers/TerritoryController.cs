@@ -418,7 +418,7 @@ namespace TerritoryTool.ServerSide.Controllers
         {
             _logger.LogInformation("Searching territory suggestions...");
 
-            var territories = await _territoryRepository.GetTerritoriesSuggestions(3);
+            var territories = await _territoryRepository.GetTerritoriesSuggestions(3, Request.Scheme, Request.Host.Value, Request.PathBase);
 
             return Ok(territories);
         }

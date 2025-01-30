@@ -3,5 +3,6 @@ export interface TerritorySuggestion {
   code: string;
   name: string;
   mapUrl: string;
+  imgUrl: string;
   lastPickedDate: Date;
 }

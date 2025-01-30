@@ -30,6 +30,6 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Interfaces
 
         IEnumerable<Transaction> GetTerritoryTransactions(int territoryId);
 
-        Task<IEnumerable<TerritorySuggestionInfo>> GetTerritoriesSuggestions(int count);
+        Task<IEnumerable<TerritorySuggestionInfo>> GetTerritoriesSuggestions(int count, string requestScheme, string requestHost, string requestPathBase);
     }
 }

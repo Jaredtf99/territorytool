@@ -622,6 +622,201 @@ ul.tl li .item-detail {
 }
 
 
+/* Contenedor con altura fija */
+.preview-container {
+  margin-bottom: 20px;
+}
+
+/* Estado vacío */
+.empty-preview {
+  height: 112px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #f8f9fa;
+  border: 2px dashed #e9ecef;
+  border-radius: 8px; /* Igual que las sugerencias */
+  color: #6c757d;
+  font-size: 0.95rem;
+  
+  i {
+    font-size: 1.2rem;
+    color: #adb5bd;
+  }
+}
+
+.territory-preview {
+  height: 112px;
+  padding: 10px 15px; /* Reducción vertical */
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid rgba(108, 122, 230, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  overflow: hidden;
+  display: flex;
+  gap: 15px;
+}
+
+.preview-image {
+  width: 120px;
+  height: 90px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.preview-content {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px; /* Reducido de 12px */
+}
+
+.preview-title {
+  font-size: 1.05rem; /* Ligera reducción */
+  color: #2c3e50;
+  margin: 0;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.preview-code {
+  background: #007bff;
+  color: white;
+  padding: 1px 6px; /* Ajuste fino */
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-right: 10px;
+}
+
+.preview-info {
+  margin-top: auto; /* Empujar contenido hacia abajo */
+  .info-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: #4a5568;
+    margin-bottom: 4px; /* Reducir espacio entre líneas */
+    
+    i {
+      color: #007bff;
+      width: 16px;
+      text-align: center;
+    }
+  }
+}
+
+/* Estilos para el enlace */
+.preview-link {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  text-decoration: none;
+  color: inherit;
+  width: 100%;
+  padding-right: 20px;
+  position: relative;
+  
+  &:hover {
+    .preview-action i {
+      transform: translateX(3px);
+      color: #007bff;
+    }
+  }
+}
+
+.preview-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 20px;
+  
+  .action-text {
+    font-size: 0.8rem;
+    color: #6c757d;
+    opacity: 0;
+    transform: translateX(-5px);
+    transition: all 0.2s ease;
+    line-height: 1;
+    margin-top: -1px;
+  }
+  
+  i {
+    color: #adb5bd;
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+  }
+}
+
+.preview-link:hover {
+  .preview-action {
+    .action-text {
+      color: #007bff;
+      opacity: 1;
+      transform: translateX(0);
+    }
+    i {
+      color: #007bff;
+      transform: translateX(3px);
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .preview-container {
+    height: 100px; /* Altura móvil fija */
+  }
+  
+  .empty-preview {
+    height: 100px; /* Igual que el contenedor móvil */
+  }
+  
+  .territory-preview {
+    height: 100px; /* Misma altura en móvil */
+    padding: 8px 10px;
+  }
+  
+  .preview-image {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .preview-title {
+    font-size: 0.95rem;
+  }
+  
+  .info-line {
+    font-size: 0.8rem;
+  }
+
+  .preview-action .action-text {
+    display: none;
+  }
+  
+  .preview-link {
+    padding-right: 10px;
+  }
+}
+
+
 @import './assets/territorytool';
 /* Importing Bootstrap SCSS file. */
 @import "./node_modules/bootstrap/scss/bootstrap";

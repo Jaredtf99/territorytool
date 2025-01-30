@@ -312,9 +312,11 @@ export class ChangeTerritoryComponent implements AfterViewInit {
 
   selectSuggestedTerritory(territory: TerritorySuggestion) {
     this.selectedTerritory = {
+      id: territory.id,
       code: territory.code,
       name: territory.name,
-      lastPickedDateUtc: territory.lastPickedDate
+      lastPickedDateUtc: territory.lastPickedDate,
+      imgUrl: territory.imgUrl
     } as Territory;
     
     this.giveTerritoryForm.patchValue({

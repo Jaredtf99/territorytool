@@ -47,6 +47,7 @@
       </div>
     </div>
 
+
     <div class="form-group mb-4">
       <label>Territorio</label>
 
@@ -69,6 +70,37 @@
         </ng-template>
 
       </ng-select>
+    </div>
+
+    <div class="preview-container">
+      <div class="empty-preview" *ngIf="!selectedTerritory">
+        <i class="fas fa-map-marked-alt"></i>
+        <span>Selecciona un territorio</span>
+      </div>
+
+      <div class="territory-preview" *ngIf="selectedTerritory">
+        <a [routerLink]="['/territory/', selectedTerritory.id]" class="preview-link">
+          <div class="preview-image">
+            <img [src]="selectedTerritory.imgUrl || './assets/img/testterritorio.png'" alt="Mapa del territorio">
+          </div>
+          <div class="preview-content">
+            <div class="preview-header">
+              <span class="preview-code">{{selectedTerritory.code}}</span>
+              <h3 class="preview-title">{{selectedTerritory.name}}</h3>
+            </div>
+            <div class="preview-info">
+              <div class="info-line">
+                <i class="fas fa-calendar"></i>
+                <span class="preview-date">{{selectedTerritory.lastPickedDateUtc | timeago}}</span>
+              </div>
+            </div>
+          </div>
+          <div class="preview-action">
+            <span class="action-text">Detalle</span>
+            <i class="fas fa-chevron-right"></i>
+          </div>
+        </a>
+      </div>
     </div>
 
 
@@ -105,7 +137,7 @@
     <div class="form_buttons">
       <button type="submit" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modalScanner" (click)="startQrScanner()"><i class="fa fa-qrcode me-2"></i>Escanear QR</button>
 
-      <button type="submit" class="btn btn-primary" [disabled]="!giveTerritoryForm.valid">Entregar territorio</button>
+      <button type="submit" class="btn btn-primary" [disabled]="!giveTerritoryForm.valid">Entregar</button>
     </div>
 
   </form>

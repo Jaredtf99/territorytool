@@ -29,6 +29,43 @@
       </ng-select>
     </div>
 
+    <div class="preview-container">
+      <div class="empty-preview" *ngIf="!selectedTerritory">
+        <i class="fas fa-map-marked-alt"></i>
+        <span>Selecciona un territorio</span>
+      </div>
+
+      <div class="territory-preview" *ngIf="selectedTerritory">
+        <a [routerLink]="['/territory/', selectedTerritory.id]" class="preview-link">
+          <div class="preview-image">
+            <img [src]="selectedTerritory.imgUrl || './assets/img/testterritorio.png'" alt="Mapa del territorio">
+          </div>
+          <div class="preview-content">
+            <div class="preview-header">
+              <span class="preview-code">{{selectedTerritory.code}}</span>
+              <h3 class="preview-title">{{selectedTerritory.name}}</h3>
+            </div>
+            <div class="preview-info">
+              <div class="info-line" *ngIf="selectedTerritory.personName">
+                <i class="fas fa-user"></i>
+                <span class="preview-person">{{selectedTerritory.personName}}</span>
+              </div>
+  
+              <div class="info-line">
+                <i class="fas fa-calendar"></i>
+                <span class="preview-date">{{selectedTerritory.givenDateUtc | timeago}}</span>
+              </div>
+            </div>
+          </div>
+          <div class="preview-action">
+            <span class="action-text">Detalle</span>
+            <i class="fas fa-chevron-right"></i>
+          </div>
+        </a>
+      </div>
+    </div>
+
+
     <div class="form-group">
       <label>Fecha manual</label>
       <div class="checkbox-wrapper-2 ms-1">

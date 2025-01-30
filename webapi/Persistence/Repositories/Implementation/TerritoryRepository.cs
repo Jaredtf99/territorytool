@@ -376,7 +376,7 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             return stats;
         }
 
-        public async Task<IEnumerable<TerritorySuggestionInfo>> GetTerritoriesSuggestions(int count)
+        public async Task<IEnumerable<TerritorySuggestionInfo>> GetTerritoriesSuggestions(int count, string requestScheme, string requestHost, string requestPathBase)
         {
             var territories = await _context.Territory
                 .Where(t => t.PersonId == null)
@@ -399,14 +399,16 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                 .Take(count)
                 .ToListAsync();
 
-            return territories.Select(x => new TerritorySuggestionInfo { 
+            return territories.Select(x => new TerritorySuggestionInfo {
                 Code = x.Territory.Code,
                 Id = x.Territory.Id,
                 LastPickedDate = x.LastPickedDate,
                 GivenDate = x.GivenDate,
                 MapUrl = x.Territory.MapUrl,
-                Name = x.Territory.Name
-            });
+                Name = x.Territory.Name,
+                ImgUrl = x.Territory.ImgUrl == null ? null : $"{requestScheme}://{requestHost}{requestPathBase}/{x.Territory.ImgUrl}"
+
+        });
         }
 
     }
