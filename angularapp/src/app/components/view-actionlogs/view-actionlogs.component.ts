@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { NgxSpinnerService } from "ngx-spinner";
 import { TabulatorFull as Tabulator } from 'tabulator-tables';
 import { TimeagoPipe } from 'ngx-timeago';
+import { lastValueFrom } from 'rxjs';
 
 
 @Component({
@@ -13,51 +14,52 @@ import { TimeagoPipe } from 'ngx-timeago';
 })
 export class ViewActionlogsComponent implements OnInit {
 
-  actionlogs: any[] = [];
-
-
   constructor(public http: HttpClient, @Inject('BASE_URL') public baseUrl: string, private spinner: NgxSpinnerService, private timeagoPipe: TimeagoPipe) {
-    this.spinner.show();
-    http.get<any[]>(`${baseUrl}/actionlogs`).subscribe({
-      next: res => {
-        this.spinner.hide();
-        this.actionlogs = res;
-        this.buildTabulatorTable();
-      },
-      error: error => {
-        this.spinner.hide();
-        console.error(error);
-      }
-    });
-
   }
 
   buildTabulatorTable() {
-    new Tabulator("#actionlogs_table", {
+    let table = new Tabulator("#actionlogs_table", {
       maxHeight: "100%",
-      data: this.actionlogs,
       layout: "fitColumns",
+      pagination: true,
+      paginationMode: "remote",
+      sortMode: "remote",
       initialSort: [
-        { column: "DateUtc", dir: "desc" }
+        { column: "DateUtc", dir: "desc" }, 
       ],
+      paginationSize: 20,
+      paginationSizeSelector: [10, 20, 50, 100],
+      ajaxURL: `${this.baseUrl}/actionlogs`,
+      ajaxRequestFunc: (url, config, params) => {
+        return lastValueFrom(
+          this.http.get(url, {
+            params: {
+              pageNumber: params.page,
+              pageSize: params.size,
+              sortField: params.sort[0].field,
+              sortOrder: params.sort[0].dir
+            }
+          })
+        );
+      },
       columns: [
-        { title: "Type", field: "ActionType", headerFilter: "input" },
-        {
+        { title: "Type", field: "ActionType" },
+        { 
           title: "Date", 
-          field: "DateUtc", 
+          field: "DateUtc",
           formatter: (cell) => {
             return this.timeagoPipe.transform(cell.getValue());
           }
         },
-        { title: "UserName", field: "UserName", headerFilter: "input" },
-        { title: "Message", field: "Message", headerFilter: "input" },
+        { title: "UserName", field: "UserName"},
+        { title: "Message", field: "Message"},
         { title: "Successful", field: "Successful", formatter: "tickCross" },
       ],
     });
   }
 
   ngOnInit() {
-
+    this.buildTabulatorTable();
   }
 
 

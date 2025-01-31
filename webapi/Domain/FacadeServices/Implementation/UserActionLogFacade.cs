@@ -53,21 +53,17 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             return true;
         }
 
-        public IEnumerable<ActionLogInfo> GetAllActionLogs()
+
+        public PagedResult<ActionLogInfo> GetActionLogsPaged(int pageNumber, int pageSize, string sortField, string sortOrder)
         {
-            IEnumerable<ActionLog> entities = _actionLog.GetActionLogs();
-            IEnumerable<ActionLogInfo> retval = new List<ActionLogInfo>();
-
-            if (entities != null && entities.Any())
-            {
-                _logger.LogInformation("Action logs retreived");
-                retval = ConvertActionLogsToActionLogInfo(entities);
-            }
-            else
-                _logger.LogWarning("No action logs retreived");
-
-
-            return retval;
+            var items = _actionLog.GetActionLogs(pageNumber, pageSize, sortField, sortOrder, out int total);
+            
+            return new PagedResult<ActionLogInfo> {
+                data = ConvertActionLogsToActionLogInfo(items),
+                TotalCount = total,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
         }
 
         private IEnumerable<ActionLogInfo> ConvertActionLogsToActionLogInfo(IEnumerable<ActionLog> actions)
@@ -108,5 +104,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
             return retval;
         }
+
+
     }
 }

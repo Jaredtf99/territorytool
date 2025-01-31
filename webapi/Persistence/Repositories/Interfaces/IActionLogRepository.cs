@@ -7,7 +7,7 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Interfaces
 {
     public interface IActionLogRepository
     {
-        IEnumerable<ActionLog> GetActionLogs();
+        IEnumerable<ActionLog> GetActionLogs(int page, int pageSize, string sortField, string sortOrder, out int total);
         void AddNewActionLog(ActionLog actionLog);
 
     }

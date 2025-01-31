@@ -34,13 +34,11 @@ namespace TerritoryTool.ServerSide.Controllers
 
         [HttpGet]
         [Authorize(Roles = "SUPERADMIN")]
-        public ActionResult GetAllActionLogs()
+        public ActionResult GetActionLogsPaged(int pageNumber = 1, int pageSize = 20, string sortField = "DateUtc", string sortOrder = "desc")
         {
-            IEnumerable<ActionLogInfo> actionLogs = _userActionLogFacade.GetAllActionLogs();
-
-            return Content(JsonConvert.SerializeObject(actionLogs), ConfigurationHelper.JsonMime);
+            var result = _userActionLogFacade.GetActionLogsPaged(pageNumber, pageSize, sortField, sortOrder);
+            return Content(JsonConvert.SerializeObject(result), ConfigurationHelper.JsonMime);
         }
-
 
     }
 }
