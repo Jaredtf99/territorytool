@@ -143,7 +143,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             //TODO: sacar apiImage a un externalService
             //TODO: Lanzar excepciones si no va bien
 
-            const string MapApiImage = "https://maps.geoapify.com/v1/staticmap?style=maptiler-3d&scaleFactor=2&width=420&height=280&pitch=40&area=rect:{0},{1},{2},{3}&apiKey={4}&styleCustomization=background:%23fffdf9|landcover_grass:%23aee77e|water:%238cd6f6|road_minor:%239a9ea1|road_trunk_primary:%239a9ea1|road_secondary_tertiary:%239a9ea1|road_major_motorway:%239a9ea1|bridge_major:%239a9ea1|building-3d:%23ebece2";
+            const string MapApiImage = "https://maps.geoapify.com/v1/staticmap?style=maptiler-3d&scaleFactor=2&width=420&height=280&pitch=40&area=rect:{0},{1},{2},{3}&apiKey={4}&styleCustomization=background:%23f9f1e6|landcover_grass:%23aee77e|water:%238cd6f6|road_minor:%239a9ea1|road_trunk_primary:%239a9ea1|road_secondary_tertiary:%239a9ea1|road_major_motorway:%239a9ea1|bridge_major:%239a9ea1|building-3d:%23e8ebe1";
             _logger.LogInformation($"Buscando coordenadas de la url del mapa del territorio {territory.Name} ({territory.Code})");
 
             var boundingBox = await GetBoundingBoxFromMapUrl(territory.MapUrl);
