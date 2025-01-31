@@ -24,6 +24,9 @@ using TerritoryTool.ServerSide.Persistence.Entities;
 using TerritoryTool.ServerSide.Persistence.Repositories.Implementation;
 using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
 using Transaction = TerritoryTool.ServerSide.Persistence.Entities.Transaction;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.IO;
 
 namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 {
@@ -140,7 +143,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             //TODO: sacar apiImage a un externalService
             //TODO: Lanzar excepciones si no va bien
 
-            const string MapApiImage = "https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/[{0},{1},{2},{3}]/300x200@2x?access_token={4}&attribution=false&logo=false";
+            const string MapApiImage = "https://maps.geoapify.com/v1/staticmap?style=maptiler-3d&scaleFactor=2&width=420&height=280&pitch=40&area=rect:{0},{1},{2},{3}&apiKey={4}&styleCustomization=background:%23fffdf9|landcover_grass:%23aee77e|water:%238cd6f6|road_minor:%239a9ea1|road_trunk_primary:%239a9ea1|road_secondary_tertiary:%239a9ea1|road_major_motorway:%239a9ea1|bridge_major:%239a9ea1|building-3d:%23ebece2";
             _logger.LogInformation($"Buscando coordenadas de la url del mapa del territorio {territory.Name} ({territory.Code})");
 
             var boundingBox = await GetBoundingBoxFromMapUrl(territory.MapUrl);
@@ -151,7 +154,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
                 using (HttpClient httpClient = new HttpClient())
                 {
-                    string url = string.Format(MapApiImage, boundingBox.Value.Southwest.Longitude.ToString().Replace(",", "."), boundingBox.Value.Southwest.Latitude.ToString().Replace(",", "."), boundingBox.Value.Northeast.Longitude.ToString().Replace(",", "."), boundingBox.Value.Northeast.Latitude.ToString().Replace(",", "."), _appSettings.MapBoxApiKey);
+                    string url = string.Format(MapApiImage, boundingBox.Value.Southwest.Longitude.ToString().Replace(",", "."), boundingBox.Value.Southwest.Latitude.ToString().Replace(",", "."), boundingBox.Value.Northeast.Longitude.ToString().Replace(",", "."), boundingBox.Value.Northeast.Latitude.ToString().Replace(",", "."), "e4eeaa9d682849079a75357e19837096");
 
                     HttpResponseMessage response = await httpClient.GetAsync(url);
 
@@ -167,18 +170,36 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
                 if (imageBytes != null)
                 {
-                    var directorioImagenes = Path.Combine("Resources", "Images");
-
-                    if (!Directory.Exists(directorioImagenes))
+                    using (var ms = new MemoryStream(imageBytes))
+                    using (var image = System.Drawing.Image.FromStream(ms))
                     {
-                        Directory.CreateDirectory(directorioImagenes);
+                        int newHeight = image.Height - 80;
+                        if (newHeight > 0)
+                        {
+                            var croppedImage = new Bitmap(image.Width, newHeight);
+                            
+                            using (var graphics = Graphics.FromImage(croppedImage))
+                            {
+                                graphics.DrawImage(image,
+                                    new Rectangle(0, 0, croppedImage.Width, croppedImage.Height),
+                                    new Rectangle(0, 0, image.Width, newHeight),
+                                    GraphicsUnit.Pixel);
+                            }
+
+                            var directorioImagenes = Path.Combine("Resources", "Images");
+                            Directory.CreateDirectory(directorioImagenes);
+                            
+                            rutaImagen = Path.Combine(directorioImagenes, $"{Guid.NewGuid()}.png");
+                            croppedImage.Save(rutaImagen, System.Drawing.Imaging.ImageFormat.Png);
+                            
+                            _logger.LogInformation($"Imagen recortada guardada en {rutaImagen}");
+                        }
+                        else
+                        {
+                            _logger.LogWarning("La imagen es demasiado pequeña para recortar (Altura: {height}px)", image.Height);
+                            return null;
+                        }
                     }
-
-                    rutaImagen = Path.Combine(directorioImagenes, $"{Guid.NewGuid()}.png");
-                    File.WriteAllBytes(rutaImagen, imageBytes);
-
-                    _logger.LogInformation($"Imagen guardada en {rutaImagen}");
-
                 }
             }
 
