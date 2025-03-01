@@ -46,6 +46,25 @@ ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 var app = builder.Build();
 
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/json";
+
+        var exceptionHandlerPathFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
+
+        if (exceptionHandlerPathFeature?.Error != null)
+        {
+            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogError(exceptionHandlerPathFeature.Error, "Unhandled exception occurred.");
+        }
+
+        await context.Response.WriteAsync("{\"message\": \"Error interno del servidor\"}");
+    });
+});
+
 app.UseCors("AllowSpecificOrigin");
 
 // Configure the HTTP request pipeline.
