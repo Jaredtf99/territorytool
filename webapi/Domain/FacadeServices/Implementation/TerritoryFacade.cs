@@ -317,18 +317,37 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
             TerritoryDetailInfo territoryDetailInfo = new TerritoryDetailInfo();
 
-
-            Transaction? lastTransaction = territory.Transactions?.OrderBy(x => x.Id).FirstOrDefault();
-
             territoryDetailInfo.MapUrl = territory.MapUrl;
             territoryDetailInfo.PersonName = territory.Person?.Name;
             territoryDetailInfo.Code = territory.Code;
             territoryDetailInfo.Name = territory.Name;
             territoryDetailInfo.Id = territory.Id;
-            territoryDetailInfo.GivenDateUtc = lastTransaction?.GivenDateUtc;
-            territoryDetailInfo.LastPickedDateUtc = lastTransaction?.PickedDateUtc;
+
+            // Calculate GivenDateUtc: Get the GivenDateUtc of the latest transaction (ordered by GivenDateUtc descending) where PickedDateUtc is null.
+            // If no such transaction exists (e.g., the territory is not currently assigned), GivenDateUtc should be null.
+            territoryDetailInfo.GivenDateUtc = territory.Transactions?
+                .Where(t => t.PickedDateUtc == null)
+                .OrderByDescending(t => t.GivenDateUtc)
+                .FirstOrDefault()?.GivenDateUtc;
+
+            // Calculate LastPickedDateUtc: Get the PickedDateUtc of the latest transaction (ordered by PickedDateUtc descending) that has a PickedDateUtc.
+            // If no such transaction exists (e.g., the territory has always been assigned or is newly created), LastPickedDateUtc should be null.
+            territoryDetailInfo.LastPickedDateUtc = territory.Transactions?
+                .Where(t => t.PickedDateUtc != null)
+                .OrderByDescending(t => t.PickedDateUtc)
+                .FirstOrDefault()?.PickedDateUtc;
+            
             territoryDetailInfo.PickedCount = territory.Transactions?.Count() ?? 0;
-            territoryDetailInfo.LastUser = lastTransaction?.PickedByNavigation?.UserName ?? lastTransaction?.GivenByNavigation.UserName;
+
+            // Determine LastUser based on the most recent transaction overall (either given or picked)
+            // This part of the logic might need further refinement based on exact requirements for LastUser, 
+            // but for now, we'll keep a simplified version based on the latest transaction available.
+            // A more robust approach would be to find the absolute latest event (given or picked) and use that user.
+            var lastOverallTransaction = territory.Transactions?
+                .OrderByDescending(t => t.PickedDateUtc ?? t.GivenDateUtc)
+                .FirstOrDefault();
+            
+            territoryDetailInfo.LastUser = lastOverallTransaction?.PickedByNavigation?.UserName ?? lastOverallTransaction?.GivenByNavigation?.UserName;
 
 
             if (territory.ImgUrl != null)
