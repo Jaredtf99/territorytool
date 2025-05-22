@@ -195,7 +195,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
                             var directorioFisicoImagenes = _configuration["Storage:PhysicalImagesPath"];
                             var directorioImagenes = _configuration["Storage:ImagesPath"];
-                            Directory.CreateDirectory(directorioImagenes);
+                            Directory.CreateDirectory(directorioFisicoImagenes);
 
                             string nombreFichero = $"{Guid.NewGuid()}.png";
 
