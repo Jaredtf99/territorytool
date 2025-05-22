@@ -35,6 +35,7 @@ public static class DependencyInjection
         services.AddQuartz(q =>
         {
             var jobKey = new JobKey("UpdateTerritoryImagesJob");
+            q.AddJob<UpdateTerritoryImagesJob>(opts => opts.WithIdentity(jobKey));
 
             q.AddTrigger(opts => opts
                 .ForJob(jobKey)
