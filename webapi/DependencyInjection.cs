@@ -45,7 +45,9 @@ public static class DependencyInjection
             q.AddTrigger(opts => opts
                 .ForJob(jobKeyDriveBackupUploader)
                 .WithIdentity("BackupDatabaseDrive-startup-trigger")
-                .StartNow());
+                .WithSimpleSchedule(x => x
+                    .WithIntervalInMinutes(1)
+                    .RepeatForever()));
 
             //q.AddTrigger(opts => opts
             //    .ForJob(jobKey)
