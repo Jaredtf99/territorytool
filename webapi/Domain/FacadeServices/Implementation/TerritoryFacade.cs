@@ -38,11 +38,13 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
         private readonly ITerritoryRepository _territoryRepo;
         private readonly IUserActionLogFacade _actionLog;
+        private readonly IConfiguration _configuration;
 
-        public TerritoryFacade(ILogger<TerritoryFacade> logger, ITerritoryRepository territoryRepo, IUserActionLogFacade actionLog, IOptions<ApplicationSecrets> appSettings)
+        public TerritoryFacade(ILogger<TerritoryFacade> logger, ITerritoryRepository territoryRepo, IUserActionLogFacade actionLog, IOptions<ApplicationSecrets> appSettings, IConfiguration configuration)
         {
             _logger = logger;
             _appSettings = appSettings.Value;
+            _configuration = configuration;
 
             _territoryRepo = territoryRepo;
             _actionLog = actionLog;
@@ -154,7 +156,12 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
                 using (HttpClient httpClient = new HttpClient())
                 {
-                    string url = string.Format(MapApiImage, boundingBox.Value.Southwest.Longitude.ToString().Replace(",", "."), boundingBox.Value.Southwest.Latitude.ToString().Replace(",", "."), boundingBox.Value.Northeast.Longitude.ToString().Replace(",", "."), boundingBox.Value.Northeast.Latitude.ToString().Replace(",", "."), "e4eeaa9d682849079a75357e19837096");
+                    string url = string.Format(MapApiImage, 
+                        boundingBox.Value.Southwest.Longitude.ToString().Replace(",", "."), 
+                        boundingBox.Value.Southwest.Latitude.ToString().Replace(",", "."), 
+                        boundingBox.Value.Northeast.Longitude.ToString().Replace(",", "."), 
+                        boundingBox.Value.Northeast.Latitude.ToString().Replace(",", "."), 
+                        "e4eeaa9d682849079a75357e19837096");
 
                     HttpResponseMessage response = await httpClient.GetAsync(url);
 
@@ -186,7 +193,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
                                     GraphicsUnit.Pixel);
                             }
 
-                            var directorioImagenes = Path.Combine("Resources", "Images");
+                            var directorioImagenes = _configuration["Storage:ImagesPath"];
                             Directory.CreateDirectory(directorioImagenes);
                             
                             rutaImagen = Path.Combine(directorioImagenes, $"{Guid.NewGuid()}.png");
