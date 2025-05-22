@@ -1,14 +1,15 @@
+using Google.Apis.Auth.OAuth2;
+using Google.Apis.Drive.v3;
+using Google.Apis.Services;
+using Google.Apis.Upload;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using Google.Apis.Auth.OAuth2;
-using Google.Apis.Drive.v3;
-using Google.Apis.Services;
-using Microsoft.Extensions.Logging;
-using webapi.Domain.FacadeServices.Interfaces;
+using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
 
-namespace webapi.Domain.FacadeServices.Implementation
+namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 {
     public class GoogleDriveService : IGoogleDriveService
     {
@@ -64,9 +65,22 @@ namespace webapi.Domain.FacadeServices.Implementation
                 {
                     request = service.Files.Create(fileMetadata, uploadStream, "application/octet-stream");
                     request.Fields = "id, name";
-                    request.UploadSessionDataTransferProgress += progress =>
-                        _logger.LogInformation($"Upload progress: {progress.Status} - {progress.BytesSent} bytes");
-                    
+
+                    request.ProgressChanged += progress =>
+                    {
+                        switch (progress.Status)
+                        {
+                            case UploadStatus.Uploading:
+                                _logger.LogInformation($"Upload progress: {progress.BytesSent} bytes uploaded.");
+                                break;
+                            case UploadStatus.Completed:
+                                _logger.LogInformation("Upload completed.");
+                                break;
+                            case UploadStatus.Failed:
+                                _logger.LogError($"Upload failed. Exception: {progress.Exception?.Message}");
+                                break;
+                        }
+                    };
                     var uploadResponse = await request.UploadAsync();
 
                     if (uploadResponse.Status == Google.Apis.Upload.UploadStatus.Completed)

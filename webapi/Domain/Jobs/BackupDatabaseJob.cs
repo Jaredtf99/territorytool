@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Quartz;
-using webapi.Domain.FacadeServices.Interfaces;
+using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
 
 namespace webapi.Domain.Jobs
 {
@@ -12,16 +12,16 @@ namespace webapi.Domain.Jobs
     {
         private readonly ILogger<BackupDatabaseJob> _logger;
         private readonly IConfiguration _configuration;
-        // private readonly IGoogleDriveService _googleDriveService; // Will be added later
+        private readonly IGoogleDriveService _googleDriveService;
 
         public BackupDatabaseJob(
             ILogger<BackupDatabaseJob> logger,
-            IConfiguration configuration)
-            // IGoogleDriveService googleDriveService) // Will be added later
+            IConfiguration configuration,
+            IGoogleDriveService googleDriveService)
         {
             _logger = logger;
             _configuration = configuration;
-            // _googleDriveService = googleDriveService; // Will be added later
+            _googleDriveService = googleDriveService;
         }
 
         public async Task Execute(IJobExecutionContext context)
@@ -32,6 +32,7 @@ namespace webapi.Domain.Jobs
             {
                 var databasePath = _configuration["DatabasePath"];
                 var googleDriveCredentialsPath = _configuration["GoogleDriveCredentialsPath"];
+                var googleDriveFolderId = _configuration["GoogleDriveFolderId"];
 
                 if (string.IsNullOrEmpty(databasePath))
                 {
@@ -48,18 +49,17 @@ namespace webapi.Domain.Jobs
                 _logger.LogInformation($"Database path: {databasePath}");
                 _logger.LogInformation("Database backup process would happen here.");
 
-                // Placeholder for actual backup and upload logic
-                // var fileName = $"TerritoryTool_Backup_{DateTime.UtcNow:yyyyMMddHHmmss}.db";
-                // var backupFilePath = Path.Combine(Path.GetTempPath(), fileName);
+                var fileName = $"TerritoryTool_Backup_{DateTime.UtcNow:yyyyMMddHHmmss}.db";
+                var backupFilePath = Path.Combine(Path.GetTempPath(), fileName);
 
-                // File.Copy(databasePath, backupFilePath, true);
-                // _logger.LogInformation($"Database copied to: {backupFilePath}");
+                File.Copy(databasePath, backupFilePath, true);
+                _logger.LogInformation($"Database copied to: {backupFilePath}");
 
-                // await _googleDriveService.UploadFileAsync(backupFilePath, fileName, googleDriveCredentialsPath, "YOUR_GOOGLE_DRIVE_FOLDER_ID");
-                // _logger.LogInformation($"Backup file {fileName} uploaded to Google Drive.");
+                await _googleDriveService.UploadFileAsync(backupFilePath, fileName, googleDriveCredentialsPath, googleDriveFolderId);
+                _logger.LogInformation($"Backup file {fileName} uploaded to Google Drive.");
 
-                // File.Delete(backupFilePath);
-                // _logger.LogInformation($"Temporary backup file {backupFilePath} deleted.");
+                File.Delete(backupFilePath);
+                _logger.LogInformation($"Temporary backup file {backupFilePath} deleted.");
 
                 _logger.LogInformation("BackupDatabaseJob completed.");
             }

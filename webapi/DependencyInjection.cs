@@ -28,19 +28,29 @@ public static class DependencyInjection
         services.AddScoped<IUserConfigurationFacade, UserConfigurationFacade>();
         services.AddScoped<ITerritoryFacade, TerritoryFacade>();
         services.AddScoped<ITransactionFacade, TransactionFacade>();
+        services.AddScoped<IGoogleDriveService, GoogleDriveService>();
     }
 
     public static IServiceCollection AddWebApiServices(this IServiceCollection services)
     {
         services.AddQuartz(q =>
         {
-            var jobKey = new JobKey("UpdateTerritoryImagesJob");
-            q.AddJob<UpdateTerritoryImagesJob>(opts => opts.WithIdentity(jobKey));
+            var jobKeyUpdateTerritoryImages = new JobKey("UpdateTerritoryImagesJob");
+            q.AddJob<UpdateTerritoryImagesJob>(opts => opts.WithIdentity(jobKeyUpdateTerritoryImages));
+
+            var jobKeyDriveBackupUploader = new JobKey("BackupDatabaseDrive");
+            q.AddJob<UpdateTerritoryImagesJob>(opts => opts.WithIdentity(jobKeyDriveBackupUploader));
 
             q.AddTrigger(opts => opts
-                .ForJob(jobKey)
-                .WithIdentity("UpdateTerritoryImagesJob-startup-trigger")
-                .StartNow()); // Se ejecuta inmediatamente al iniciar la aplicación
+                .ForJob(jobKeyDriveBackupUploader)
+                .WithIdentity("BackupDatabaseDrive-startup-trigger")
+                .StartNow());
+
+            //q.AddTrigger(opts => opts
+            //    .ForJob(jobKey)
+            //    .WithIdentity("UpdateTerritoryImagesJob-startup-trigger")
+            //    .StartNow()); // Se ejecuta inmediatamente al iniciar la aplicación
+
         });
 
         services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);

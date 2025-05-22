@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace webapi.Domain.FacadeServices.Interfaces
+namespace TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces
 {
     public interface IGoogleDriveService
     {
