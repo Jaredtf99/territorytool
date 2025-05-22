@@ -85,13 +85,14 @@ app.UseAuthorization();
 app.UseAuthentication();
 app.UseStaticFiles();
 
+var physicalImagesPath = builder.Configuration["Storage:PhysicalImagesPath"];
 var imagesPath = builder.Configuration["Storage:ImagesPath"];
-Directory.CreateDirectory(imagesPath);
+Directory.CreateDirectory(physicalImagesPath);
 
 app.UseStaticFiles(new StaticFileOptions()
 {
-    FileProvider = new PhysicalFileProvider(imagesPath),
-    RequestPath = new PathString("/Resources/Images")
+    FileProvider = new PhysicalFileProvider(physicalImagesPath),
+    RequestPath = new PathString(imagesPath)
 });
 app.MapControllers();
 

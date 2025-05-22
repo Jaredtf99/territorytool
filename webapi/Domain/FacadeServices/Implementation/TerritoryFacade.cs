@@ -193,13 +193,19 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
                                     GraphicsUnit.Pixel);
                             }
 
+                            var directorioFisicoImagenes = _configuration["Storage:PhysicalImagesPath"];
                             var directorioImagenes = _configuration["Storage:ImagesPath"];
                             Directory.CreateDirectory(directorioImagenes);
+
+                            string nombreFichero = $"{Guid.NewGuid()}.png";
+
+
+                            string rutaFisicaImagen = Path.Combine(directorioFisicoImagenes, nombreFichero);
+                            croppedImage.Save(rutaFisicaImagen, System.Drawing.Imaging.ImageFormat.Png);
+
+                            rutaImagen = Path.Combine(directorioImagenes, nombreFichero);
                             
-                            rutaImagen = Path.Combine(directorioImagenes, $"{Guid.NewGuid()}.png");
-                            croppedImage.Save(rutaImagen, System.Drawing.Imaging.ImageFormat.Png);
-                            
-                            _logger.LogInformation($"Imagen recortada guardada en {rutaImagen}");
+                            _logger.LogInformation($"Imagen recortada guardada en {rutaFisicaImagen}");
                         }
                         else
                         {
