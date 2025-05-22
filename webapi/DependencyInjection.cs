@@ -2,14 +2,15 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Quartz;
 using System.Text;
 using TerritoryTool.ServerSide.Domain.FacadeServices.Implementation;
 using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
+using TerritoryTool.ServerSide.Domain.Jobs;
 using TerritoryTool.ServerSide.Persistence;
 using TerritoryTool.ServerSide.Persistence.Repositories.Implementation;
 using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
-using Quartz;
-using TerritoryTool.ServerSide.Domain.Jobs;
+using webapi.Domain.Jobs;
 
 public static class DependencyInjection
 {
@@ -36,10 +37,10 @@ public static class DependencyInjection
         services.AddQuartz(q =>
         {
             var jobKeyUpdateTerritoryImages = new JobKey("UpdateTerritoryImagesJob");
-            q.AddJob<UpdateTerritoryImagesJob>(opts => opts.WithIdentity(jobKeyUpdateTerritoryImages));
+            //q.AddJob<UpdateTerritoryImagesJob>(opts => opts.WithIdentity(jobKeyUpdateTerritoryImages));
 
             var jobKeyDriveBackupUploader = new JobKey("BackupDatabaseDrive");
-            q.AddJob<UpdateTerritoryImagesJob>(opts => opts.WithIdentity(jobKeyDriveBackupUploader));
+            q.AddJob<BackupDatabaseJob>(opts => opts.WithIdentity(jobKeyDriveBackupUploader));
 
             q.AddTrigger(opts => opts
                 .ForJob(jobKeyDriveBackupUploader)
