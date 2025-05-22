@@ -35,7 +35,11 @@ public static class DependencyInjection
         services.AddQuartz(q =>
         {
             var jobKey = new JobKey("UpdateTerritoryImagesJob");
-            
+
+            q.AddTrigger(opts => opts
+                .ForJob(jobKey)
+                .WithIdentity("UpdateTerritoryImagesJob-startup-trigger")
+                .StartNow()); // Se ejecuta inmediatamente al iniciar la aplicación
         });
 
         services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
