@@ -158,17 +158,21 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                     var normalizedDbName = SearchUtils.RemoveDiacritics(t.Name?.ToLower() ?? string.Empty);
                     var normalizedDbCode = SearchUtils.RemoveDiacritics(t.Code?.ToLower() ?? string.Empty);
 
-                    if (!string.IsNullOrEmpty(normalizedDbName) && SearchUtils.LevenshteinDistance(normalizedDbName, normalizedSearchTerm) <= levenshteinThreshold)
+                    bool nameMatches = false;
+                    if (!string.IsNullOrEmpty(normalizedDbName))
                     {
-                        return true;
+                        nameMatches = SearchUtils.LevenshteinDistance(normalizedDbName, normalizedSearchTerm) <= levenshteinThreshold ||
+                                      normalizedDbName.StartsWith(normalizedSearchTerm, StringComparison.Ordinal);
                     }
 
-                    if (!string.IsNullOrEmpty(normalizedDbCode) && SearchUtils.LevenshteinDistance(normalizedDbCode, normalizedSearchTerm) <= levenshteinThreshold)
+                    bool codeMatches = false;
+                    if (!string.IsNullOrEmpty(normalizedDbCode))
                     {
-                        return true;
+                        codeMatches = SearchUtils.LevenshteinDistance(normalizedDbCode, normalizedSearchTerm) <= levenshteinThreshold ||
+                                      normalizedDbCode.StartsWith(normalizedSearchTerm, StringComparison.Ordinal);
                     }
 
-                    return false;
+                    return nameMatches || codeMatches;
                 })
                 .ToList();
         }

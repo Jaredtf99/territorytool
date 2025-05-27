@@ -40,7 +40,11 @@ namespace TerritoryTool.ServerSide.Tests.Persistence.Repositories.Implementation
                 new Person { Id = 7, Name = "Pedro Álvares Cabral", Enabled = true}, // Name contains full name
                 new Person { Id = 8, Name = "Another John", Enabled = true },
                 new Person { Id = 9, Name = "Jean-Luc Picard", Enabled = true },
-                new Person { Id = 10, Name = "Helmut Jöhn", Enabled = true } // For combined fuzzy & accent
+                new Person { Id = 10, Name = "Helmut Jöhn", Enabled = true }, // For combined fuzzy & accent
+                new Person { Id = 11, Name = "Ainhoa Iglesias", Enabled = true },
+                new Person { Id = 12, Name = "Johnny Test", Enabled = true },
+                new Person { Id = 13, Name = "Axxxxxxxxxxxxxx", Enabled = true }, // For prefix vs fuzzy test
+                new Person { Id = 14, Name = "Zzz Top", Enabled = true } // For fuzzy not prefix test
             };
         }
 
@@ -78,16 +82,9 @@ namespace TerritoryTool.ServerSide.Tests.Persistence.Repositories.Implementation
             var resultAnotherJohn = repository.SearchPersonsByName("Anoter John").ToList();
             Assert.Contains(resultAnotherJohn, p => p.Name == "Another John");
 
-            // Check that "Jonh Doe" doesn't accidentally match "Another John" if "John Doe" is a closer match and both are different by 1
-            // This depends on the specific behavior for multiple matches and thresholds.
-            // For now, we ensure "John Doe" is found. If "Another John" is also found, that might be acceptable depending on requirements not specified here.
-            // Assert.Single(result1.Where(p => p.Name == "John Doe" || p.Name == "Another John"));
-            // Let's be more specific: only John Doe should be found by "Jonh Doe" with threshold 2 from default list
             var specificResult1 = result1.Where(p => p.Name == "John Doe").ToList();
             Assert.Single(specificResult1);
 
-
-            // Levenshtein distance 2 for "Janette Miller" vs "Jannette Miller"
             var result2 = repository.SearchPersonsByName("Jannette Miller").ToList(); // Janette Miller
             Assert.Contains(result2, p => p.Name == "Janette Miller");
         }
@@ -100,7 +97,6 @@ namespace TerritoryTool.ServerSide.Tests.Persistence.Repositories.Implementation
             var logger = NullLogger<PersonRepository>.Instance;
             var repository = new PersonRepository(context, logger);
 
-            // Assuming threshold is 2
             var result1 = repository.SearchPersonsByName("Alexandr").ToList(); // Dist 1
             Assert.Contains(result1, p => p.Name == "Alexander");
             
@@ -111,7 +107,6 @@ namespace TerritoryTool.ServerSide.Tests.Persistence.Repositories.Implementation
             Assert.DoesNotContain(result3, p => p.Name == "Alexander");
         }
 
-
         [Fact]
         public void SearchPersonsByName_CombinationAccentAndFuzzy_ReturnsMatchingPersons()
         {
@@ -120,20 +115,14 @@ namespace TerritoryTool.ServerSide.Tests.Persistence.Repositories.Implementation
             var logger = NullLogger<PersonRepository>.Instance;
             var repository = new PersonRepository(context, logger);
 
-            // "Jõnh" (search term) -> normalized "Jonh"
-            // "Helmut Jöhn" (db) -> normalized "Helmut John" -> dist("Jonh", "Helmut John") is large
-            // "John Doe" (db) -> normalized "John Doe" -> dist("Jonh", "John Doe") is 1 ("Jonh" vs "John")
-            // "Another John" (db) -> normalized "Another John" -> dist("Jonh", "Another John") is 1 ("Jonh" vs "John")
-            var result = repository.SearchPersonsByName("Jõnh").ToList();
-
-            // Expected: "John Doe" and "Another John" (due to "John" part)
-            // "Helmut Jöhn" should match if we search "Helmut Jonh" or similar, 
-            // but "Jõnh" alone is too far from "Helmut Jöhn"
+            var result = repository.SearchPersonsByName("Jõnh").ToList(); // normalized "jonh"
+            // "John Doe" (john doe) - Levenshtein dist 1 to "jonh"
             Assert.Contains(result, p => p.Name == "John Doe");
+            // "Another John" (another john) - Levenshtein dist 1 (of "john" to "jonh")
             Assert.Contains(result, p => p.Name == "Another John");
-            Assert.DoesNotContain(result, p => p.Name == "Helmut Jöhn"); // This should not match "Jõnh" with threshold 2
+            // "Helmut Jöhn" (helmut john) vs "jonh" - Levenshtein dist is high on whole string
+            Assert.DoesNotContain(result, p => p.Name == "Helmut Jöhn");
 
-            // Test for "Helmut Jöhn" specifically
             var resultHelmut = repository.SearchPersonsByName("Helmut Jonh").ToList(); // Fuzzy for Jöhn
             Assert.Contains(resultHelmut, p => p.Name == "Helmut Jöhn");
         }
@@ -165,13 +154,12 @@ namespace TerritoryTool.ServerSide.Tests.Persistence.Repositories.Implementation
         [Fact]
         public void SearchPersonsByName_DisabledPerson_NotReturned()
         {
-            var persons = GetDefaultPersons(); // Includes "Disabled User"
+            var persons = GetDefaultPersons(); 
             var context = GetInMemoryDbContext(persons);
             var logger = NullLogger<PersonRepository>.Instance;
             var repository = new PersonRepository(context, logger);
 
             var result = repository.SearchPersonsByName("Disabled User").ToList();
-            Assert.DoesNotContain(result, p => p.Name == "Disabled User" && !p.Enabled);
             Assert.Empty(result.Where(p => p.Name == "Disabled User"));
         }
         
@@ -187,7 +175,7 @@ namespace TerritoryTool.ServerSide.Tests.Persistence.Repositories.Implementation
             var logger = NullLogger<PersonRepository>.Instance;
             var repository = new PersonRepository(context, logger);
 
-            var result = repository.SearchPersonsByName("Person").ToList();
+            var result = repository.SearchPersonsByName("Person").ToList(); // "Person" is prefix of "Enabled Person"
             Assert.Single(result);
             Assert.Equal("Enabled Person", result.First().Name);
         }
@@ -251,16 +239,13 @@ namespace TerritoryTool.ServerSide.Tests.Persistence.Repositories.Implementation
             var logger = NullLogger<PersonRepository>.Instance;
             var repository = new PersonRepository(context, logger);
 
-            // Search for part of "John Doe"
-            var resultJohn = repository.SearchPersonsByName("John Do").ToList();
+            var resultJohn = repository.SearchPersonsByName("John Do").ToList(); // Levenshtein for "John Doe"
             Assert.Contains(resultJohn, p => p.Name == "John Doe");
 
-            // Search for part of "Pedro Álvares Cabral"
-            var resultPedro = repository.SearchPersonsByName("Pedro Alvares Cabra").ToList();
+            var resultPedro = repository.SearchPersonsByName("Pedro Alvares Cabra").ToList(); // Levenshtein for "Pedro Álvares Cabral"
             Assert.Contains(resultPedro, p => p.Name == "Pedro Álvares Cabral");
             
-            // Search for part of "Joséphine Moreau" with fuzzy and accent
-            var resultJosephine = repository.SearchPersonsByName("Josephine Morea").ToList();
+            var resultJosephine = repository.SearchPersonsByName("Josephine Morea").ToList(); // Levenshtein for "Joséphine Moreau"
             Assert.Contains(resultJosephine, p => p.Name == "Joséphine Moreau");
         }
 
@@ -274,18 +259,122 @@ namespace TerritoryTool.ServerSide.Tests.Persistence.Repositories.Implementation
             var logger = NullLogger<PersonRepository>.Instance;
             var repository = new PersonRepository(context, logger);
 
-            // This test confirms that search is against the Name field, not FirstName/LastName.
-            // "TheLegen SpecialNam" is a fuzzy search for "TheLegend SpecialName"
             var result = repository.SearchPersonsByName("TheLegen SpecialNam").ToList(); 
             Assert.Contains(result, p => p.Name == "TheLegend SpecialName");
 
-            // Searching for "John Do" should NOT find this person, as "John Doe" is not in the Name field.
             var resultNonMatch = repository.SearchPersonsByName("John Do").ToList();
             Assert.DoesNotContain(resultNonMatch, p => p.Name == "TheLegend SpecialName");
         }
-        // Removed SearchPersonsByName_NameFieldDifferentFromParts_MatchesFullName as it's no longer applicable
-        // Removed SearchPersonsByName_MatchOnlyFirstName_ReturnsPerson, SearchPersonsByName_MatchOnlyLastName_ReturnsPerson, SearchPersonsByName_MatchMiddleName_ReturnsPerson
-        // as the logic now only targets the consolidated Name field.
-        // The functionality of matching parts of a name is covered by fuzzy matching on the Name field itself in SearchPersonsByName_PartialMatchNameWithinThreshold_ReturnsPerson.
+
+        [Fact]
+        public void SearchPersonsByName_PrefixMatch_Simple()
+        {
+            var persons = GetDefaultPersons();
+            var context = GetInMemoryDbContext(persons);
+            var logger = NullLogger<PersonRepository>.Instance;
+            var repository = new PersonRepository(context, logger);
+
+            var resultAinh = repository.SearchPersonsByName("Ainh").ToList(); // Prefix of "Ainhoa Iglesias"
+            Assert.Contains(resultAinh, p => p.Name == "Ainhoa Iglesias");
+
+            var resultJo = repository.SearchPersonsByName("Jo").ToList();
+            Assert.Contains(resultJo, p => p.Name == "John Doe"); // StartsWith "jo"
+            Assert.Contains(resultJo, p => p.Name == "Johnny Test");  // StartsWith "jo"
+            Assert.Contains(resultJo, p => p.Name == "Joséphine Moreau"); // Normalized "josephine moreau" StartsWith "jo"
+            // "Helmut Jöhn" (helmut john) vs "Jo" (jo). Levenshtein("helmut john", "jo") is 7. Not StartsWith.
+            Assert.DoesNotContain(resultJo, p => p.Name == "Helmut Jöhn");
+
+            var resultJohn = repository.SearchPersonsByName("John").ToList();
+            Assert.Contains(resultJohn, p => p.Name == "John Doe"); // StartsWith "john"
+            Assert.Contains(resultJohn, p => p.Name == "Johnny Test"); // StartsWith "john"
+             // "Another John" (another john) vs "John" (john). LevenshteinDistance=8. Not StartsWith.
+            Assert.DoesNotContain(resultJohn, p => p.Name == "Another John");
+            // "Helmut Jöhn" (helmut john) vs "John" (john). LevenshteinDistance=7. Not StartsWith.
+            Assert.DoesNotContain(resultJohn, p => p.Name == "Helmut Jöhn");
+        }
+
+        [Fact]
+        public void SearchPersonsByName_PrefixMatch_WithAccents()
+        {
+            var persons = GetDefaultPersons();
+            var context = GetInMemoryDbContext(persons);
+            var logger = NullLogger<PersonRepository>.Instance;
+            var repository = new PersonRepository(context, logger);
+
+            var resultJos = repository.SearchPersonsByName("Jos").ToList(); // "Jos" is prefix of normalized "josephine moreau"
+            Assert.Contains(resultJos, p => p.Name == "Joséphine Moreau");
+
+            var resultAin = repository.SearchPersonsByName("Aïn").ToList(); // Normalized "ain" is prefix of normalized "ainhoa iglesias"
+            Assert.Contains(resultAin, p => p.Name == "Ainhoa Iglesias");
+        }
+
+        [Fact]
+        public void SearchPersonsByName_PrefixMatch_DifferentLengths()
+        {
+            var persons = GetDefaultPersons();
+            var context = GetInMemoryDbContext(persons);
+            var logger = NullLogger<PersonRepository>.Instance;
+            var repository = new PersonRepository(context, logger);
+
+            var resultA = repository.SearchPersonsByName("A").ToList();
+            Assert.Contains(resultA, p => p.Name == "Ainhoa Iglesias"); // StartsWith 'a'
+            Assert.Contains(resultA, p => p.Name == "Another John");  // StartsWith 'a'
+            Assert.Contains(resultA, p => p.Name == "Axxxxxxxxxxxxxx"); // StartsWith 'a'
+            // "Pedro Álvares Cabral" (pedro alvares cabral) does not start with 'a'.
+            Assert.DoesNotContain(resultA, p => p.Name == "Pedro Álvares Cabral");
+
+            var resultAinho = repository.SearchPersonsByName("Ainho").ToList();
+            Assert.Contains(resultAinho, p => p.Name == "Ainhoa Iglesias");
+            Assert.Single(resultAinho.Where(p => p.Name == "Ainhoa Iglesias")); 
+        }
+        
+        [Fact]
+        public void SearchPersonsByName_PrefixMatch_OverridesHighLevenshteinDistance()
+        {
+            var persons = GetDefaultPersons(); 
+            var context = GetInMemoryDbContext(persons);
+            var logger = NullLogger<PersonRepository>.Instance;
+            var repository = new PersonRepository(context, logger);
+
+            // "A" is a prefix of "Axxxxxxxxxxxxxx" (normalized "axxxxxxxxxxxxxx")
+            // Levenshtein distance between "a" and "axxxxxxxxxxxxxx" is 14, above threshold 2
+            // Should match because of StartsWith
+            var result = repository.SearchPersonsByName("A").ToList();
+            Assert.Contains(result, p => p.Name == "Axxxxxxxxxxxxxx");
+        }
+
+        [Fact]
+        public void SearchPersonsByName_FuzzyMatch_StillWorksWhenNotPrefix()
+        {
+            var persons = GetDefaultPersons(); 
+            var context = GetInMemoryDbContext(persons);
+            var logger = NullLogger<PersonRepository>.Instance;
+            var repository = new PersonRepository(context, logger);
+
+            // "Zz Top" is not a prefix of "Zzz Top", but Levenshtein distance is 1 (normalized "zz top" vs "zzz top")
+            var resultZzz = repository.SearchPersonsByName("Zz Top").ToList();
+            Assert.Contains(resultZzz, p => p.Name == "Zzz Top");
+
+            // "Janette Miller" vs "Jannte Miller" (Levenshtein 2)
+            var resultJanette = repository.SearchPersonsByName("Jannte Miller").ToList();
+            Assert.Contains(resultJanette, p => p.Name == "Janette Miller");
+            Assert.DoesNotContain(resultJanette, p => p.Name == "Jane Smith"); 
+        }
+        
+        [Fact]
+        public void SearchPersonsByName_PrefixMatch_CaseInsensitive()
+        {
+            var persons = GetDefaultPersons();
+            var context = GetInMemoryDbContext(persons);
+            var logger = NullLogger<PersonRepository>.Instance;
+            var repository = new PersonRepository(context, logger);
+
+            var result = repository.SearchPersonsByName("jo").ToList();
+            Assert.Contains(result, p => p.Name == "John Doe");
+            Assert.Contains(result, p => p.Name == "Johnny Test");
+            Assert.Contains(result, p => p.Name == "Joséphine Moreau");
+            // "Helmut Jöhn" (helmut john) vs "jo". Levenshtein is 7. Not StartsWith.
+            Assert.DoesNotContain(result, p => p.Name == "Helmut Jöhn");
+        }
     }
 }

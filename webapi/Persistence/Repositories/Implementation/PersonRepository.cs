@@ -49,10 +49,18 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                 {
                     var normalizedDbName = SearchUtils.RemoveDiacritics(p.Name?.ToLower() ?? string.Empty);
                     
-                    // Check Levenshtein distance against the Name property
-                    if (!string.IsNullOrEmpty(normalizedDbName) && SearchUtils.LevenshteinDistance(normalizedDbName, normalizedSearchTerm) <= levenshteinThreshold)
+                    // Check Levenshtein distance against the Name property OR if the name starts with the search term
+                    if (!string.IsNullOrEmpty(normalizedDbName))
                     {
-                        return true;
+                        if (SearchUtils.LevenshteinDistance(normalizedDbName, normalizedSearchTerm) <= levenshteinThreshold)
+                        {
+                            return true;
+                        }
+
+                        if (normalizedDbName.StartsWith(normalizedSearchTerm, StringComparison.Ordinal))
+                        {
+                            return true;
+                        }
                     }
                     
                     return false;
