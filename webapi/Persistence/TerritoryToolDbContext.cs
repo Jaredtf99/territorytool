@@ -148,6 +148,8 @@ namespace TerritoryTool.ServerSide.Persistence
                 entity.Property(e => e.Id).ValueGeneratedOnAdd();
 
                 entity.Property(e => e.Name).IsRequired();
+
+                entity.Property(e => e.Enabled).IsRequired().HasDefaultValue(true);
             });
 
             modelBuilder.Entity<Territory>(entity =>

@@ -70,8 +70,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
         {
             IEnumerable<PersonInfo> personsInfo = new List<PersonInfo>();
 
-            var persons = _personRepo.SearchPersonsByName(name)
-                                     .Where(p => p.Enabled); // Added filtering for Enabled persons
+            var persons = _personRepo.SearchPersonsByName(name);
 
             var retval = ConvertPersonToPersonInfoList(persons);
 

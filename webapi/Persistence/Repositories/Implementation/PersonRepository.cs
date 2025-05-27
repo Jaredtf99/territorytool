@@ -33,7 +33,7 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
         {
             name = name.ToLower();
             //TODO: hacer una busqueda por proximidad, en vez de un contains
-            return _context.Person.Where(x => x.Name.ToLower().Contains(name) || name.Contains(x.Name.ToLower()));
+            return _context.Person.Where(x => x.Name.ToLower().Contains(name) || name.Contains(x.Name.ToLower())).Where(p => p.Enabled);
         }
 
         public IEnumerable<Person> GetAllPersons()
