@@ -78,11 +78,11 @@ namespace TerritoryTool.ServerSide.Controllers
         /// <param name="search"></param>
         /// <returns></returns>
         [HttpGet("{search}")]
-        public IEnumerable<PersonInfo> SearchPersons(string search)
+        public IEnumerable<PersonInfo> SearchPersons(string search, int take = int.MaxValue)
         {
             _logger.LogInformation("Searching persons");
 
-            return _personFacade.SearchPersonsByName(search);
+            return _personFacade.SearchPersonsByName(search).Take(take);
         }
 
         [HttpPut("{id}")]

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TerritoryTool.ServerSide.Persistence.Entities;
 using TerritoryTool.ServerSide.Persistence.Repositories.Implementation;
-using TerritoryTool.ServerSide.Persistence; // For TerritoryToolDbContext
+using TerritoryTool.ServerSide.Persistence;
 using Xunit; 
 
 namespace TerritoryTool.ServerSide.Tests.Persistence.Repositories.Implementation

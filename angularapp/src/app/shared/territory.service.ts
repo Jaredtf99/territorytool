@@ -84,11 +84,11 @@ export class TerritoryService {
     return this.http.get<Territory[]>(`${this.baseUrl}/territories?search=${term}`).pipe()
   }
 
-  searchFreeTerritories(term: string): Observable<Territory[]> {
-    return this.http.get<Territory[]>(`${this.baseUrl}/territories?search=${term}&onlyFreeTerritories=true`).pipe()
+  searchFreeTerritories(term: string, take: number): Observable<Territory[]> {
+    return this.http.get<Territory[]>(`${this.baseUrl}/territories?search=${term}&onlyFreeTerritories=true&take=${take}`).pipe()
   }
-  searchGivenTerritories(term: string): Observable<Territory[]> {
-    return this.http.get<Territory[]>(`${this.baseUrl}/territories?search=${term}&onlyGivenTerritories=true`).pipe()
+  searchGivenTerritories(term: string, take: number): Observable<Territory[]> {
+    return this.http.get<Territory[]>(`${this.baseUrl}/territories?search=${term}&onlyGivenTerritories=true&take=${take}`).pipe()
   }
 
   getTerritorySuggestions(): Observable<TerritorySuggestion[]> {

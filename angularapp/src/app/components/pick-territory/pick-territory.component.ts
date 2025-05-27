@@ -169,7 +169,7 @@ export class PickTerritoryComponent implements AfterViewInit {
       this.territoriesInput$.pipe(
         distinctUntilChanged(),
         tap(() => this.territoriesLoading = true),
-        switchMap(term => this.territoryService.searchGivenTerritories(term).pipe(
+        switchMap(term => this.territoryService.searchGivenTerritories(term, 3).pipe(
           catchError(() => of([])), // empty list on error
           tap(() => this.territoriesLoading = false)
         ))

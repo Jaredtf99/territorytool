@@ -23,8 +23,8 @@ export class PersonService {
     return this.http.delete(url).pipe()
   }
 
-  searchPersons(term: string): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/persons/${term}`).pipe()
+  searchPersons(term: string, take: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/persons/${term}?take=${take}`).pipe()
   }
 
   updatePerson(id: number, name: string, enabled: boolean): Observable<any> {

@@ -338,7 +338,7 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                     .Where(t => t.FirstGivenDate != null)
                     .Select(t =>
                     {
-                        var territoryDays = (DateTime.UtcNow - t.FirstGivenDate.Value).TotalDays; // Ensure Value is used for Nullable DateTime
+                        var territoryDays = (DateTime.UtcNow - t.FirstGivenDate).TotalDays; // Ensure Value is used for Nullable DateTime
                         if (territoryDays == 0) return 0; // Avoid division by zero
                         var territoryAssignedDays = t.Transactions
                             .Sum(tr => ((tr.PickedDateUtc ?? DateTime.UtcNow) - tr.GivenDateUtc).TotalDays);

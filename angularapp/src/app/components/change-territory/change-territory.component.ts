@@ -192,7 +192,7 @@ export class ChangeTerritoryComponent implements AfterViewInit {
       this.territoriesInput$.pipe(
         distinctUntilChanged(),
         tap(() => this.territoriesLoading = true),
-        switchMap(term => this.territoryService.searchFreeTerritories(term).pipe(
+        switchMap(term => this.territoryService.searchFreeTerritories(term, 3).pipe(
           catchError(() => of([])), // empty list on error
           tap(() => this.territoriesLoading = false)
         ))
@@ -217,7 +217,7 @@ export class ChangeTerritoryComponent implements AfterViewInit {
       this.personsInput$.pipe(
         distinctUntilChanged(),
         tap(() => this.personsLoading = true),
-        switchMap(term => this.personService.searchPersons(term).pipe(
+        switchMap(term => this.personService.searchPersons(term, 3).pipe(
           catchError(() => of([])), // empty list on error
           tap(() => this.personsLoading = false)
         ))

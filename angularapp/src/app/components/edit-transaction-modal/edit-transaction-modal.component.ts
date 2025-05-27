@@ -65,7 +65,7 @@ export class EditTransactionModalComponent {
       this.personsInput$.pipe(
         distinctUntilChanged(),
         tap(() => this.personsLoading = true),
-        switchMap(term => this.personService.searchPersons(term).pipe(
+        switchMap(term => this.personService.searchPersons(term, 3).pipe(
           catchError(() => of([])), // empty list on error
           tap(() => this.personsLoading = false)
         ))

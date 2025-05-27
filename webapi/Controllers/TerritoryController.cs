@@ -98,11 +98,11 @@ namespace TerritoryTool.ServerSide.Controllers
         /// <param name="onlyFreeTerritories">Flag para obtener solo los territorios libres</param>
         /// <returns></returns>
         [HttpGet]
-        public IEnumerable<TerritoryInfo> SearchTerritories(string search, bool onlyFreeTerritories = false, bool onlyGivenTerritories = false)
+        public IEnumerable<TerritoryInfo> SearchTerritories(string search, bool onlyFreeTerritories = false, bool onlyGivenTerritories = false, int take = int.MaxValue)
         {
             _logger.LogInformation("Searching territories");
 
-            var territories = _territoryRepository.SearchTerritories(search, onlyFreeTerritories, onlyGivenTerritories);
+            var territories = _territoryRepository.SearchTerritories(search, onlyFreeTerritories, onlyGivenTerritories).Take(take);
 
             return ConvertTerritoryToTerritoryInfoList(territories);
         }
