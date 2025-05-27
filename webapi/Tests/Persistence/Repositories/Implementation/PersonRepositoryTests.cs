@@ -31,16 +31,16 @@ namespace TerritoryTool.ServerSide.Tests.Persistence.Repositories.Implementation
         {
             return new List<Person>
             {
-                new Person { Id = 1, Name = "John Doe", FirstName = "John", LastName = "Doe", Enabled = true },
-                new Person { Id = 2, Name = "Jane Smith", FirstName = "Jane", LastName = "Smith", Enabled = true },
-                new Person { Id = 3, Name = "Joséphine Moreau", FirstName = "Joséphine", LastName = "Moreau", Enabled = true }, // Accents
-                new Person { Id = 4, Name = "Søren Kierkegaard", FirstName = "Søren", LastName = "Kierkegaard", Enabled = true }, // Special chars
-                new Person { Id = 5, Name = "Janette Miller", FirstName = "Janette", LastName = "Miller", Enabled = true }, // For fuzzy
-                new Person { Id = 6, Name = "Disabled User", FirstName = "Disabled", LastName = "User", Enabled = false },
-                new Person { Id = 7, Name = "Pedro Álvares Cabral", FirstName = "Pedro", MiddleName = "Álvares", LastName = "Cabral", Enabled = true}, // Accent in middle name
-                new Person { Id = 8, Name = "Another John", FirstName = "John", LastName = "Another", Enabled = true },
-                new Person { Id = 9, Name = "Jean-Luc Picard", FirstName = "Jean-Luc", LastName = "Picard", Enabled = true },
-                new Person { Id = 10, Name = "Helmut Jöhn", FirstName = "Helmut", LastName = "Jöhn", Enabled = true } // For combined fuzzy & accent
+                new Person { Id = 1, Name = "John Doe", Enabled = true },
+                new Person { Id = 2, Name = "Jane Smith", Enabled = true },
+                new Person { Id = 3, Name = "Joséphine Moreau", Enabled = true }, // Accents
+                new Person { Id = 4, Name = "Søren Kierkegaard", Enabled = true }, // Special chars
+                new Person { Id = 5, Name = "Janette Miller", Enabled = true }, // For fuzzy
+                new Person { Id = 6, Name = "Disabled User", Enabled = false },
+                new Person { Id = 7, Name = "Pedro Álvares Cabral", Enabled = true}, // Name contains full name
+                new Person { Id = 8, Name = "Another John", Enabled = true },
+                new Person { Id = 9, Name = "Jean-Luc Picard", Enabled = true },
+                new Person { Id = 10, Name = "Helmut Jöhn", Enabled = true } // For combined fuzzy & accent
             };
         }
 
@@ -95,7 +95,7 @@ namespace TerritoryTool.ServerSide.Tests.Persistence.Repositories.Implementation
         [Fact]
         public void SearchPersonsByName_FuzzyMatching_ThresholdTest()
         {
-            var persons = new List<Person> { new Person { Id = 1, Name = "Alexander", FirstName = "Alexander", Enabled = true } };
+            var persons = new List<Person> { new Person { Id = 1, Name = "Alexander", Enabled = true } };
             var context = GetInMemoryDbContext(persons);
             var logger = NullLogger<PersonRepository>.Instance;
             var repository = new PersonRepository(context, logger);
@@ -180,8 +180,8 @@ namespace TerritoryTool.ServerSide.Tests.Persistence.Repositories.Implementation
         {
             var persons = new List<Person>
             {
-                new Person { Id = 1, Name = "Enabled Person", FirstName = "Enabled", Enabled = true },
-                new Person { Id = 2, Name = "Disabled Person", FirstName = "Disabled", Enabled = false }
+                new Person { Id = 1, Name = "Enabled Person", Enabled = true },
+                new Person { Id = 2, Name = "Disabled Person", Enabled = false }
             };
             var context = GetInMemoryDbContext(persons);
             var logger = NullLogger<PersonRepository>.Instance;
@@ -268,7 +268,7 @@ namespace TerritoryTool.ServerSide.Tests.Persistence.Repositories.Implementation
         public void SearchPersonsByName_NameFieldDifferentFromParts_MatchesNameField()
         {
             var persons = new List<Person> {
-                new Person { Id = 1, Name = "TheLegend SpecialName", FirstName = "John", LastName = "Doe", Enabled = true }
+                new Person { Id = 1, Name = "TheLegend SpecialName", Enabled = true }
             };
             var context = GetInMemoryDbContext(persons);
             var logger = NullLogger<PersonRepository>.Instance;
