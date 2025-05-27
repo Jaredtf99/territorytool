@@ -3,11 +3,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using TerritoryTool.ServerSide.Controllers.Models.User;
+using webapi.Controllers.Models.User; // Corrected namespace
 using TerritoryTool.ServerSide.Domain.Classes;
 using TerritoryTool.ServerSide.Domain.Enums;
 using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
 using TerritoryTool.ServerSide.Domain.Helpers;
+using System.Threading.Tasks; // Added for Task
+using Microsoft.AspNetCore.Http; // Added for StatusCodes
 
 namespace TerritoryTool.ServerSide.Controllers
 {
@@ -127,6 +129,46 @@ namespace TerritoryTool.ServerSide.Controllers
 
         }
 
+        [HttpPost("{userId}/change-password")]
+        [Authorize(Roles = "SUPERADMIN,ADMIN")]
+        public async Task<IActionResult> ChangeUserPassword(string userId, [FromBody] ChangeUserPasswordModel model)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return BadRequest("INVALID_USER_ID");
+            }
 
+            // ModelState.IsValid will be false if model is null or NewPassword is null/empty due to [Required]
+            if (!ModelState.IsValid) 
+            {
+                return BadRequest("INVALID_PASSWORD");
+            }
+
+            var loggedUserId = SecurityHelper.GetLoggedUserId(User);
+
+            IdentityResult result = await _userConfigurationFacade.ChangeUserPasswordAsync(userId, model.NewPassword, loggedUserId);
+
+            if (result == null)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error processing request");
+            }
+
+            if (result.Succeeded)
+            {
+                return Ok();
+            }
+            else
+            {
+                if (result.Errors.Any(e => e.Code == "USER_NOT_FOUND"))
+                {
+                    return NotFound("USER_NOT_FOUND");
+                }
+                if (result.Errors.Any(e => e.Code == "PERMISSION_DENIED"))
+                {
+                    return Forbid(); 
+                }
+                return BadRequest(result.Errors);
+            }
+        }
     }
 }

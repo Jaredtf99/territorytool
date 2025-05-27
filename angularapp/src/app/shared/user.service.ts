@@ -116,5 +116,9 @@ export class UserService {
     return this.http.delete(`${this.baseUrl}/users/${id}`).pipe()
   }
 
+  public changeUserPassword(userId: string, newPassword: string): Observable<any> {
+    const body = { newPassword: newPassword };
+    return this.http.post(`${this.baseUrl}api/v1/users/${userId}/change-password`, body);
+  }
 
 }

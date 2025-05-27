@@ -25,6 +25,19 @@
               <option [value]="role" *ngFor="let role of rolesCanIChange">{{role}}</option>
             </select>
           </div>
+
+          <div class="col-12 mb-3 form-group" *ngIf="canChangePassword">
+            <label>Nueva Contraseña</label>
+            <input type="password" class="form-control item" formControlName="newPassword">
+            <div *ngIf="editForm.get('newPassword')?.invalid && (editForm.get('newPassword')?.dirty || editForm.get('newPassword')?.touched)" class="invalid-feedback d-block">
+              <div *ngIf="editForm.get('newPassword')?.hasError('required')">Introduce la nueva contraseña</div>
+              <div *ngIf="editForm.get('newPassword')?.hasError('minlength')">La contraseña debe tener al menos 8 caracteres</div>
+            </div>
+          </div>
+
+          <div class="col-12 mb-3" *ngIf="canChangePassword">
+            <button type="button" class="btn btn-warning" (click)="changePassword()" [disabled]="editForm.get('newPassword')?.invalid">Cambiar Contraseña</button>
+          </div>
         </form>
       </div>
       <div class="modal-footer">

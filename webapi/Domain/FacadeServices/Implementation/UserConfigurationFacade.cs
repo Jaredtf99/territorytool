@@ -218,5 +218,94 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             }
         }
 
+        public async Task<IdentityResult> ChangeUserPasswordAsync(string targetUserId, string newPassword, string loggedInUserId)
+        {
+            _logger.LogInformation("Attempting to change password for target user {TargetUserId} by logged-in user {LoggedInUserId}", targetUserId, loggedInUserId);
+
+            var targetUser = await _userManager.FindByIdAsync(targetUserId);
+            if (targetUser == null)
+            {
+                _logger.LogWarning("Target user with ID {TargetUserId} not found.", targetUserId);
+                _userActionLogFacade.AddNewActionLog(ActionType.ChangeUserPassword, $"Attempt to change password for non-existent target user ID {targetUserId}", loggedInUserId, false);
+                return IdentityResult.Failed(new IdentityError { Code = "USER_NOT_FOUND", Description = "Target user not found." });
+            }
+
+            var loggedInUser = await _userManager.FindByIdAsync(loggedInUserId);
+            if (loggedInUser == null)
+            {
+                // This case should ideally not be reached if JWT authentication is working correctly
+                _logger.LogError("Logged-in user with ID {LoggedInUserId} not found. This indicates a potential issue.", loggedInUserId);
+                // Not logging to userActionLogFacade as loggedInUserId might be compromised or invalid.
+                return IdentityResult.Failed(new IdentityError { Code = "REQUESTER_NOT_FOUND", Description = "Logged-in user not found." });
+            }
+
+            var loggedInUserRoles = await _userManager.GetRolesAsync(loggedInUser);
+            var targetUserRoles = await _userManager.GetRolesAsync(targetUser);
+
+            RoleType loggedInUserRole = RoleType.Unknown;
+            Enum.TryParse(loggedInUserRoles.FirstOrDefault(), out loggedInUserRole);
+
+            RoleType targetUserRole = RoleType.Unknown;
+            Enum.TryParse(targetUserRoles.FirstOrDefault(), out targetUserRole);
+
+            _logger.LogInformation("Logged-in user {LoggedInUserName} (Role: {LoggedInUserRole}) is attempting to change password for target user {TargetUserName} (Role: {TargetUserRole})",
+                loggedInUser.UserName, loggedInUserRole, targetUser.UserName, targetUserRole);
+
+            if (loggedInUserRole == RoleType.SUPERADMIN)
+            {
+                if (targetUserRole == RoleType.SUPERADMIN)
+                {
+                    _logger.LogWarning("SUPERADMIN {LoggedInUserName} permission denied to change password for SUPERADMIN {TargetUserName}.", loggedInUser.UserName, targetUser.UserName);
+                    _userActionLogFacade.AddNewActionLog(ActionType.ChangeUserPassword, $"Attempt by SUPERADMIN {loggedInUser.UserName} to change password for SUPERADMIN {targetUser.UserName} - DENIED", loggedInUserId, false);
+                    return IdentityResult.Failed(new IdentityError { Code = "PERMISSION_DENIED", Description = "SuperAdmins cannot change other SuperAdmins' passwords." });
+                }
+                // SUPERADMIN can change ADMIN or USER passwords
+            }
+            else if (loggedInUserRole == RoleType.ADMIN)
+            {
+                if (targetUserRole == RoleType.ADMIN || targetUserRole == RoleType.SUPERADMIN)
+                {
+                    _logger.LogWarning("ADMIN {LoggedInUserName} permission denied to change password for {TargetUserRole} {TargetUserName}.", loggedInUser.UserName, targetUserRole, targetUser.UserName);
+                    _userActionLogFacade.AddNewActionLog(ActionType.ChangeUserPassword, $"Attempt by ADMIN {loggedInUser.UserName} to change password for {targetUserRole} {targetUser.UserName} - DENIED", loggedInUserId, false);
+                    return IdentityResult.Failed(new IdentityError { Code = "PERMISSION_DENIED", Description = "Admins can only change User passwords." });
+                }
+                // ADMIN can change USER passwords
+            }
+            else // USER or Unknown role
+            {
+                _logger.LogWarning("User {LoggedInUserName} (Role: {LoggedInUserRole}) has insufficient permissions to change passwords.", loggedInUser.UserName, loggedInUserRole);
+                _userActionLogFacade.AddNewActionLog(ActionType.ChangeUserPassword, $"Attempt by user {loggedInUser.UserName} (Role: {loggedInUserRole}) to change password for {targetUser.UserName} - DENIED (Insufficient Permission)", loggedInUserId, false);
+                return IdentityResult.Failed(new IdentityError { Code = "PERMISSION_DENIED", Description = "Insufficient permissions." });
+            }
+
+            // If permissions are valid, proceed to change password
+            _logger.LogInformation("Permissions validated for {LoggedInUserName} to change password for {TargetUserName}. Proceeding with password change.", loggedInUser.UserName, targetUser.UserName);
+            
+            // Remove existing password. If the user has no password, this step might return errors, but AddPasswordAsync should still work.
+            // It's safer to remove first to ensure the user doesn't end up with multiple password hashes if that's possible by the provider.
+            var removePasswordResult = await _userManager.RemovePasswordAsync(targetUser);
+            if (!removePasswordResult.Succeeded)
+            {
+                // Log if removal failed, but still attempt to add. Some providers might not require removal or handle it.
+                _logger.LogWarning("Could not remove existing password for user {TargetUserName}. Errors: {Errors}. Proceeding to add new password.", 
+                    targetUser.UserName, string.Join(", ", removePasswordResult.Errors.Select(e => e.Description)));
+            }
+
+            IdentityResult result = await _userManager.AddPasswordAsync(targetUser, newPassword);
+
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("Password successfully changed for user {TargetUserName} by {LoggedInUserName}.", targetUser.UserName, loggedInUser.UserName);
+            }
+            else
+            {
+                _logger.LogError("Failed to change password for user {TargetUserName} by {LoggedInUserName}. Errors: {Errors}", 
+                    targetUser.UserName, loggedInUser.UserName, string.Join(", ", result.Errors.Select(e => e.Description)));
+            }
+            
+            _userActionLogFacade.AddNewActionLog(ActionType.ChangeUserPassword, $"Attempt to change password for user {targetUser.UserName} by user {loggedInUser.UserName}. Success: {result.Succeeded}", loggedInUserId, result.Succeeded);
+
+            return result;
+        }
     }
 }

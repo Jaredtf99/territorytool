@@ -18,5 +18,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces
         void DeleteUser(string userID, string loggedUserId);
 
         IEnumerable<UserInfo> GetUsersInformation();
+
+        Task<IdentityResult> ChangeUserPasswordAsync(string targetUserId, string newPassword, string loggedInUserId);
     }
 }

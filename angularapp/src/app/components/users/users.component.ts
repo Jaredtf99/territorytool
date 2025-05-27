@@ -24,6 +24,7 @@ export class UsersComponent implements OnInit {
   public rolesCanIChange: string[] = [];
   public defaultRoleIndex = 0;
   public editForm: FormGroup;
+  public canChangePassword = false;
 
   constructor(public http: HttpClient, @Inject('BASE_URL') public baseUrl: string, public userService: UserService, private toastr: ToastrService, private spinner: NgxSpinnerService, private fb: FormBuilder) {
 
@@ -34,7 +35,8 @@ export class UsersComponent implements OnInit {
 
     this.editForm = this.fb.group({
       userName: ['', Validators.required],
-      role: ['', Validators.required]
+      role: ['', Validators.required],
+      newPassword: ['', Validators.minLength(8)]
     });
 
     this.getUsersData();
@@ -125,6 +127,17 @@ export class UsersComponent implements OnInit {
       userName: user.UserName,
       role: user.Role
     });
+    this.editForm.get('newPassword')?.reset();
+
+    const userRoleToEdit = RoleType[user.Role as keyof typeof RoleType];
+    this.canChangePassword = false; // Default to false
+
+    if (this.role === RoleType.SUPERADMIN && (userRoleToEdit === RoleType.ADMIN || userRoleToEdit === RoleType.USER)) {
+      this.canChangePassword = true;
+    } else if (this.role === RoleType.ADMIN && userRoleToEdit === RoleType.USER) {
+      this.canChangePassword = true;
+    }
+
   }
 
   selectedRoleEventHandler(roleIndex: number) {
@@ -188,6 +201,30 @@ export class UsersComponent implements OnInit {
 
 
   ngOnInit() {
+  }
+
+  changePassword() {
+    if (this.editForm.get('newPassword')?.invalid) {
+      return;
+    }
+
+    this.spinner.show();
+    const newPassword = this.editForm.get('newPassword')?.value;
+
+    this.userService.changeUserPassword(this.userToEdit.UserID!, newPassword).subscribe({
+      next: () => {
+        this.toastr.success('Contraseña cambiada correctamente');
+        $('#editUser').modal('hide');
+        this.spinner.hide();
+        this.editForm.get('newPassword')?.reset();
+      },
+      error: (error) => {
+        this.toastr.error('Error al cambiar la contraseña');
+        console.error(error);
+        this.spinner.hide();
+        this.editForm.get('newPassword')?.reset();
+      }
+    });
   }
 
 }
