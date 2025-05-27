@@ -1,11 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Data;
-using System.Linq;
+using TerritoryTool.ServerSide.Domain.Classes; // Added for SearchResultItem<T>
+using TerritoryTool.ServerSide.Domain.Enums;   // Added for SearchMatchType
+using TerritoryTool.ServerSide.Domain.Helpers; // For SearchUtils
 using TerritoryTool.ServerSide.Persistence.Entities;
 using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
-using TerritoryTool.ServerSide.Domain.Helpers; // Added for SearchUtils
+
 
 namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
 {
@@ -27,8 +30,8 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
 
         public Person? GetPersonByName(string name)
         {
-            name = name;
-
+            // This method likely needs to be updated or reviewed in context of new search logic
+            // For now, keeping its original simple equality check.
             return _context.Person.FirstOrDefault(x => x.Name == name);
         }
 
@@ -39,32 +42,27 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                 return _context.Person.Where(p => p.Enabled).ToList();
             }
 
-            var normalizedSearchTerm = SearchUtils.RemoveDiacritics(name.ToLower());
-            const int levenshteinThreshold = 2; // Or a percentage of normalizedSearchTerm.Length
+            var allEnabledPersons = _context.Person.Where(p => p.Enabled).ToList();
+            var rankedResults = new List<SearchResultItem<Person>>();
 
-            return _context.Person
-                .Where(p => p.Enabled)
-                .ToList() // Bring entities into memory to perform complex string operations
-                .Where(p =>
+            foreach (var person in allEnabledPersons)
+            {
+                if (person.Name == null) continue; // Skip persons with null names
+
+                var matchResult = SearchUtils.CalculateMatchResult(name, person.Name);
+
+                if (matchResult.MatchType != SearchMatchType.None)
                 {
-                    var normalizedDbName = SearchUtils.RemoveDiacritics(p.Name?.ToLower() ?? string.Empty);
-                    
-                    // Check Levenshtein distance against the Name property OR if the name starts with the search term
-                    if (!string.IsNullOrEmpty(normalizedDbName))
-                    {
-                        if (SearchUtils.LevenshteinDistance(normalizedDbName, normalizedSearchTerm) <= levenshteinThreshold)
-                        {
-                            return true;
-                        }
+                    rankedResults.Add(new SearchResultItem<Person>(person, matchResult.Score, matchResult.MatchType));
+                }
+            }
 
-                        if (normalizedDbName.StartsWith(normalizedSearchTerm, StringComparison.Ordinal))
-                        {
-                            return true;
-                        }
-                    }
-                    
-                    return false;
-                })
+            // Sort by MatchType (lower enum value = higher priority), then by Score (higher score = better), then by Name for stability
+            return rankedResults
+                .OrderBy(r => r.MatchType)  // Lower enum value is better match type
+                .ThenByDescending(r => r.Score) // Higher score is better
+                .ThenBy(r => r.Item.Name)   // Alphabetical for tie-breaking
+                .Select(r => r.Item)
                 .ToList();
         }
 
@@ -108,6 +106,5 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             _context.Person.Remove(person);
             _context.SaveChanges();
         }
-
     }
 }

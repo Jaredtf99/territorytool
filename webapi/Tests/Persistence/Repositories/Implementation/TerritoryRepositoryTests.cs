@@ -4,8 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using TerritoryTool.ServerSide.Persistence.Entities;
 using TerritoryTool.ServerSide.Persistence.Repositories.Implementation;
-using TerritoryTool.ServerSide.Persistence; // For TerritoryToolDbContext
-using Xunit; // Assuming XUnit for testing framework
+using TerritoryTool.ServerSide.Persistence; 
+using Xunit;
 
 namespace TerritoryTool.ServerSide.Tests.Persistence.Repositories.Implementation
 {
@@ -14,7 +14,7 @@ namespace TerritoryTool.ServerSide.Tests.Persistence.Repositories.Implementation
         private TerritoryToolDbContext GetInMemoryDbContext(List<Territory> initialData = null)
         {
             var options = new DbContextOptionsBuilder<TerritoryToolDbContext>()
-                .UseInMemoryDatabase(databaseName: System.Guid.NewGuid().ToString()) // Unique name
+                .UseInMemoryDatabase(databaseName: System.Guid.NewGuid().ToString()) 
                 .Options;
 
             var context = new TerritoryToolDbContext(options);
@@ -31,28 +31,63 @@ namespace TerritoryTool.ServerSide.Tests.Persistence.Repositories.Implementation
         {
             return new List<Territory>
             {
-                new Territory { Id = 1, Name = "Territory Alpha", Code = "TA01", PersonId = 1 }, // Assigned
-                new Territory { Id = 2, Name = "Território Beta", Code = "TB02", PersonId = null }, // Free, Accent name
-                new Territory { Id = 3, Name = "Territory Gamma", Code = "TG03", PersonId = 2 }, // Assigned
-                new Territory { Id = 4, Name = "Territory Delta", Code = "TDÖ4", PersonId = null }, // Free, Accent code
-                new Territory { Id = 5, Name = "Territory Epsilon", Code = "TE05", PersonId = 3 }, // Assigned
-                new Territory { Id = 6, Name = "Old Territory", Code = "OT06", PersonId = null }, // Free
-                new Territory { Id = 7, Name = "Zeta Place", Code = "ZP07", PersonId = null }, // Free, for fuzzy
-                new Territory { Id = 8, Name = "Central District", Code = "CDIST", PersonId = 4 }, // Assigned
-                new Territory { Id = 9, Name = "North Sector (Residential)", Code = "NSR09", PersonId = null}, // Free
-                new Territory { Id = 10, Name = "Südlicher Bereich", Code = "SBR10", PersonId = 5}, // Assigned, Accent name and code part
-                
-                // New territories for StartsWith tests
+                new Territory { Id = 1, Name = "Territory Alpha", Code = "TA01", PersonId = 1 }, 
+                new Territory { Id = 2, Name = "Território Beta", Code = "TB02", PersonId = null }, 
+                new Territory { Id = 3, Name = "Territory Gamma", Code = "TG03", PersonId = 2 }, 
+                new Territory { Id = 4, Name = "Territory Delta", Code = "TDÖ4", PersonId = null }, 
+                new Territory { Id = 5, Name = "Territory Epsilon", Code = "TE05", PersonId = 3 }, 
+                new Territory { Id = 6, Name = "Old Territory", Code = "OT06", PersonId = null }, 
+                new Territory { Id = 7, Name = "Zeta Place", Code = "ZP07", PersonId = null }, 
+                new Territory { Id = 8, Name = "Central District", Code = "CDIST", PersonId = 4 }, 
+                new Territory { Id = 9, Name = "North Sector (Residential)", Code = "NSR09", PersonId = null}, 
+                new Territory { Id = 10, Name = "Südlicher Bereich", Code = "SBR10", PersonId = 5}, 
                 new Territory { Id = 11, Name = "Alpha Centauri", Code = "AC011", PersonId = null }, 
                 new Territory { Id = 12, Name = "Território Gamma Plus", Code = "TGP12", PersonId = 2 }, 
                 new Territory { Id = 13, Name = "Sirius Sector", Code = "KÖD321", PersonId = null }, 
                 new Territory { Id = 14, Name = "Orion Spur", Code = "OS014", PersonId = 6 }, 
-                new Territory { Id = 15, Name = "Nebula Outpost X", Code = "NOX15", PersonId = null }, // For prefix vs fuzzy - Name
-                new Territory { Id = 16, Name = "Kepler Station", Code = "KXXXX016", PersonId = 7 }, // For prefix vs fuzzy - Code
-                new Territory { Id = 17, Name = "Vega Colony", Code = "VC017", PersonId = null }, // For fuzzy not prefix - Name
-                new Territory { Id = 18, Name = "Polaris Base", Code = "PLBASE1", PersonId = 8 } // For fuzzy not prefix - Code
+                new Territory { Id = 15, Name = "Nebula Outpost X", Code = "NOX15", PersonId = null }, 
+                new Territory { Id = 16, Name = "Kepler Station", Code = "KXXXX016", PersonId = 7 }, 
+                new Territory { Id = 17, Name = "Vega Colony", Code = "VC017", PersonId = null }, 
+                new Territory { Id = 18, Name = "Polaris Base", Code = "PLBASE1", PersonId = 8 },
+
+                // New for word matching and ordering
+                new Territory { Id = 19, Name = "Alpha Station Gamma", Code = "ASG19", PersonId = null },
+                new Territory { Id = 20, Name = "Beta Outpost Zeta", Code = "BOZ20", PersonId = 1 },
+                new Territory { Id = 21, Name = "Sector 7G", Code = "S7G21", PersonId = null }, // Single letter word "G"
+                new Territory { Id = 22, Name = "Main Hub Control", Code = "MHC22", PersonId = 2 },
+                new Territory { Id = 23, Name = "Central Gamma Hub", Code = "CGH23", PersonId = null },
+                new Territory { Id = 24, Name = "Delta Station Alpha", Code = "DSA24", PersonId = 3 }, // "Station" and "Alpha"
+                new Territory { Id = 25, Name = "The Alpha Base", Code = "TAB25", PersonId = null }, 
+                new Territory { Id = 26, Name = "Auxiliary Base", Code = "AUXALPHA", PersonId = 4 } 
             };
         }
+
+        [Fact]
+        public void SearchTerritories_ExactMatch_Name_IsTopResult()
+        {
+            var territories = GetDefaultTerritories();
+            var context = GetInMemoryDbContext(territories);
+            var logger = NullLogger<TerritoryRepository>.Instance;
+            var repository = new TerritoryRepository(context, logger);
+
+            var result = repository.SearchTerritories("Territory Alpha", false, false).ToList();
+            Assert.NotEmpty(result);
+            Assert.Equal("Territory Alpha", result.First().Name); // ExactContains on Name
+        }
+        
+        [Fact]
+        public void SearchTerritories_ExactMatch_Code_IsTopResult()
+        {
+            var territories = GetDefaultTerritories();
+            var context = GetInMemoryDbContext(territories);
+            var logger = NullLogger<TerritoryRepository>.Instance;
+            var repository = new TerritoryRepository(context, logger);
+
+            var result = repository.SearchTerritories("TA01", false, false).ToList();
+            Assert.NotEmpty(result);
+            Assert.Equal("TA01", result.First().Code); // ExactContains on Code
+        }
+
 
         [Fact]
         public void SearchTerritories_AccentInsensitive_Name_ReturnsMatchingTerritories()
@@ -63,477 +98,196 @@ namespace TerritoryTool.ServerSide.Tests.Persistence.Repositories.Implementation
             var repository = new TerritoryRepository(context, logger);
 
             var result = repository.SearchTerritories("Territorio Beta", false, false).ToList();
-            Assert.Contains(result, t => t.Name == "Território Beta");
+            Assert.Contains(result, t => t.Name == "Território Beta"); // FuzzyFull or PrefixFull
         }
 
         [Fact]
-        public void SearchTerritories_AccentInsensitive_Code_ReturnsMatchingTerritories()
+        public void SearchTerritories_Name_WordMatch_Exact_SecondWord()
         {
             var territories = GetDefaultTerritories();
             var context = GetInMemoryDbContext(territories);
             var logger = NullLogger<TerritoryRepository>.Instance;
             var repository = new TerritoryRepository(context, logger);
 
-            var result = repository.SearchTerritories("TDO4", false, false).ToList(); // TDÖ4
-            Assert.Contains(result, t => t.Code == "TDÖ4");
+            // Search "Station" -> "Alpha Station Gamma", "Delta Station Alpha", "Kepler Station"
+            // All are ExactContains on a word. Order by name.
+            var results = repository.SearchTerritories("Station", false, false).ToList();
+            Assert.Contains(results, t => t.Name == "Alpha Station Gamma");
+            Assert.Contains(results, t => t.Name == "Delta Station Alpha");
+            Assert.Contains(results, t => t.Name == "Kepler Station");
+            Assert.Equal(3, results.Count);
+            Assert.Equal("Alpha Station Gamma", results[0].Name); // Alpha comes before Delta, Kepler
         }
 
         [Fact]
-        public void SearchTerritories_FuzzyMatching_Name_ReturnsMatchingTerritories()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            var result = repository.SearchTerritories("Zta Place", false, false).ToList(); 
-            Assert.Contains(result, t => t.Name == "Zeta Place");
-
-            var result2 = repository.SearchTerritories("Central Distric", false, false).ToList(); 
-            Assert.Contains(result2, t => t.Name == "Central District");
-        }
-
-        [Fact]
-        public void SearchTerritories_FuzzyMatching_Code_ReturnsMatchingTerritories()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            var result = repository.SearchTerritories("TA1", false, false).ToList(); 
-            Assert.Contains(result, t => t.Code == "TA01");
-            
-            var result2 = repository.SearchTerritories("NSR0", false, false).ToList(); 
-            Assert.Contains(result2, t => t.Code == "NSR09");
-        }
-        
-        [Fact]
-        public void SearchTerritories_FuzzyMatching_ThresholdTest()
-        {
-            var territories = new List<Territory> { new Territory { Id = 1, Name = "Alexander", Code = "ALEX", PersonId = null } };
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            Assert.Single(repository.SearchTerritories("Alexandr", false, false)); 
-            Assert.Single(repository.SearchTerritories("Alexande", false, false)); 
-            Assert.Empty(repository.SearchTerritories("Alexand", false, false));   
-
-            Assert.Single(repository.SearchTerritories("ALE", false, false)); 
-            Assert.Single(repository.SearchTerritories("AL", false, false));  
-            Assert.Empty(repository.SearchTerritories("A", false, false));    
-        }
-
-        [Fact]
-        public void SearchTerritories_CombinationAccentAndFuzzy_Name_ReturnsMatchingTerritories()
+        public void SearchTerritories_Name_WordMatch_Prefix_SecondWord()
         {
             var territories = GetDefaultTerritories();
             var context = GetInMemoryDbContext(territories);
             var logger = NullLogger<TerritoryRepository>.Instance;
             var repository = new TerritoryRepository(context, logger);
             
-            var result = repository.SearchTerritories("Sudlicer Berech", false, false).ToList(); 
+            // Search "Gam" -> "Alpha Station Gamma", "Territory Gamma", "Território Gamma Plus", "Central Gamma Hub"
+            // All are PrefixWord on "Gamma" or "Gamma Plus". Order by name.
+            var results = repository.SearchTerritories("Gam", false, false).ToList();
+            Assert.Contains(results, t => t.Name == "Alpha Station Gamma");      // PrefixWord
+            Assert.Contains(results, t => t.Name == "Central Gamma Hub");        // PrefixWord
+            Assert.Contains(results, t => t.Name == "Território Gamma Plus");    // PrefixWord
+            Assert.Contains(results, t => t.Name == "Territory Gamma");          // PrefixWord
+        }
+
+        [Fact]
+        public void SearchTerritories_Name_WordMatch_Fuzzy_SecondWord()
+        {
+            var territories = GetDefaultTerritories();
+            var context = GetInMemoryDbContext(territories);
+            var logger = NullLogger<TerritoryRepository>.Instance;
+            var repository = new TerritoryRepository(context, logger);
+            
+            // Search "Outpst" (fuzzy for Outpost) -> "Beta Outpost Zeta", "Nebula Outpost X"
+            // Both FuzzyWord. Order by name.
+            var results = repository.SearchTerritories("Outpst", false, false).ToList();
+            Assert.Contains(results, t => t.Name == "Beta Outpost Zeta");
+            Assert.Contains(results, t => t.Name == "Nebula Outpost X");
+            Assert.Equal("Beta Outpost Zeta", results[0].Name);
+        }
+
+        [Fact]
+        public void SearchTerritories_Name_WordMatch_Accent_SecondWord()
+        {
+            var territories = GetDefaultTerritories();
+            var context = GetInMemoryDbContext(territories);
+            var logger = NullLogger<TerritoryRepository>.Instance;
+            var repository = new TerritoryRepository(context, logger);
+
+            // Search "Südlich" -> "Südlicher Bereich" (PrefixWord after normalization)
+            var result = repository.SearchTerritories("Südlich", false, false).ToList();
             Assert.Contains(result, t => t.Name == "Südlicher Bereich");
-        }
-
-        [Fact]
-        public void SearchTerritories_CombinationAccentAndFuzzy_Code_ReturnsMatchingTerritories()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            var result = repository.SearchTerritories("TDO", false, false).ToList(); 
-            Assert.Contains(result, t => t.Code == "TDÖ4");
+            Assert.Equal("Südlicher Bereich", result.First().Name);
         }
         
         [Fact]
-        public void SearchTerritories_SearchTermWithDiacritics_ReturnsMatchingTerritories()
+        public void SearchTerritories_Ordering_NameMatchWinsOverCodeMatch()
         {
-            var territories = GetDefaultTerritories();
+            // Name: "The Alpha Base" (PrefixFull for "Alpha") vs Code: "TAB25" (FuzzyFull for "Alpha")
+            // Search "Alpha"
+            // "The Alpha Base": Name is PrefixWord "Alpha". Score 70.
+            // "Territory Alpha": Name is PrefixWord "Alpha". Score 70.
+            // "Alpha Centauri": Name is PrefixFull "Alpha Centauri". Score 90.
+            // "Auxiliary Base" Code "AUXALPHA": Code is ExactContains "alpha". Score 100.
+            // "Delta Station Alpha": Name is ExactContains on word "Alpha". Score 100.
+            var context = GetInMemoryDbContext(GetDefaultTerritories());
+            var logger = NullLogger<TerritoryRepository>.Instance;
+            var repository = new TerritoryRepository(context, logger);
+
+            var results = repository.SearchTerritories("Alpha", false, false).ToList();
+            
+            Assert.Collection(results,
+                item => Assert.Equal("Delta Station Alpha", item.Name), // Name ExactContains Word (100)
+                item => Assert.Equal("Auxiliary Base", item.Name),      // Code ExactContains (100) - AUXALPHA vs alpha
+                item => Assert.Equal("Alpha Centauri", item.Name),      // Name PrefixFull (90)
+                item => Assert.Equal("Territory Alpha", item.Name),     // Name PrefixWord (70)
+                item => Assert.Equal("The Alpha Base", item.Name)       // Name PrefixWord (70)
+            );
+        }
+
+        [Fact]
+        public void SearchTerritories_Ordering_CodeMatchWinsOverNameMatch()
+        {
+            // Territory A: Name "LowPrio Name", Code "EXACTCODE"
+            // Territory B: Name "Exact Name Match", Code "LPCODE"
+            // Search "Exact"
+            // A: Code "EXACTCODE" -> ExactContains. Score 100.
+            // B: Name "Exact Name Match" -> ExactContains. Score 100.
+            // B should come before A due to Name sort.
+            var territories = new List<Territory> {
+                new Territory { Id = 1, Name = "LowPrio Name", Code = "EXACTCODE", PersonId = null },
+                new Territory { Id = 2, Name = "Exact Name Match", Code = "LPCODE", PersonId = null }
+            };
             var context = GetInMemoryDbContext(territories);
             var logger = NullLogger<TerritoryRepository>.Instance;
             var repository = new TerritoryRepository(context, logger);
 
-            var result = repository.SearchTerritories("Território", false, false).ToList();
-            Assert.Contains(result, t => t.Name == "Território Beta");
-            Assert.Contains(result, t => t.Name == "Território Gamma Plus"); // Also matches by prefix
-            
-            var resultCode = repository.SearchTerritories("TDÖ4", false, false).ToList();
-            Assert.Contains(resultCode, t => t.Code == "TDÖ4");
+            var results = repository.SearchTerritories("Exact", false, false).ToList();
+            Assert.Collection(results,
+                item => Assert.Equal("Exact Name Match", item.Name), // ExactContains on Name
+                item => Assert.Equal("LowPrio Name", item.Name)      // ExactContains on Code
+            );
         }
         
         [Fact]
-        public void SearchTerritories_CaseInsensitive_ReturnsMatchingTerritories()
+        public void SearchTerritories_Ordering_PriorityOfMatchTypes_ComplexScenario()
         {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
+            // Search "Territory"
+            // 1. Territory Alpha (Name: ExactContains - 100)
+            // 2. Territory Delta (Name: ExactContains - 100)
+            // 3. Territory Epsilon (Name: ExactContains - 100)
+            // 4. Territory Gamma (Name: ExactContains - 100)
+            // 5. Território Beta (Name: PrefixFull - 90, after normalization "territorio beta" starts with "territory")
+            // 6. Território Gamma Plus (Name: PrefixFull - 90)
+            // 7. Old Territory (Name: FuzzyFull - "old territory" vs "territory" is dist 2) -> No, dist is 4. This should not fuzzy match.
+            //    "Old Territory" (Name: PrefixWord "Territory")
+            var context = GetInMemoryDbContext(GetDefaultTerritories());
             var logger = NullLogger<TerritoryRepository>.Instance;
             var repository = new TerritoryRepository(context, logger);
+            var results = repository.SearchTerritories("Territory", false, false).ToList();
 
-            var resultName = repository.SearchTerritories("territory alpha", false, false).ToList();
-            Assert.Contains(resultName, t => t.Name == "Territory Alpha");
-            
-            var resultCode = repository.SearchTerritories("ta01", false, false).ToList();
-            Assert.Contains(resultCode, t => t.Code == "TA01");
-        }
-
-        [Fact]
-        public void SearchTerritories_OnlyFreeTerritories_True_ReturnsOnlyFree()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            var result = repository.SearchTerritories("Territory", true, false).ToList(); 
-            Assert.True(result.Any());
-            Assert.True(result.All(t => t.PersonId == null));
-            Assert.Contains(result, t => t.Name == "Território Beta"); 
-            Assert.DoesNotContain(result, t => t.Name == "Territory Alpha"); 
-        }
-
-        [Fact]
-        public void SearchTerritories_OnlyGivenTerritories_True_ReturnsOnlyGiven()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            var result = repository.SearchTerritories("Territory", false, true).ToList();
-            Assert.True(result.Any());
-            Assert.True(result.All(t => t.PersonId != null));
-            Assert.Contains(result, t => t.Name == "Territory Alpha"); 
-            Assert.DoesNotContain(result, t => t.Name == "Território Beta");
+            Assert.Collection(results,
+                item => Assert.Equal("Territory Alpha", item.Name),   // ExactContains
+                item => Assert.Equal("Territory Delta", item.Name),   // ExactContains
+                item => Assert.Equal("Territory Epsilon", item.Name), // ExactContains
+                item => Assert.Equal("Territory Gamma", item.Name),   // ExactContains
+                item => Assert.Equal("Território Beta", item.Name),  // PrefixFull
+                item => Assert.Equal("Território Gamma Plus", item.Name), // PrefixFull
+                item => Assert.Equal("Old Territory", item.Name)      // PrefixWord
+            );
         }
         
         [Fact]
-        public void SearchTerritories_OnlyFreeAndOnlyGiven_True_ReturnsEmpty()
+        public void SearchTerritories_Ordering_ByName_WhenSameMatchTypeAndScore()
         {
-            var territories = GetDefaultTerritories();
+            var territories = new List<Territory> {
+                new Territory { Id = 1, Name = "Zulu Territory", Code = "ZT01", PersonId = null },
+                new Territory { Id = 2, Name = "Yankee Territory", Code = "YT02", PersonId = null }
+            }; // Both ExactContains for "Territory"
             var context = GetInMemoryDbContext(territories);
             var logger = NullLogger<TerritoryRepository>.Instance;
             var repository = new TerritoryRepository(context, logger);
 
-            var result = repository.SearchTerritories("Territory", true, true).ToList();
-            Assert.Empty(result); 
+            var results = repository.SearchTerritories("Territory", false, false).ToList();
+            Assert.Collection(results,
+                item => Assert.Equal("Yankee Territory", item.Name), // Y before Z
+                item => Assert.Equal("Zulu Territory", item.Name)
+            );
         }
 
         [Fact]
-        public void SearchTerritories_SearchName_And_OnlyFree_ReturnsCorrectTerritories()
+        public void SearchTerritories_Name_WordMatch_WithOnlyFreeFilter()
         {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
+            var context = GetInMemoryDbContext(GetDefaultTerritories());
             var logger = NullLogger<TerritoryRepository>.Instance;
             var repository = new TerritoryRepository(context, logger);
 
-            var result = repository.SearchTerritories("Território Beta", true, false).ToList();
-            Assert.Single(result);
-            Assert.Equal("Território Beta", result.First().Name);
-            Assert.Null(result.First().PersonId);
-        }
-
-        [Fact]
-        public void SearchTerritories_SearchCode_And_OnlyGiven_ReturnsCorrectTerritories()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            var result = repository.SearchTerritories("TA01", false, true).ToList();
-            Assert.Single(result);
-            Assert.Equal("TA01", result.First().Code);
-            Assert.NotNull(result.First().PersonId);
-        }
-
-        [Fact]
-        public void SearchTerritories_EmptySearchTerm_And_OnlyFree_ReturnsAllFree()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            var result = repository.SearchTerritories("", true, false).ToList();
-            var expectedFree = territories.Count(t => t.PersonId == null);
-            Assert.Equal(expectedFree, result.Count);
-            Assert.True(result.All(t => t.PersonId == null));
-        }
-
-        [Fact]
-        public void SearchTerritories_NullSearchTerm_And_OnlyGiven_ReturnsAllGiven()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            var result = repository.SearchTerritories(null, false, true).ToList();
-            var expectedGiven = territories.Count(t => t.PersonId != null);
-            Assert.Equal(expectedGiven, result.Count);
-            Assert.True(result.All(t => t.PersonId != null));
-        }
-
-        [Fact]
-        public void SearchTerritories_EmptySearchTerm_NoFilters_ReturnsAll()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            var result = repository.SearchTerritories("", false, false).ToList();
-            Assert.Equal(territories.Count, result.Count);
+            // "Alpha Station Gamma" (ASG19) is free. "Delta Station Alpha" (DSA24) is assigned.
+            // "Kepler Station" (KXXXX016) is assigned.
+            var results = repository.SearchTerritories("Station", true, false).ToList(); // onlyFree = true
+            Assert.Single(results);
+            Assert.Equal("Alpha Station Gamma", results.First().Name);
         }
         
         [Fact]
-        public void SearchTerritories_NullSearchTerm_NoFilters_ReturnsAll()
+        public void SearchTerritories_EmptySearchTerm_StillReturnsAllFiltered()
         {
             var territories = GetDefaultTerritories();
             var context = GetInMemoryDbContext(territories);
             var logger = NullLogger<TerritoryRepository>.Instance;
             var repository = new TerritoryRepository(context, logger);
 
-            var result = repository.SearchTerritories(null, false, false).ToList();
-            Assert.Equal(territories.Count, result.Count);
-        }
+            var result = repository.SearchTerritories("", true, false).ToList(); // onlyFree
+            Assert.Equal(territories.Count(t => t.PersonId == null), result.Count);
 
-        [Fact]
-        public void SearchTerritories_NoMatches_WithFilters_ReturnsEmptyList()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            var result = repository.SearchTerritories("NonExistentXYZ", true, false).ToList();
-            Assert.Empty(result);
-        }
-
-        [Fact]
-        public void SearchTerritories_ExactMatch_Name_WithFilters_ReturnsCorrectTerritory()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            var result = repository.SearchTerritories("Território Beta", true, false).ToList();
-            Assert.Single(result);
-            Assert.Equal("Território Beta", result.First().Name);
-            Assert.Null(result.First().PersonId);
-
-            var result2 = repository.SearchTerritories("Territory Alpha", false, true).ToList();
-            Assert.Single(result2);
-            Assert.Equal("Territory Alpha", result2.First().Name);
-            Assert.NotNull(result2.First().PersonId);
-        }
-
-        [Fact]
-        public void SearchTerritories_ExactMatch_Code_WithFilters_ReturnsCorrectTerritory()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            var result = repository.SearchTerritories("TB02", true, false).ToList();
-            Assert.Single(result);
-            Assert.Equal("TB02", result.First().Code);
-            Assert.Null(result.First().PersonId);
-
-            var result2 = repository.SearchTerritories("TA01", false, true).ToList();
-            Assert.Single(result2);
-            Assert.Equal("TA01", result2.First().Code);
-            Assert.NotNull(result2.First().PersonId);
-        }
-
-        // --- New tests for StartsWith ---
-
-        [Fact]
-        public void SearchTerritories_PrefixMatch_Name_Simple()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            var result = repository.SearchTerritories("Alpha", false, false).ToList(); // For "Alpha Centauri"
-            Assert.Contains(result, t => t.Name == "Alpha Centauri");
-            Assert.DoesNotContain(result, t => t.Name == "Territory Alpha"); // "Territory Alpha" does not start with "Alpha"
-        }
-
-        [Fact]
-        public void SearchTerritories_PrefixMatch_Name_WithAccents()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            // Search "Territ" (normalized from "Territ") finds "Território Gamma Plus" (normalized to "territorio gamma plus")
-            var result = repository.SearchTerritories("Territ", false, false).ToList();
-            Assert.Contains(result, t => t.Name == "Território Gamma Plus");
-            Assert.Contains(result, t => t.Name == "Territory Alpha"); // Also matches "Territory Alpha" etc.
-        }
-
-        [Fact]
-        public void SearchTerritories_PrefixMatch_Code_Simple()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            var result = repository.SearchTerritories("AC", false, false).ToList(); // For "AC011"
-            Assert.Contains(result, t => t.Code == "AC011");
-        }
-
-        [Fact]
-        public void SearchTerritories_PrefixMatch_Code_WithAccents()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            // Search "KÖD" (normalized to "kod") finds "KÖD321" (normalized to "kod321")
-            var result = repository.SearchTerritories("KÖD", false, false).ToList();
-            Assert.Contains(result, t => t.Code == "KÖD321");
-        }
-
-        [Fact]
-        public void SearchTerritories_PrefixMatch_NameOrCode_FindsByName()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            // "Alpha" is prefix of "Alpha Centauri" (Name), not its code "AC011"
-            var result = repository.SearchTerritories("Alpha", false, false).ToList();
-            Assert.Contains(result, t => t.Name == "Alpha Centauri");
-        }
-
-        [Fact]
-        public void SearchTerritories_PrefixMatch_NameOrCode_FindsByCode()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-            
-            // "AC0" is prefix of "AC011" (Code) of "Alpha Centauri", not its name
-            var result = repository.SearchTerritories("AC0", false, false).ToList();
-            Assert.Contains(result, t => t.Code == "AC011");
-        }
-
-        [Fact]
-        public void SearchTerritories_PrefixMatch_Name_WithOnlyFreeFilter()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            // "Alpha Centauri" is free (PersonId = null)
-            var result = repository.SearchTerritories("Alpha", true, false).ToList();
-            Assert.Contains(result, t => t.Name == "Alpha Centauri" && t.PersonId == null);
-            Assert.Single(result.Where(t => t.Name == "Alpha Centauri"));
-        }
-
-        [Fact]
-        public void SearchTerritories_PrefixMatch_Code_WithOnlyGivenFilter()
-        {
-            var territories = GetDefaultTerritories(); // "Território Gamma Plus" (TGP12) is PersonId = 2
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            var result = repository.SearchTerritories("TGP", false, true).ToList();
-            Assert.Contains(result, t => t.Code == "TGP12" && t.PersonId != null);
-            Assert.Single(result.Where(t => t.Code == "TGP12"));
-        }
-
-        [Fact]
-        public void SearchTerritories_PrefixMatch_OverridesHighLevenshtein_Name()
-        {
-            var territories = GetDefaultTerritories(); // Nebula Outpost X (NOX15)
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            // "Neb" is prefix of "Nebula Outpost X". Levenshtein("nebula outpost x", "neb") is high.
-            var result = repository.SearchTerritories("Neb", false, false).ToList();
-            Assert.Contains(result, t => t.Name == "Nebula Outpost X");
-        }
-
-        [Fact]
-        public void SearchTerritories_PrefixMatch_OverridesHighLevenshtein_Code()
-        {
-            var territories = GetDefaultTerritories(); // Kepler Station (KXXXX016)
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-            
-            // "K" is prefix of "KXXXX016". Levenshtein("kxxxx016", "k") is high.
-            var result = repository.SearchTerritories("K", false, false).ToList();
-            Assert.Contains(result, t => t.Code == "KXXXX016"); // Matches KÖD321 as well
-            Assert.Contains(result, t => t.Code == "KÖD321");
-        }
-
-        [Fact]
-        public void SearchTerritories_FuzzyMatch_StillWorksWhenNotPrefix_Name()
-        {
-            var territories = GetDefaultTerritories(); // Vega Colony (VC017)
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            // "Vaga Colony" is Levenshtein 1 from "Vega Colony", not prefix
-            var result = repository.SearchTerritories("Vaga Colony", false, false).ToList();
-            Assert.Contains(result, t => t.Name == "Vega Colony");
-        }
-
-        [Fact]
-        public void SearchTerritories_FuzzyMatch_StillWorksWhenNotPrefix_Code()
-        {
-            var territories = GetDefaultTerritories(); // Polaris Base (PLBASE1)
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            // "PLBAS1" is Levenshtein 1 from "PLBASE1", not prefix
-            var result = repository.SearchTerritories("PLBAS1", false, false).ToList();
-            Assert.Contains(result, t => t.Code == "PLBASE1");
-        }
-
-        [Fact]
-        public void SearchTerritories_PrefixMatch_CaseInsensitive_Name()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-
-            var result = repository.SearchTerritories("alpha", false, false).ToList(); // for "Alpha Centauri"
-            Assert.Contains(result, t => t.Name == "Alpha Centauri");
-        }
-
-        [Fact]
-        public void SearchTerritories_PrefixMatch_CaseInsensitive_Code()
-        {
-            var territories = GetDefaultTerritories();
-            var context = GetInMemoryDbContext(territories);
-            var logger = NullLogger<TerritoryRepository>.Instance;
-            var repository = new TerritoryRepository(context, logger);
-            
-            var result = repository.SearchTerritories("ac", false, false).ToList(); // for "AC011"
-            Assert.Contains(result, t => t.Code == "AC011");
+            var resultGiven = repository.SearchTerritories(null, false, true).ToList(); // onlyGiven
+            Assert.Equal(territories.Count(t => t.PersonId != null), resultGiven.Count);
         }
     }
 }

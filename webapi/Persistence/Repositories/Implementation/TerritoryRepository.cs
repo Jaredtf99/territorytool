@@ -1,14 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+using System; // For StringComparison, Math.Min if they were used directly, though now in SearchUtils
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Xml.Linq;
 using TerritoryTool.ServerSide.Controllers.Models.Person;
-using TerritoryTool.ServerSide.Domain.Helpers; // Added for SearchUtils
-using TerritoryTool.ServerSide.Domain.Classes;
+using TerritoryTool.ServerSide.Domain.Classes; // Added for SearchResultItem<T>
+using TerritoryTool.ServerSide.Domain.Enums;   // Added for SearchMatchType
+using TerritoryTool.ServerSide.Domain.Helpers; // For SearchUtils
 using TerritoryTool.ServerSide.Persistence.Entities;
 using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
 
@@ -37,8 +37,11 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
 
             if (term != null)
             {
-                term = term.ToLower();
-                query = query.Where(x => x.Name.ToLower().Contains(term) || term.Contains(x.Name.ToLower()) || x.Code.ToLower().Contains(term));
+                // This basic search is kept for GetAllTerritories, 
+                // the advanced search is specific to SearchTerritories method
+                string lowerTerm = term.ToLower();
+                query = query.Where(x => (x.Name != null && x.Name.ToLower().Contains(lowerTerm)) || 
+                                         (x.Code != null && x.Code.ToLower().Contains(lowerTerm)));
             }
 
             if (inUse != null)
@@ -51,12 +54,12 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
 
             if (lastGivenDateFrom != null) 
             {
-                query = query.Where(x => x.Transactions.OrderByDescending(t => t.GivenDateUtc).FirstOrDefault()!.GivenDateUtc > lastGivenDateFrom.Value);
+                query = query.Where(x => x.Transactions.Any() && x.Transactions.OrderByDescending(t => t.GivenDateUtc).First().GivenDateUtc > lastGivenDateFrom.Value);
             }
 
             if (lastGivenDateTo != null) 
             {
-                query = query.Where(x => lastGivenDateTo.Value > x.Transactions.OrderByDescending(t => t.GivenDateUtc).FirstOrDefault()!.GivenDateUtc);
+                query = query.Where(x => x.Transactions.Any() && lastGivenDateTo.Value > x.Transactions.OrderByDescending(t => t.GivenDateUtc).First().GivenDateUtc);
             }
 
 
@@ -132,48 +135,71 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
         {
             IQueryable<Territory> query = _context.Territory;
 
+            // Apply initial filters
             if (onlyFreeTerritories)
             {
                 query = query.Where(x => x.PersonId == null);
             }
-
-            if (onlyGivenTerritories)
+            if (onlyGivenTerritories) // Note: if both are true, this will result in an empty set if they are mutually exclusive
             {
                 query = query.Where(x => x.PersonId != null);
             }
-
+            
             if (string.IsNullOrWhiteSpace(search))
             {
-                return query.ToList();
+                return query.ToList(); 
             }
 
-            var normalizedSearchTerm = SearchUtils.RemoveDiacritics(search.ToLower());
-            const int levenshteinThreshold = 2;
+            var candidateTerritories = query.ToList(); // Fetch candidates after initial DB filtering
+            var rankedResults = new List<SearchResultItem<Territory>>();
 
-            // Bring the initially filtered entities into memory to perform complex string operations
-            var territoriesList = query.ToList();
+            foreach (var territory in candidateTerritories)
+            {
+                SearchUtils.MatchResult nameMatchResult = SearchUtils.CalculateMatchResult(search, territory.Name);
+                SearchUtils.MatchResult codeMatchResult = SearchUtils.CalculateMatchResult(search, territory.Code);
 
-            return territoriesList.Where(t =>
+                SearchUtils.MatchResult finalMatchResult;
+
+                if (nameMatchResult.MatchType != SearchMatchType.None && codeMatchResult.MatchType != SearchMatchType.None)
                 {
-                    var normalizedDbName = SearchUtils.RemoveDiacritics(t.Name?.ToLower() ?? string.Empty);
-                    var normalizedDbCode = SearchUtils.RemoveDiacritics(t.Code?.ToLower() ?? string.Empty);
-
-                    bool nameMatches = false;
-                    if (!string.IsNullOrEmpty(normalizedDbName))
+                    // Both Name and Code matched, determine which is better
+                    if (nameMatchResult.MatchType < codeMatchResult.MatchType) // Lower enum value means higher priority
                     {
-                        nameMatches = SearchUtils.LevenshteinDistance(normalizedDbName, normalizedSearchTerm) <= levenshteinThreshold ||
-                                      normalizedDbName.StartsWith(normalizedSearchTerm, StringComparison.Ordinal);
+                        finalMatchResult = nameMatchResult;
                     }
-
-                    bool codeMatches = false;
-                    if (!string.IsNullOrEmpty(normalizedDbCode))
+                    else if (codeMatchResult.MatchType < nameMatchResult.MatchType)
                     {
-                        codeMatches = SearchUtils.LevenshteinDistance(normalizedDbCode, normalizedSearchTerm) <= levenshteinThreshold ||
-                                      normalizedDbCode.StartsWith(normalizedSearchTerm, StringComparison.Ordinal);
+                        finalMatchResult = codeMatchResult;
                     }
-
-                    return nameMatches || codeMatches;
-                })
+                    else // MatchTypes are the same, compare scores
+                    {
+                        finalMatchResult = nameMatchResult.Score >= codeMatchResult.Score ? nameMatchResult : codeMatchResult;
+                    }
+                }
+                else if (nameMatchResult.MatchType != SearchMatchType.None)
+                {
+                    finalMatchResult = nameMatchResult;
+                }
+                else if (codeMatchResult.MatchType != SearchMatchType.None)
+                {
+                    finalMatchResult = codeMatchResult;
+                }
+                else
+                {
+                    finalMatchResult = new SearchUtils.MatchResult(SearchMatchType.None, 0); // No match
+                }
+                
+                if (finalMatchResult.MatchType != SearchMatchType.None)
+                {
+                    rankedResults.Add(new SearchResultItem<Territory>(territory, finalMatchResult.Score, finalMatchResult.MatchType));
+                }
+            }
+            
+            return rankedResults
+                .OrderBy(r => r.MatchType)      // Lower enum value (higher priority) first
+                .ThenByDescending(r => r.Score) // Higher score first
+                .ThenBy(r => r.Item.Name)       // Alphabetical by Name for tie-breaking
+                .Select(r => r.Item)
                 .ToList();
         }
 
@@ -275,7 +301,6 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
 
         public async Task<TerritoryStatistics> GetTerritoryStatistics(int territoryId)
         {
-            // Calcular el ranking directamente en la base de datos
             var territoryUsages = await _context.Territory
                 .Select(t => new { t.Id, Count = t.Transactions.Count })
                 .OrderByDescending(t => t.Count)
@@ -292,7 +317,6 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                 TotalTerritories = totalTerritories
             };
 
-            // Obtener estadísticas globales de manera eficiente
             var globalStats = await _context.Territory
                 .Where(t => t.Transactions.Any())
                 .Select(t => new
@@ -308,45 +332,47 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                 })
                 .ToListAsync();
 
-            // Inicializar medias globales incluso si el territorio no tiene historial
             if (globalStats.Any())
             {
                 var globalAssignedPercentages = globalStats
                     .Where(t => t.FirstGivenDate != null)
                     .Select(t =>
                     {
-                        var territoryDays = (DateTime.UtcNow - t.FirstGivenDate).TotalDays;
+                        var territoryDays = (DateTime.UtcNow - t.FirstGivenDate.Value).TotalDays; // Ensure Value is used for Nullable DateTime
+                        if (territoryDays == 0) return 0; // Avoid division by zero
                         var territoryAssignedDays = t.Transactions
                             .Sum(tr => ((tr.PickedDateUtc ?? DateTime.UtcNow) - tr.GivenDateUtc).TotalDays);
                         return (territoryAssignedDays / territoryDays) * 100;
                     });
-                stats.GlobalAverageAssignedTimePercentage = globalAssignedPercentages.Average();
+                if (globalAssignedPercentages.Any()) stats.GlobalAverageAssignedTimePercentage = globalAssignedPercentages.Average();
+
 
                 var globalReassignmentPeriods = globalStats
                     .SelectMany(t => t.Transactions
-                        .Where((tr, i) => tr.PickedDateUtc.HasValue)
-                        .Select((tr, i) => 
-                            i < t.Transactions.Count - 1 
-                            ? (t.Transactions[i + 1].GivenDateUtc - tr.PickedDateUtc!.Value).TotalDays
-                            : (DateTime.UtcNow - tr.PickedDateUtc!.Value).TotalDays
+                        .Select((tr, i) => new { Transaction = tr, Index = i }) // Keep track of index for next transaction
+                        .Where(x => x.Transaction.PickedDateUtc.HasValue)
+                        .Select(x => 
+                            x.Index < t.Transactions.Count - 1 
+                            ? (t.Transactions[x.Index + 1].GivenDateUtc - x.Transaction.PickedDateUtc!.Value).TotalDays
+                            : (DateTime.UtcNow - x.Transaction.PickedDateUtc!.Value).TotalDays
                         ));
-                stats.GlobalAverageReassignmentTime = globalReassignmentPeriods.Any() ? globalReassignmentPeriods.Average() : 0;
+                 if (globalReassignmentPeriods.Any()) stats.GlobalAverageReassignmentTime = globalReassignmentPeriods.Average();
+
 
                 var globalHoldingPeriods = globalStats
                     .SelectMany(t => t.Transactions
                         .Where(tr => tr.PickedDateUtc.HasValue)
                         .Select(tr => (tr.PickedDateUtc!.Value - tr.GivenDateUtc).TotalDays));
-                stats.GlobalAverageHoldingTime = globalHoldingPeriods.Any() ? globalHoldingPeriods.Average() : 0;
+                if (globalHoldingPeriods.Any()) stats.GlobalAverageHoldingTime = globalHoldingPeriods.Average();
 
                 var globalUniqueUsers = globalStats
                     .Select(t => t.Transactions
                         .Select(tr => tr.PersonId)
                         .Distinct()
                         .Count());
-                stats.GlobalAverageUniqueUsersCount = globalUniqueUsers.Average();
+                if (globalUniqueUsers.Any()) stats.GlobalAverageUniqueUsersCount = globalUniqueUsers.Average();
             }
 
-            // Calcular tiempos promedio
             var histories = await _context.Transaction
                 .Where(tr => tr.TerritoryId == territoryId)
                 .OrderBy(tr => tr.GivenDateUtc)
@@ -357,13 +383,14 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             {
                 var firstTransaction = histories.First();
                 var totalDays = (DateTime.UtcNow - firstTransaction.GivenDateUtc).TotalDays;
+                if (totalDays > 0) // Avoid division by zero
+                {
+                    var assignedDays = histories.Sum(h => 
+                        ((h.PickedDateUtc ?? DateTime.UtcNow) - h.GivenDateUtc).TotalDays);
+                    stats.AssignedTimePercentage = (assignedDays / totalDays) * 100;
+                }
 
-                // Calcular porcentaje de tiempo asignado del territorio actual
-                var assignedDays = histories.Sum(h => 
-                    ((h.PickedDateUtc ?? DateTime.UtcNow) - h.GivenDateUtc).TotalDays);
-                stats.AssignedTimePercentage = (assignedDays / totalDays) * 100;
 
-                // Calcular tiempo promedio de reasignación del territorio actual
                 var reassignmentPeriods = new List<double>();
                 for (int i = 0; i < histories.Count; i++)
                 {
@@ -376,43 +403,50 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                             var next = histories[i + 1];
                             reassignmentTime = (next.GivenDateUtc - current.PickedDateUtc.Value).TotalDays;
                         }
-                        else if (current.PersonId == null)
+                        else if (current.PersonId == null) // No longer assigned to anyone
                         {
                             reassignmentTime = (DateTime.UtcNow - current.PickedDateUtc.Value).TotalDays;
                         }
-                        else continue;
+                        else continue; // Still assigned or last transaction
 
                         reassignmentPeriods.Add(reassignmentTime);
                     }
                 }
-                stats.AverageReassignmentTime = reassignmentPeriods.Any() ? reassignmentPeriods.Average() : 0;
+                if (reassignmentPeriods.Any()) stats.AverageReassignmentTime = reassignmentPeriods.Average();
 
-                // Calcular tiempo promedio de uso por persona del territorio actual
+
                 var holdingPeriods = histories
                     .Where(h => h.PickedDateUtc.HasValue)
                     .Select(h => (h.PickedDateUtc!.Value - h.GivenDateUtc).TotalDays);
-                stats.AverageHoldingTime = holdingPeriods.Any() ? holdingPeriods.Average() : 0;
+                if (holdingPeriods.Any()) stats.AverageHoldingTime = holdingPeriods.Average();
 
-                // Calcular tiempo actual sin asignar
                 var lastTransaction = histories.LastOrDefault();
-                if (lastTransaction?.PersonId == null)
+                if (lastTransaction != null && lastTransaction.PersonId == null && lastTransaction.PickedDateUtc.HasValue) // Check if currently unassigned
                 {
-                    var lastPickup = histories.LastOrDefault(h => h.PickedDateUtc.HasValue)?.PickedDateUtc;
-                    if (lastPickup.HasValue)
-                        stats.CurrentUnassignedTime = (DateTime.UtcNow - lastPickup.Value).TotalDays;
+                     stats.CurrentUnassignedTime = (DateTime.UtcNow - lastTransaction.PickedDateUtc.Value).TotalDays;
+                } else if (lastTransaction != null && lastTransaction.PersonId != null && !lastTransaction.PickedDateUtc.HasValue) { // Currently assigned
+                    stats.CurrentUnassignedTime = 0; 
+                } else if (!histories.Any()) { // Never assigned
+                    // This case might need specific handling if totalDays from first transaction is not applicable
                 }
 
-                // Calcular tasa de rotación (usuarios únicos)
+
                 stats.UniqueUsersCount = histories
                     .Select(h => h.PersonId)
                     .Distinct()
                     .Count();
             }
 
-            // Calcular estadísticas de uso
             stats.UsageRank = currentTerritoryRank?.Rank ?? totalTerritories;
-            stats.IsHighUsage = stats.UsageRank <= (totalTerritories * 0.25);
-            stats.IsLowUsage = stats.UsageRank > (totalTerritories * 0.75);
+            if (totalTerritories > 0) // Avoid division by zero if there are no territories
+            {
+                stats.IsHighUsage = stats.UsageRank <= (totalTerritories * 0.25);
+                stats.IsLowUsage = stats.UsageRank > (totalTerritories * 0.75);
+            } else {
+                stats.IsHighUsage = false;
+                stats.IsLowUsage = false;
+            }
+            
 
             return stats;
         }
@@ -427,15 +461,15 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                     LastPickedDate = t.Transactions
                         .Where(tr => tr.PickedDateUtc != null)
                         .OrderByDescending(tr => tr.PickedDateUtc)
-                        .Select(tr => tr.PickedDateUtc)
+                        .Select(tr => (DateTime?)tr.PickedDateUtc) // Cast to nullable DateTime
                         .FirstOrDefault(),
                     GivenDate = t.Transactions
                         .Where(tr => tr.PickedDateUtc == null)
                         .OrderByDescending(tr => tr.GivenDateUtc)
-                        .Select(tr => tr.GivenDateUtc)
+                        .Select(tr => (DateTime?)tr.GivenDateUtc) // Cast to nullable DateTime
                         .FirstOrDefault()
                 })
-                .OrderBy(t => t.LastPickedDate)
+                .OrderBy(t => t.LastPickedDate) // Nulls will typically be first or last depending on DB, handle if needed
                 .ThenBy(t => t.Territory.Transactions.Count)
                 .Take(count)
                 .ToListAsync();
@@ -449,8 +483,7 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                 Name = x.Territory.Name,
                 ImgUrl = x.Territory.ImgUrl == null ? null : $"{requestScheme}://{requestHost}{requestPathBase}/{x.Territory.ImgUrl}"
 
-        });
+            });
         }
-
     }
 }
