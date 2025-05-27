@@ -1,12 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Text;
-using System.Globalization;
 using System.Xml.Linq;
 using TerritoryTool.ServerSide.Controllers.Models.Person;
+using TerritoryTool.ServerSide.Domain.Helpers; // Added for SearchUtils
 using TerritoryTool.ServerSide.Domain.Classes;
 using TerritoryTool.ServerSide.Persistence.Entities;
 using TerritoryTool.ServerSide.Persistence.Repositories.Interfaces;
@@ -146,7 +147,7 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                 return query.ToList();
             }
 
-            var normalizedSearchTerm = RemoveDiacritics(search.ToLower());
+            var normalizedSearchTerm = SearchUtils.RemoveDiacritics(search.ToLower());
             const int levenshteinThreshold = 2;
 
             // Bring the initially filtered entities into memory to perform complex string operations
@@ -154,15 +155,15 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
 
             return territoriesList.Where(t =>
                 {
-                    var normalizedDbName = RemoveDiacritics(t.Name?.ToLower() ?? string.Empty);
-                    var normalizedDbCode = RemoveDiacritics(t.Code?.ToLower() ?? string.Empty);
+                    var normalizedDbName = SearchUtils.RemoveDiacritics(t.Name?.ToLower() ?? string.Empty);
+                    var normalizedDbCode = SearchUtils.RemoveDiacritics(t.Code?.ToLower() ?? string.Empty);
 
-                    if (!string.IsNullOrEmpty(normalizedDbName) && LevenshteinDistance(normalizedDbName, normalizedSearchTerm) <= levenshteinThreshold)
+                    if (!string.IsNullOrEmpty(normalizedDbName) && SearchUtils.LevenshteinDistance(normalizedDbName, normalizedSearchTerm) <= levenshteinThreshold)
                     {
                         return true;
                     }
 
-                    if (!string.IsNullOrEmpty(normalizedDbCode) && LevenshteinDistance(normalizedDbCode, normalizedSearchTerm) <= levenshteinThreshold)
+                    if (!string.IsNullOrEmpty(normalizedDbCode) && SearchUtils.LevenshteinDistance(normalizedDbCode, normalizedSearchTerm) <= levenshteinThreshold)
                     {
                         return true;
                     }
@@ -170,58 +171,6 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                     return false;
                 })
                 .ToList();
-        }
-
-        private static string RemoveDiacritics(string text)
-        {
-            if (string.IsNullOrWhiteSpace(text))
-                return string.Empty;
-
-            var normalizedString = text.Normalize(NormalizationForm.FormD);
-            var stringBuilder = new StringBuilder();
-
-            foreach (var c in normalizedString)
-            {
-                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
-                if (unicodeCategory != UnicodeCategory.NonSpacingMark)
-                {
-                    stringBuilder.Append(c);
-                }
-            }
-
-            return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
-        }
-
-        private static int LevenshteinDistance(string s, string t)
-        {
-            if (string.IsNullOrEmpty(s))
-            {
-                return string.IsNullOrEmpty(t) ? 0 : t.Length;
-            }
-
-            if (string.IsNullOrEmpty(t))
-            {
-                return s.Length;
-            }
-
-            int n = s.Length;
-            int m = t.Length;
-            int[,] d = new int[n + 1, m + 1];
-
-            for (int i = 0; i <= n; d[i, 0] = i++) { }
-            for (int j = 0; j <= m; d[0, j] = j++) { }
-
-            for (int i = 1; i <= n; i++)
-            {
-                for (int j = 1; j <= m; j++)
-                {
-                    int cost = (t[j - 1] == s[i - 1]) ? 0 : 1;
-                    d[i, j] = Math.Min(
-                        Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
-                        d[i - 1, j - 1] + cost);
-                }
-            }
-            return d[n, m];
         }
 
         public Territory? GetTerritoryById(int id)
