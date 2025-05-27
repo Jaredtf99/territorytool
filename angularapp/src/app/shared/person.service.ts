@@ -26,4 +26,9 @@ export class PersonService {
   searchPersons(term: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/persons/${term}`).pipe()
   }
+
+  updatePerson(id: number, name: string, enabled: boolean): Observable<any> {
+    const body = { name, enabled };
+    return this.http.put(`${this.baseUrl}/persons/${id}`, body).pipe();
+  }
 }

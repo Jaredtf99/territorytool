@@ -14,3 +14,36 @@
     </div>
   </div>
 </div>
+
+<!-- Edit Person Modal -->
+<div class="modal fade" id="editPersonModal" tabindex="-1" aria-labelledby="editPersonModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editPersonModalLabel">Editar Hermano</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form #editPersonForm="ngForm" (ngSubmit)="submitEditPerson()">
+          <div class="mb-3">
+            <label for="editPersonNameInput" class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="editPersonNameInput" name="editPersonNameInput" 
+                   [(ngModel)]="editPersonName" required #nameInput="ngModel">
+            <div *ngIf="nameInput.invalid && (nameInput.dirty || nameInput.touched)" class="text-danger">
+              El nombre es requerido.
+            </div>
+          </div>
+          <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="editPersonEnabledInput" name="editPersonEnabledInput"
+                   [(ngModel)]="editPersonEnabled">
+            <label class="form-check-label" for="editPersonEnabledInput">Habilitado</label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="submitEditPerson()" [disabled]="editPersonForm.invalid">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+</div>

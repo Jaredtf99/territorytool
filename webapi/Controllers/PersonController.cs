@@ -85,5 +85,22 @@ namespace TerritoryTool.ServerSide.Controllers
             return _personFacade.SearchPersonsByName(search);
         }
 
+        [HttpPut("{id}")]
+        [Authorize(Roles = "SUPERADMIN,ADMIN")]
+        public ActionResult UpdatePerson(int id, [FromBody] UpdatePersonModel model)
+        {
+            var userId = SecurityHelper.GetLoggedUserId(User);
+            _logger.LogInformation($"Updating person with id {id}...");
+
+            try
+            {
+                _personFacade.UpdatePerson(id, model.Name, model.Enabled, userId);
+                return Ok();
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }

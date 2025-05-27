@@ -70,7 +70,8 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
         {
             IEnumerable<PersonInfo> personsInfo = new List<PersonInfo>();
 
-            var persons = _personRepo.SearchPersonsByName(name);
+            var persons = _personRepo.SearchPersonsByName(name)
+                                     .Where(p => p.Enabled); // Added filtering for Enabled persons
 
             var retval = ConvertPersonToPersonInfoList(persons);
 
@@ -120,6 +121,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
             personInfo.Name = person.Name;
             personInfo.Id = person.Id;
+            personInfo.Enabled = person.Enabled;
 
             if (person.Transactions != null)
                 personInfo.TerritoriesInUse = ConvertTransactionToPersonInfoTransactionList(person.Transactions.Where(x => x.PickedDateUtc == null));
@@ -127,6 +129,36 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             return personInfo;
 
         }
+
+        public void UpdatePerson(int id, string name, bool enabled, string currentUserId)
+        {
+            var person = _personRepo.GetPersonById(id);
+            if (person == null)
+            {
+                throw new DomainException("Persona no encontrada");
+            }
+
+            string originalName = person.Name;
+            bool originalEnabled = person.Enabled;
+
+            if (originalName != name)
+            {
+                var existingPersonWithNewName = _personRepo.GetPersonByName(name);
+                if (existingPersonWithNewName != null && existingPersonWithNewName.Id != id)
+                {
+                    throw new DomainException($"Ya existe un hermano con el nombre {name}");
+                }
+            }
+
+            person.Name = name;
+            person.Enabled = enabled;
+
+            _personRepo.EditPerson(person);
+
+            string logMessage = $"Se actualizó el hermano. Id: {person.Id}. Nombre Anterior: {originalName}, Nuevo Nombre: {person.Name}. Habilitado Anterior: {originalEnabled}, Nuevo Habilitado: {person.Enabled}";
+            _actionLog.AddNewActionLog(ActionType.EditPerson, logMessage, currentUserId, true);
+        }
+
         private List<PersonInfoTransaction> ConvertTransactionToPersonInfoTransactionList(IEnumerable<Transaction> transactions)
         {
             List<PersonInfoTransaction> retval = new List<PersonInfoTransaction>();

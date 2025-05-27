@@ -9,6 +9,7 @@ namespace TerritoryTool.ServerSide.Domain.Classes
     {
         public string Name { get; set; }
         public int Id { get; set; }
+        public bool Enabled { get; set; }
         public List<PersonInfoTransaction> TerritoriesInUse { get; set; }
     }
 }

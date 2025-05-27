@@ -12,6 +12,7 @@ namespace TerritoryTool.ServerSide.Persistence.Entities
         }
 
         public string Name { get; set; }
+        public bool Enabled { get; set; } = true;
 
         public ICollection<Territory> TerritoriesInUse { get; set; }
         public ICollection<Transaction> Transactions { get; set; }
