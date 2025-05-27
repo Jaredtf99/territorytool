@@ -11,3 +11,4 @@ webapi/webapi.csproj.user
 webapi/Resources
 /webapi/appsettings.Development.json
 /TerritoryTool.slnLaunch.user
+/webapi/TerritoryTool.db
