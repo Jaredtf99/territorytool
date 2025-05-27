@@ -118,7 +118,7 @@ export class UserService {
 
   public changeUserPassword(userId: string, newPassword: string): Observable<any> {
     const body = { newPassword: newPassword };
-    return this.http.post(`${this.baseUrl}api/v1/users/${userId}/change-password`, body);
+    return this.http.post(`${this.baseUrl}/users/${userId}/change-password`, body);
   }
 
 }

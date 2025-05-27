@@ -7,11 +7,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using TerritoryTool.ServerSide.Domain.ApplicationSecrets; // Corrected namespace
 using TerritoryTool.ServerSide.Domain.Enums;
 using TerritoryTool.ServerSide.Domain.FacadeServices.Implementation;
 using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
-using TerritoryTool.ServerSide.Persistence; // For ApplicationUser
+using TerritoryTool.ServerSide.Persistence;
+using TerritoryTool.ServerSide.Domain;
 
 namespace webapi.Tests.Domain.FacadeServices
 {

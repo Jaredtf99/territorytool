@@ -7,21 +7,21 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using TerritoryTool.ServerSide.Controllers;
 using TerritoryTool.ServerSide.Domain.FacadeServices.Interfaces;
-using webapi.Controllers.Models.User; // Corrected namespace for ChangeUserPasswordModel
-using TerritoryTool.ServerSide.Domain.Enums; // For RoleType
+using TerritoryTool.ServerSide.Domain.Enums;
+using TerritoryTool.ServerSide.Controllers.Models.User;
 
 namespace webapi.Tests.Controllers
 {
     public class UserControllerTests
     {
         private readonly Mock<IUserConfigurationFacade> _mockFacade;
-        private readonly Mock<ILogger<ActionLogController>> _mockLogger; // Assuming ActionLogController's logger, adjust if UserController has its own
+        private readonly Mock<ILogger<ActionLogController>> _mockLogger;
         private readonly UserController _controller;
 
         public UserControllerTests()
         {
             _mockFacade = new Mock<IUserConfigurationFacade>();
-            _mockLogger = new Mock<ILogger<ActionLogController>>(); // Or ILogger<UserController> if specific
+            _mockLogger = new Mock<ILogger<ActionLogController>>();
         }
 
         private UserController CreateControllerWithUser(string role, string userId = "test-user-id")

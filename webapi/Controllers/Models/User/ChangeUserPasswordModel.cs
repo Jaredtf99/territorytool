@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace webapi.Controllers.Models.User
+namespace TerritoryTool.ServerSide.Controllers.Models.User
 {
     public class ChangeUserPasswordModel
     {

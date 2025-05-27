@@ -36,7 +36,7 @@ export class UsersComponent implements OnInit {
     this.editForm = this.fb.group({
       userName: ['', Validators.required],
       role: ['', Validators.required],
-      newPassword: ['', Validators.minLength(8)]
+      newPassword: ['']
     });
 
     this.getUsersData();

@@ -155,6 +155,12 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
                 throw new DomainException("Role not found for user");
             }
 
+            if (actualRole == RoleType.SUPERADMIN.ToString())
+            {
+                _logger.LogError("Forbidden to modify de user SUPERADMIN. UserId {0}", userID);
+                throw new DomainException("SUPERADMIN cannot be edited");
+            }
+
             if (userName != user.UserName)
                 _userManager.SetUserNameAsync(user, userName);
 
