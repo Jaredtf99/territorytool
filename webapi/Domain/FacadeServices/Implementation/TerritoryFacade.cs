@@ -37,26 +37,42 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
         private const string GeoApifyWidth = "420";
         private const string GeoApifyHeight = "280";
         private const string GeoApifyPitch = "40";
-        private const string GeoApifyStyleCustomizationBackground = "background:%23f9f1e6";
-        private const string GeoApifyStyleCustomizationLandcoverGrass = "landcover_grass:%23aee77e";
-        private const string GeoApifyStyleCustomizationWater = "water:%238cd6f6";
-        private const string GeoApifyStyleCustomizationRoadMinor = "road_minor:%239a9ea1";
-        private const string GeoApifyStyleCustomizationRoadTrunkPrimary = "road_trunk_primary:%239a9ea1";
-        private const string GeoApifyStyleCustomizationRoadSecondaryTertiary = "road_secondary_tertiary:%239a9ea1";
-        private const string GeoApifyStyleCustomizationRoadMajorMotorway = "road_major_motorway:%239a9ea1";
-        private const string GeoApifyStyleCustomizationBridgeMajor = "bridge_major:%239a9ea1";
-        private const string GeoApifyStyleCustomizationBuilding3d = "building-3d:%23e8ebe1";
+        // private const string GeoApifyStyleCustomizationBackground = "background:%23F9F9F9"; // Commented out as it was causing issues
+        private const string GeoApifyStyleCustomizationLandcoverGrass = "landcover_grass:%23d0e3b4";
+        private const string GeoApifyStyleCustomizationWater = "water:%23a2daf2";
+        private const string GeoApifyStyleCustomizationRoadMinor = "road_minor:%23000000";
+        private const string GeoApifyStyleCustomizationRoadTrunkPrimary = "road_trunk_primary:%23ffe15f";
+        private const string GeoApifyStyleCustomizationRoadSecondaryTertiary = "road_secondary_tertiary:%23ffffff";
+        private const string GeoApifyStyleCustomizationRoadMajorMotorway = "road_major_motorway:%23ffe15f";
+        private const string GeoApifyStyleCustomizationBridgeMajor = "bridge_major:%23ffe15f";
+        private const string GeoApifyStyleCustomizationBuilding3d = "building-3d:%23f7f1df";
+
+        // Constants for hiding layers
+        private const string GeoApifyStyleCustomizationHidePoiLevel1 = "poi-level-1:none";
+        private const string GeoApifyStyleCustomizationHidePoiLevel2 = "poi-level-2:none";
+        private const string GeoApifyStyleCustomizationHidePoiLevel3 = "poi-level-3:none";
+        private const string GeoApifyStyleCustomizationHideRoadLabels = "highway-name-major:none";
+        // GeoApifyStyleCustomizationHideTerrain was omitted due to uncertainty about the layer name ('terrain' or 'hillshade') for maptiler-3d style.
+
+        // Note: Text/label customization was skipped as no confident layer names were found.
+        // If suitable layer names are identified later, they can be added here and included in the string.Join below.
 
         private static readonly string GeoApifyStyleCustomizationString = string.Join("|",
-            GeoApifyStyleCustomizationBackground,
+            GeoApifyStyleCustomizationWater, // Moved to be one of the first items for safety
             GeoApifyStyleCustomizationLandcoverGrass,
-            GeoApifyStyleCustomizationWater,
+            // GeoApifyStyleCustomizationBackground, // Ensure this remains commented out
             GeoApifyStyleCustomizationRoadMinor,
             GeoApifyStyleCustomizationRoadTrunkPrimary,
             GeoApifyStyleCustomizationRoadSecondaryTertiary,
             GeoApifyStyleCustomizationRoadMajorMotorway,
             GeoApifyStyleCustomizationBridgeMajor,
-            GeoApifyStyleCustomizationBuilding3d);
+            GeoApifyStyleCustomizationBuilding3d,
+            GeoApifyStyleCustomizationHidePoiLevel1,
+            GeoApifyStyleCustomizationHidePoiLevel2,
+            GeoApifyStyleCustomizationHidePoiLevel3,
+            GeoApifyStyleCustomizationHideRoadLabels
+            // Add new text/label constants here if they are defined
+            );
 
         private readonly ILogger _logger;
         private readonly ApplicationSecrets _appSettings;
