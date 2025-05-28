@@ -63,15 +63,33 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             if (_territoryRepo.GetTerritoryByMapUrl(mapUrl) != null)
                 throw new DomainException("MAPURL_EXIST");
 
-            Territory territoryAdded = _territoryRepo.AddNewTerritory(code, name, mapUrl);
+            Territory territoryAdded = null;
+            try
+            {
+                territoryAdded = _territoryRepo.AddNewTerritory(code, name, mapUrl);
 
-            _actionLog.AddNewActionLog(ActionType.AddTerritory, string.Format("Added territory {0} {1}", code, name), createdById, true);
+                //TODO: hacer que no haya que esperar por esto
+                string rutaImagen = DownloadTerritoryMapImageAsync(territoryAdded).Result;
 
-            //TODO: hacer que no haya que esperar por esto
-            string rutaImagen = DownloadTerritoryMapImageAsync(territoryAdded).Result;
+                territoryAdded.ImgUrl = rutaImagen;
+                _territoryRepo.EditTerritory(territoryAdded); // Persist ImgUrl
 
-            territoryAdded.ImgUrl = rutaImagen;
-            _territoryRepo.EditTerritory(territoryAdded);
+                _actionLog.AddNewActionLog(ActionType.AddTerritory, string.Format("Added territory {0} ({1}), ImgUrl: {2}", name, code, territoryAdded.ImgUrl), createdById, true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error adding territory Name: {name}, Code: {code}");
+                string errorMessage = $"Error adding territory {name} ({code}): {ex.Message}";
+                // If territoryAdded is null, it means the initial AddNewTerritory failed.
+                // If not null, it means a subsequent operation (image download/processing, or final EditTerritory) failed.
+                if (territoryAdded == null) {
+                    errorMessage = $"Error initially creating territory {name} ({code}): {ex.Message}";
+                } else {
+                    errorMessage = $"Error processing or saving image for territory {name} ({code}), ID {territoryAdded.Id}: {ex.Message}";
+                }
+                _actionLog.AddNewActionLog(ActionType.AddTerritory, errorMessage, createdById, false);
+                throw;
+            }
         }
 
         public void EditTerritory(int id, string code, string name, string mapUrl, string editedById)
@@ -102,10 +120,22 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             territory.Name = name;
             territory.MapUrl = mapUrl;
 
-            _territoryRepo.EditTerritory(territory);
-
-            _actionLog.AddNewActionLog(ActionType.EditTerritory, string.Format("Edited territory ID {0} to: Code ({1}) Name ({2}) MapURL ({3})", id, code, name, mapUrl), editedById, true);
-
+            try
+            {
+                _territoryRepo.EditTerritory(territory);
+                _actionLog.AddNewActionLog(ActionType.EditTerritory, string.Format("Edited territory ID {0} to: Code ({1}) Name ({2}) MapURL ({3}), ImgUrl: {4}", id, code, name, mapUrl, territory.ImgUrl), editedById, true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error editing territory ID {id}");
+                // Log the original and new values for better debugging if needed, though the message from the pre-check exceptions should be clear.
+                string errorMessage = $"Error editing territory ID {id} (Code: {code}, Name: {name}, MapUrl: {mapUrl}): {ex.Message}";
+                 if (territory.MapUrl != mapUrl && territory.ImgUrl == null) { // Check if image processing might have been the issue
+                    errorMessage = $"Error processing or saving new image for territory ID {id} during edit: {ex.Message}";
+                }
+                _actionLog.AddNewActionLog(ActionType.EditTerritory, errorMessage, editedById, false);
+                throw;
+            }
         }
 
         public void RefreshImageTerritory(int territoryId, string? refreshedById = null)
@@ -115,18 +145,45 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             if (territory == null)
                 throw new DomainException("TERRITORY_NOT_FOUND");
 
-            string rutaImagen = DownloadTerritoryMapImageAsync(territory).Result;
-            territory.ImgUrl = rutaImagen;
-
-            _territoryRepo.EditTerritory(territory);
-
-            if (!string.IsNullOrEmpty(refreshedById))
+            try
             {
-                _actionLog.AddNewActionLog(
-                    ActionType.RefreshTerritoryImage, 
-                    string.Format("Refreshed image territory ID {0}", territoryId), 
-                    refreshedById, 
-                    true);
+                string rutaImagen = DownloadTerritoryMapImageAsync(territory).Result;
+                territory.ImgUrl = rutaImagen;
+
+                _territoryRepo.EditTerritory(territory);
+
+                if (!string.IsNullOrEmpty(refreshedById))
+                {
+                    _actionLog.AddNewActionLog(
+                        ActionType.RefreshTerritoryImage,
+                        string.Format("Refreshed image for territory ID {0}, new ImgUrl: {1}", territoryId, territory.ImgUrl),
+                        refreshedById,
+                        true);
+                }
+                else // Log even if refreshedById is null, perhaps with a system user or generic message
+                {
+                    _actionLog.AddNewActionLog(
+                        ActionType.RefreshTerritoryImage,
+                        string.Format("Refreshed image for territory ID {0} (automated or unspecified user), new ImgUrl: {1}", territoryId, territory.ImgUrl),
+                        null, // Or a system user ID if available/applicable
+                        true);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error refreshing image for territory ID {territoryId}");
+                string errorMessage = $"Error refreshing image for territory ID {territoryId}: {ex.Message}";
+                 // If territory.ImgUrl is null it implies image processing failed.
+                if (territory.ImgUrl == null) {
+                    errorMessage = $"Error downloading/processing image for territory ID {territoryId}: {ex.Message}";
+                }
+                
+                if (!string.IsNullOrEmpty(refreshedById)) {
+                     _actionLog.AddNewActionLog(ActionType.RefreshTerritoryImage,errorMessage, refreshedById, false);
+                } else {
+                     _actionLog.AddNewActionLog(ActionType.RefreshTerritoryImage, $"{errorMessage} (automated or unspecified user)", null, false);
+                }
+                throw;
             }
         }
 

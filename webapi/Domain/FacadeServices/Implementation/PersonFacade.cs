@@ -50,11 +50,18 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
             _logger.LogInformation(string.Format("Adding {0} to persons", name));
 
-            _personRepo.AddNewPerson(person);
-
-            _actionLog.AddNewActionLog(ActionType.AddPerson, string.Format("Person {0} added", name), idLoggedUser, true);
-
-            return true;
+            try
+            {
+                _personRepo.AddNewPerson(person);
+                _actionLog.AddNewActionLog(ActionType.AddPerson, string.Format("Person {0} added", name), idLoggedUser, true);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error adding person {name}");
+                _actionLog.AddNewActionLog(ActionType.AddPerson, string.Format("Error adding person {0}: {1}", name, ex.Message), idLoggedUser, false);
+                throw;
+            }
         }
 
         public IEnumerable<PersonInfo> GetAllPersons()
@@ -80,14 +87,35 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
         public void DeletePerson(string name, string loggedUserId)
         {
-            var personToDelete = _personRepo.GetPersonByName(name);
+            Person? personToDelete = null;
+            try
+            {
+                personToDelete = _personRepo.GetPersonByName(name);
 
-            if (personToDelete == null)
-                _logger.LogError($"Cannot found person to delete. Name: {name}");
-            else
+                if (personToDelete == null)
+                {
+                    _logger.LogError($"Cannot find person to delete. Name: {name}");
+                    _actionLog.AddNewActionLog(ActionType.DeletePerson, $"Person {name} not found for deletion.", loggedUserId, false);
+                    // Optionally, throw an exception here if desired, e.g., new DomainException("PERSON_NOT_FOUND");
+                    // For now, just logging and exiting as per original logic's implication.
+                    return; 
+                }
+                
                 _personRepo.DeletePerson(personToDelete);
-
-            _actionLog.AddNewActionLog(ActionType.DeletePerson, $"Deleting person {name}", loggedUserId, personToDelete != null);
+                _actionLog.AddNewActionLog(ActionType.DeletePerson, $"Person {name} deleted successfully.", loggedUserId, true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error deleting person {name}");
+                // Check personToDelete again because it might be null if GetPersonByName failed,
+                // though less likely if GetPersonByName itself doesn't throw and just returns null.
+                string message = $"Error deleting person {name}: {ex.Message}";
+                if (personToDelete == null) { // If person was not found and an error still occurred (e.g. DB connection)
+                    message = $"Error trying to delete non-existent person {name}: {ex.Message}";
+                }
+                _actionLog.AddNewActionLog(ActionType.DeletePerson, message, loggedUserId, false);
+                throw;
+            }
         }
 
         public PersonInfo? GetPersonByName(string name)
@@ -152,10 +180,19 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             person.Name = name;
             person.Enabled = enabled;
 
-            _personRepo.EditPerson(person);
-
-            string logMessage = $"Se actualizó el hermano. Id: {person.Id}. Nombre Anterior: {originalName}, Nuevo Nombre: {person.Name}. Habilitado Anterior: {originalEnabled}, Nuevo Habilitado: {person.Enabled}";
-            _actionLog.AddNewActionLog(ActionType.EditPerson, logMessage, currentUserId, true);
+            try
+            {
+                _personRepo.EditPerson(person);
+                string logMessage = $"Se actualizó el hermano. Id: {person.Id}. Nombre Anterior: {originalName}, Nuevo Nombre: {person.Name}. Habilitado Anterior: {originalEnabled}, Nuevo Habilitado: {person.Enabled}";
+                _actionLog.AddNewActionLog(ActionType.EditPerson, logMessage, currentUserId, true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error updating person with Id: {id}");
+                string logMessage = $"Error actualizando el hermano con Id: {id}. Nombre Anterior: {originalName}, Habilitado Anterior: {originalEnabled}. Error: {ex.Message}";
+                _actionLog.AddNewActionLog(ActionType.EditPerson, logMessage, currentUserId, false);
+                throw;
+            }
         }
 
         private List<PersonInfoTransaction> ConvertTransactionToPersonInfoTransactionList(IEnumerable<Transaction> transactions)
