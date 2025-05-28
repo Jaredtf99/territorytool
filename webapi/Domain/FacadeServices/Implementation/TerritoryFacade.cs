@@ -32,6 +32,31 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 {
     public class TerritoryFacade : ITerritoryFacade
     {
+        private const string GeoApifyStyle = "maptiler-3d";
+        private const string GeoApifyScaleFactor = "2";
+        private const string GeoApifyWidth = "420";
+        private const string GeoApifyHeight = "280";
+        private const string GeoApifyPitch = "40";
+        private const string GeoApifyStyleCustomizationBackground = "background:%23f9f1e6";
+        private const string GeoApifyStyleCustomizationLandcoverGrass = "landcover_grass:%23aee77e";
+        private const string GeoApifyStyleCustomizationWater = "water:%238cd6f6";
+        private const string GeoApifyStyleCustomizationRoadMinor = "road_minor:%239a9ea1";
+        private const string GeoApifyStyleCustomizationRoadTrunkPrimary = "road_trunk_primary:%239a9ea1";
+        private const string GeoApifyStyleCustomizationRoadSecondaryTertiary = "road_secondary_tertiary:%239a9ea1";
+        private const string GeoApifyStyleCustomizationRoadMajorMotorway = "road_major_motorway:%239a9ea1";
+        private const string GeoApifyStyleCustomizationBridgeMajor = "bridge_major:%239a9ea1";
+        private const string GeoApifyStyleCustomizationBuilding3d = "building-3d:%23e8ebe1";
+
+        private static readonly string GeoApifyStyleCustomizationString = string.Join("|",
+            GeoApifyStyleCustomizationBackground,
+            GeoApifyStyleCustomizationLandcoverGrass,
+            GeoApifyStyleCustomizationWater,
+            GeoApifyStyleCustomizationRoadMinor,
+            GeoApifyStyleCustomizationRoadTrunkPrimary,
+            GeoApifyStyleCustomizationRoadSecondaryTertiary,
+            GeoApifyStyleCustomizationRoadMajorMotorway,
+            GeoApifyStyleCustomizationBridgeMajor,
+            GeoApifyStyleCustomizationBuilding3d);
 
         private readonly ILogger _logger;
         private readonly ApplicationSecrets _appSettings;
@@ -50,6 +75,31 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             _actionLog = actionLog;
         }
 
+        public static string BuildGeoApifyStaticMapUrl(
+            (Coordinate Southwest, Coordinate Northeast) boundingBox,
+            string apiKey,
+            string style,
+            string scaleFactor,
+            string width,
+            string height,
+            string pitch,
+            string styleCustomization)
+        {
+            const string MapApiUrlFormatString = "https://maps.geoapify.com/v1/staticmap?style={0}&scaleFactor={1}&width={2}&height={3}&pitch={4}&area=rect:{5},{6},{7},{8}&apiKey={9}&styleCustomization={10}";
+            
+            return string.Format(MapApiUrlFormatString,
+                style,
+                scaleFactor,
+                width,
+                height,
+                pitch,
+                boundingBox.Southwest.Longitude.ToString().Replace(",", "."),
+                boundingBox.Southwest.Latitude.ToString().Replace(",", "."),
+                boundingBox.Northeast.Longitude.ToString().Replace(",", "."),
+                boundingBox.Northeast.Latitude.ToString().Replace(",", "."),
+                apiKey,
+                styleCustomization);
+        }
 
         public void AddTerritory(string code, string name, string mapUrl, string createdById)
         {
@@ -145,7 +195,6 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             //TODO: sacar apiImage a un externalService
             //TODO: Lanzar excepciones si no va bien
 
-            const string MapApiImage = "https://maps.geoapify.com/v1/staticmap?style=maptiler-3d&scaleFactor=2&width=420&height=280&pitch=40&area=rect:{0},{1},{2},{3}&apiKey={4}&styleCustomization=background:%23f9f1e6|landcover_grass:%23aee77e|water:%238cd6f6|road_minor:%239a9ea1|road_trunk_primary:%239a9ea1|road_secondary_tertiary:%239a9ea1|road_major_motorway:%239a9ea1|bridge_major:%239a9ea1|building-3d:%23e8ebe1";
             _logger.LogInformation($"Buscando coordenadas de la url del mapa del territorio {territory.Name} ({territory.Code})");
 
             var boundingBox = await GetBoundingBoxFromMapUrl(territory.MapUrl);
@@ -156,12 +205,15 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
                 using (HttpClient httpClient = new HttpClient())
                 {
-                    string url = string.Format(MapApiImage, 
-                        boundingBox.Value.Southwest.Longitude.ToString().Replace(",", "."), 
-                        boundingBox.Value.Southwest.Latitude.ToString().Replace(",", "."), 
-                        boundingBox.Value.Northeast.Longitude.ToString().Replace(",", "."), 
-                        boundingBox.Value.Northeast.Latitude.ToString().Replace(",", "."), 
-                        "e4eeaa9d682849079a75357e19837096");
+                    string url = BuildGeoApifyStaticMapUrl(
+                        boundingBox.Value,
+                        _appSettings.MapBoxApiKey,
+                        GeoApifyStyle,
+                        GeoApifyScaleFactor,
+                        GeoApifyWidth,
+                        GeoApifyHeight,
+                        GeoApifyPitch,
+                        GeoApifyStyleCustomizationString);
 
                     HttpResponseMessage response = await httpClient.GetAsync(url);
 
@@ -219,7 +271,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             return rutaImagen;
         }
 
-        private async Task<(Coordinate Southwest, Coordinate Northeast)?> GetBoundingBoxFromMapUrl(string mapUrl)
+        protected virtual async Task<(Coordinate Southwest, Coordinate Northeast)?> GetBoundingBoxFromMapUrl(string mapUrl)
         {
             using (HttpClient httpClient = new HttpClient())
             {
