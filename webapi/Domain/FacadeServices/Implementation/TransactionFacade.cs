@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -103,6 +103,12 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
             return ConvertTransactionToTransactionInfo(transaction);
         }
 
+        public async Task<IEnumerable<TransactionInfo>> GetRecentTransactions()
+        {
+            var transactions = await _transactionRepo.GetRecentTransactionsAsync();
+            return transactions.Select(t => ConvertTransactionToTransactionInfo(t));
+        }
+
 
         private TransactionInfo ConvertTransactionToTransactionInfo(Transaction transaction)
         {
@@ -125,4 +131,3 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
 
     }
 }
-

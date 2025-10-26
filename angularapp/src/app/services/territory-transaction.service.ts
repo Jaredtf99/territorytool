@@ -23,4 +23,8 @@ export class TerritoryTransactionService {
   deleteTransaction(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/transactions/${id}`);
   }
+
+  getRecentTransactions(): Observable<TerritoryTransaction[]> {
+    return this.http.get<TerritoryTransaction[]>(`${this.baseUrl}/transactions/recent`);
+  }
 }

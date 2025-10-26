@@ -25,5 +25,6 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Interfaces
         /// <param name="territoryId">ID del territorio</param>
         /// <returns>La última transacción completada o null si no existe</returns>
         Task<Transaction?> GetTerritoryLastCompletedTransactionAsync(int territoryId);
+        Task<IEnumerable<Transaction>> GetRecentTransactionsAsync();
     }
 }

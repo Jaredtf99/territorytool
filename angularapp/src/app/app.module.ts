@@ -45,6 +45,7 @@ import { TerritoryDetailComponent } from './components/territory-detail/territor
 import { TerritoryTransactionsComponent } from './components/territory-transactions/territory-transactions.component';
 import { EditTransactionModalComponent } from './components/edit-transaction-modal/edit-transaction-modal.component';
 import { TerritoryCardComponent } from './components/territory-card/territory-card.component';
+import { RecentTransactionsComponent } from './components/recent-transactions/recent-transactions.component';
 
 LOAD_WASM().subscribe((res: any) => console.log('LOAD_WASM', res));
 
@@ -78,6 +79,7 @@ export class MyIntl extends TimeagoIntl {
     TerritoryDetailComponent,
     TerritoryTransactionsComponent,
     EditTransactionModalComponent,
+    RecentTransactionsComponent,
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -94,6 +96,7 @@ export class MyIntl extends TimeagoIntl {
           { path: 'territories', component: TerritoriesComponent },
           { path: 'territory/:id', component: TerritoryDetailComponent },
           { path: 'territory/:id/transactions', component: TerritoryTransactionsComponent },
+          { path: 'recent-transactions', component: RecentTransactionsComponent },
           { path: 'add-territory', component: AddTerritoryComponent, data: { permittedRoles: ['SUPERADMIN', 'ADMIN'] } },
           { path: 'change-territory', component: ChangeTerritoryComponent },
           { path: 'change-territory/:territoryCode', component: ChangeTerritoryComponent },

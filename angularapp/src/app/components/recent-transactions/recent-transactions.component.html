@@ -1,0 +1,26 @@
+<div class="container">
+  <h2>Transacciones Recientes</h2>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Territorio</th>
+        <th>Fecha de Entrega</th>
+        <th>Entregado Por</th>
+        <th>Fecha de Devolución</th>
+        <th>Devuelto Por</th>
+        <th>Publicador</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let transaction of transactions">
+        <td>{{transaction.territoryName}}</td>
+        <td>{{transaction.givenDateUtc | date:'medium'}}</td>
+        <td>{{transaction.givenBy}}</td>
+        <td>{{transaction.pickedDateUtc | date:'medium'}}</td>
+        <td>{{transaction.pickedBy}}</td>
+        <td>{{transaction.personName}}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
