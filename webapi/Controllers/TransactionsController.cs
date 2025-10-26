@@ -32,7 +32,12 @@ namespace TerritoryTool.ServerSide.Controllers
             _transactionFacade = transactionFacade;
         }
 
-        
+        [HttpGet("recent")]
+        public async Task<ActionResult<IEnumerable<TransactionInfo>>> GetRecentTransactions()
+        {
+            var transactions = await _transactionFacade.GetRecentTransactions();
+            return Ok(transactions);
+        }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<TransactionInfo>> GetTransaction(int id)

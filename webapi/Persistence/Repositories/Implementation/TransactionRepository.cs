@@ -100,5 +100,19 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                 .Include(t => t.Person)
                 .FirstOrDefaultAsync();
         }
+
+        public async Task<IEnumerable<Transaction>> GetRecentTransactionsAsync()
+        {
+            var threeDaysAgo = DateTime.UtcNow.AddDays(-3);
+
+            return await _context.Transaction
+                .Where(t => t.GivenDateUtc >= threeDaysAgo)
+                .Include(t => t.Territory)
+                .Include(t => t.Person)
+                .Include(t => t.GivenByNavigation)
+                .Include(t => t.PickedByNavigation)
+                .OrderByDescending(t => t.GivenDateUtc)
+                .ToListAsync();
+        }
     }
 }
