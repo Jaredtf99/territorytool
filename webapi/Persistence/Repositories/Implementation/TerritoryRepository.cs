@@ -87,7 +87,7 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
 
         public IEnumerable<Transaction> GetAllTransactionsForReport(DateTime start, DateTime end)
         {
-            return _context.Transaction.Where(tr => tr.GivenDateUtc >= start && end >= tr.GivenDateUtc).Include(tr => tr.Territory).Include(tr => tr.Person).ToList();
+            return _context.Transaction.Where(tr => (tr.GivenDateUtc >= start && end >= tr.GivenDateUtc) || (tr.PickedDateUtc >= start && end >= tr.PickedDateUtc)).Include(tr => tr.Territory).Include(tr => tr.Person).ToList();
         }
 
 
