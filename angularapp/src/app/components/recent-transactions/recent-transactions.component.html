@@ -1,26 +1,82 @@
-<div class="container">
-  <h2>Transacciones Recientes</h2>
+<div class="transactions-container">
+  <div class="transactions-header">
+    <h2>
+      <i class="fa fa-clock-rotate-left me-2"></i>
+      Transacciones Recientes
+    </h2>
+    <small *ngIf="transactions.length > 0" class="text-muted">
+      Últimos 3 días: {{transactions.length}} transacción{{transactions.length !== 1 ? 'es' : ''}}
+    </small>
+  </div>
 
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Territorio</th>
-        <th>Fecha de Entrega</th>
-        <th>Entregado Por</th>
-        <th>Fecha de Devolución</th>
-        <th>Devuelto Por</th>
-        <th>Publicador</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let transaction of transactions">
-        <!--<td>{{transaction.territoryName}}</td>-->
-        <td>{{transaction.givenDateUtc | date:'medium'}}</td>
-        <td>{{transaction.givenBy}}</td>
-        <td>{{transaction.pickedDateUtc | date:'medium'}}</td>
-        <td>{{transaction.pickedBy}}</td>
-        <td>{{transaction.personName}}</td>
-      </tr>
-    </tbody>
-  </table>
+  <div *ngIf="transactions.length === 0" class="empty-state">
+    <i class="fa fa-inbox me-2"></i>
+    No hay transacciones en los últimos 3 días
+  </div>
+
+  <div *ngIf="transactions.length > 0" class="transactions-list">
+    <div *ngFor="let transaction of transactions" 
+         class="transaction-card"
+         [routerLink]="['/territory/', transaction.territoryId]">
+      
+      <div class="transaction-header">
+        <h3 class="territory-name">
+          <i class="fa fa-map-location-dot me-2"></i>
+          {{transaction.territoryName}}
+        </h3>
+      </div>
+
+      <div class="transaction-content">
+        <!-- Información de entrega -->
+        <div class="transaction-action given-action">
+          <div class="action-icon">
+            <i class="fa fa-arrow-up"></i>
+          </div>
+          <div class="action-details">
+            <div class="action-label">Entregado</div>
+            <div class="action-info">
+              <span class="action-date">
+                <i class="fa fa-calendar me-1"></i>
+                {{transaction.givenDateUtc | timeago}}
+              </span>
+              <span class="action-by" *ngIf="transaction.givenBy">
+                <i class="fa fa-user me-1"></i>
+                Por {{transaction.givenBy}}
+              </span>
+            </div>
+            <div class="action-person" *ngIf="transaction.personName">
+              <i class="fa fa-user-tag me-1"></i>
+              <strong>{{transaction.personName}}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Información de devolución (si existe) -->
+        <div class="transaction-action picked-action" *ngIf="transaction.pickedDateUtc">
+          <div class="action-icon">
+            <i class="fa fa-arrow-down"></i>
+          </div>
+          <div class="action-details">
+            <div class="action-label">Recogido</div>
+            <div class="action-info">
+              <span class="action-date">
+                <i class="fa fa-calendar me-1"></i>
+                {{transaction.pickedDateUtc | timeago}}
+              </span>
+              <span class="action-by" *ngIf="transaction.pickedBy">
+                <i class="fa fa-user me-1"></i>
+                Por {{transaction.pickedBy}}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estado pendiente si no ha sido recogido -->
+        <div class="transaction-status pending" *ngIf="!transaction.pickedDateUtc">
+          <i class="fa fa-clock me-1"></i>
+          <span>Pendiente de recogida</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

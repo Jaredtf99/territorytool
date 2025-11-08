@@ -123,6 +123,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
                 GivenBy = transaction.GivenByNavigation.UserName,
                 PickedBy = transaction.PickedByNavigation?.UserName,
                 TerritoryName = transaction.Territory.Name,
+                TerritoryId = transaction.TerritoryId,
                 PersonName = transaction.Person.Name
             };
 

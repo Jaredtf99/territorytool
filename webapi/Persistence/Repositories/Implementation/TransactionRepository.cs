@@ -106,11 +106,39 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
             var threeDaysAgo = DateTime.UtcNow.AddDays(-3);
 
             return await _context.Transaction
-                .Where(t => t.GivenDateUtc >= threeDaysAgo)
-                .Include(t => t.Territory)
-                .Include(t => t.Person)
-                .Include(t => t.GivenByNavigation)
-                .Include(t => t.PickedByNavigation)
+                .Where(t => t.GivenDateUtc >= threeDaysAgo || t.PickedDateUtc >= threeDaysAgo)
+                .Select(tr => new Transaction
+                {
+                    Id = tr.Id,
+                    TerritoryId = tr.TerritoryId,
+                    PersonId = tr.PersonId,
+                    GivenBy = tr.GivenBy,
+                    GivenDateUtc = tr.GivenDateUtc,
+                    PickedBy = tr.PickedBy,
+                    PickedDateUtc = tr.PickedDateUtc,
+                    IsAutomaticGivenDate = tr.IsAutomaticGivenDate,
+                    IsAutomaticPickedDate = tr.IsAutomaticPickedDate,
+                    Territory = new Territory
+                    {
+                        Id = tr.Territory.Id,
+                        Name = tr.Territory.Name
+                    },
+                    Person = new Person
+                    {
+                        Id = tr.Person.Id,
+                        Name = tr.Person.Name
+                    },
+                    GivenByNavigation = new AspNetUsers
+                    {
+                        Id = tr.GivenByNavigation.Id,
+                        UserName = tr.GivenByNavigation.UserName
+                    },
+                    PickedByNavigation = tr.PickedBy != null ? new AspNetUsers
+                    {
+                        Id = tr.PickedByNavigation!.Id,
+                        UserName = tr.PickedByNavigation.UserName
+                    } : null
+                })                
                 .OrderByDescending(t => t.GivenDateUtc)
                 .ToListAsync();
         }

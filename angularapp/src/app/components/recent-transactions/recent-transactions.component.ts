@@ -4,7 +4,8 @@ import { TerritoryTransaction } from '../../classes/territory-transaction.model'
 
 @Component({
   selector: 'app-recent-transactions',
-  templateUrl: './recent-transactions.component.html'
+  templateUrl: './recent-transactions.component.html',
+  styleUrls: ['./recent-transactions.component.scss']
 })
 export class RecentTransactionsComponent implements OnInit {
   transactions: TerritoryTransaction[] = [];
@@ -17,6 +18,13 @@ export class RecentTransactionsComponent implements OnInit {
 
   loadRecentTransactions() {
     this.transactionService.getRecentTransactions()
-      .subscribe(transactions => this.transactions = transactions);
+      .subscribe({
+        next: (transactions) => {
+          this.transactions = transactions;
+        },
+        error: (error) => {
+          console.error('Error loading recent transactions:', error);
+        }
+      });
   }
 }

@@ -13,6 +13,7 @@ namespace TerritoryTool.ServerSide.Domain.Classes
         public DateTime? PickedDateUtc { get; set; }
         public string GivenBy { get; set; }
         public string? PickedBy { get; set; }
+        public int TerritoryId { get; set; }
         public string TerritoryName { get; set; }
         public string PersonName { get; set; }
 
