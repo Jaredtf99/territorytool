@@ -65,7 +65,7 @@ namespace TerritoryTool.ServerSide.Domain.FacadeServices.Implementation
                 {
                     request = service.Files.Create(fileMetadata, uploadStream, "application/octet-stream");
                     request.Fields = "id, name";
-
+                    request.SupportsAllDrives = true;
                     request.ProgressChanged += progress =>
                     {
                         switch (progress.Status)
