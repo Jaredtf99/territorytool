@@ -12,3 +12,44 @@ webapi/Resources
 /webapi/appsettings.Development.json
 /TerritoryTool.slnLaunch.user
 /webapi/TerritoryTool.db
+
+# Xcode build & user data
+iosapp/TerritoryTool/build/
+iosapp/TerritoryTool/DerivedData/
+iosapp/TerritoryTool/*.xcworkspace
+iosapp/TerritoryTool/xcuserdata/
+iosapp/TerritoryTool/*.xcuserstate
+iosapp/TerritoryTool/*.moved-aside
+iosapp/TerritoryTool/*.pbxuser
+iosapp/TerritoryTool/*.mode1v3
+iosapp/TerritoryTool/*.mode2v3
+iosapp/TerritoryTool/*.perspectivev3
+
+# Swift Package Manager
+iosapp/TerritoryTool/.build/
+iosapp/TerritoryTool/Packages/
+iosapp/TerritoryTool/.swiftpm/
+iosapp/TerritoryTool/Package.resolved
+
+# Archives
+iosapp/TerritoryTool/*.xcarchive
+iosapp/TerritoryTool/*.ipa
+iosapp/TerritoryTool/*.app
+iosapp/TerritoryTool/*.dSYM
+iosapp/TerritoryTool/*.dSYM.zip
+
+# Playgrounds
+iosapp/TerritoryTool/timeline.xctimeline
+iosapp/TerritoryTool/playground.xcworkspace
+
+# MacOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Temporary files
+*.swp
+*.lock
+*.tmp
+*.temp
+*.orig
