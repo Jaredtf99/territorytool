@@ -1,12 +1,10 @@
 import SwiftUI
 
 struct DashboardView: View {
-    @StateObject private var viewModel: DashboardViewModel
+    @StateObject private var viewModel = DIContainer.shared.makeDashboardViewModel()
     @State private var showSettings = false
     
-    init(viewModel: DashboardViewModel) {
-        self._viewModel = StateObject(wrappedValue: viewModel)
-    }
+    init() {}
     
     var body: some View {
         ScrollView {

@@ -8,28 +8,28 @@ struct MainTabView: View {
     var body: some View {
         TabView {
             NavigationStack {
-                DashboardView(viewModel: DIContainer.shared.makeDashboardViewModel())
+                DashboardView()
             }
             .tabItem {
                 Label("dashboard.title", systemImage: "house.fill")
             }
             
             NavigationStack {
-                TerritoriesView(viewModel: DIContainer.shared.makeTerritoriesViewModel())
+                TerritoriesView()
             }
             .tabItem {
                 Label("territories.title", systemImage: "map.fill")
             }
             
             NavigationStack {
-                TerritoryAssignmentView(viewModel: DIContainer.shared.makeTerritoryAssignmentViewModel())
+                TerritoryAssignmentView()
             }
             .tabItem {
                 Label("assignment.title", systemImage: "person.badge.plus")
             }
             
             NavigationStack {
-                TerritoryReturnView(viewModel: DIContainer.shared.makeTerritoryReturnViewModel())
+                TerritoryReturnView()
             }
             .tabItem {
                 Label("return.title", systemImage: "tray.and.arrow.down")

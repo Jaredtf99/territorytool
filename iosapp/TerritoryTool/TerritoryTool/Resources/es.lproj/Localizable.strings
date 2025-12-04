@@ -118,3 +118,7 @@
 "common.days" = "días";
 "common.no_results" = "No hay resultados";
 "common.ok" = "OK";
+
+// QR Scan Errors
+"assignment.error.territory_not_found" = "Territorio no encontrado o no disponible";
+"return.error.territory_not_found" = "Territorio no encontrado o no asignado";

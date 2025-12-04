@@ -26,8 +26,6 @@ class TerritoriesViewModel: ObservableObject {
     
     private let apiService: APIService
     private var cancellables = Set<AnyCancellable>()
-    private var currentTask: Task<Void, Never>?
-    private var hasInitiallyLoaded = false
     
     init(apiService: APIService) {
         self.apiService = apiService
@@ -36,10 +34,11 @@ class TerritoriesViewModel: ObservableObject {
         $searchText
             .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .removeDuplicates()
-            .dropFirst() // Drop initial empty value
+            .dropFirst()
             .sink { [weak self] _ in
-                guard let self = self, self.hasInitiallyLoaded else { return }
-                self.triggerLoad()
+                Task { [weak self] in
+                    await self?.loadTerritories()
+                }
             }
             .store(in: &cancellables)
             
@@ -48,17 +47,11 @@ class TerritoriesViewModel: ObservableObject {
             .dropFirst()
             .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
             .sink { [weak self] _ in
-                guard let self = self, self.hasInitiallyLoaded else { return }
-                self.triggerLoad()
+                Task { [weak self] in
+                    await self?.loadTerritories()
+                }
             }
             .store(in: &cancellables)
-    }
-    
-    private func triggerLoad() {
-        currentTask?.cancel()
-        currentTask = Task {
-            await loadTerritories()
-        }
     }
     
     func loadTerritories() async {
@@ -89,11 +82,6 @@ class TerritoriesViewModel: ObservableObject {
             ))
             
             self.territories = result
-            self.hasInitiallyLoaded = true
-        } catch is CancellationError {
-            // Silently ignore cancellation errors
-        } catch let error as URLError where error.code == .cancelled {
-            // Silently ignore URLSession cancellation errors
         } catch {
             self.errorMessage = error.localizedDescription
         }

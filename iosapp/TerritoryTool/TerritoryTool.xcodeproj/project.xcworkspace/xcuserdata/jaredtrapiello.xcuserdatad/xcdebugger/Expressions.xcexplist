@@ -3,6 +3,14 @@
    version = "1.0">
    <ContextStates>
       <ContextState
+         contextName = "TerritoriesViewModel.loadTerritories():TerritoriesViewModel.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "error">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
          contextName = "closure #1 in closure #1 in TerritoryCard.body.getter:TerritoryCard.swift">
       </ContextState>
       <ContextState

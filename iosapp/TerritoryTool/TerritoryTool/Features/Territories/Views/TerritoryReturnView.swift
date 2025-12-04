@@ -1,13 +1,12 @@
 import SwiftUI
 
 struct TerritoryReturnView: View {
-    @StateObject private var viewModel: TerritoryReturnViewModel
+    @StateObject private var viewModel = DIContainer.shared.makeTerritoryReturnViewModel()
     
-    init(viewModel: TerritoryReturnViewModel) {
-        self._viewModel = StateObject(wrappedValue: viewModel)
-    }
+    init() {}
     
     @State private var showTerritorySheet = false
+    @State private var showQRScanner = false
     
     var body: some View {
         ScrollView {
@@ -20,16 +19,30 @@ struct TerritoryReturnView: View {
                         .padding(.horizontal)
                     
                     // Territory Selection Row
-                    SelectionRow(
-                        title: "return.section.territory",
-                        value: viewModel.selectedTerritory.map { "\($0.code) - \($0.name)" },
-                        placeholder: "return.search_territory",
-                        icon: "map",
-                        action: { showTerritorySheet = true },
-                        onClear: viewModel.selectedTerritory != nil ? {
-                            withAnimation { viewModel.selectedTerritory = nil }
-                        } : nil
-                    )
+                    HStack(spacing: 12) {
+                        SelectionRow(
+                            title: "return.section.territory",
+                            value: viewModel.selectedTerritory.map { "\($0.code) - \($0.name)" },
+                            placeholder: "return.search_territory",
+                            icon: "map",
+                            action: { showTerritorySheet = true },
+                            onClear: viewModel.selectedTerritory != nil ? {
+                                withAnimation { viewModel.selectedTerritory = nil }
+                            } : nil
+                        )
+                        
+                        Button(action: {
+                            showQRScanner = true
+                        }) {
+                            Image(systemName: "qrcode.viewfinder")
+                                .font(.system(size: 24))
+                                .foregroundColor(.white)
+                                .frame(width: 50, height: 50)
+                                .background(Color.green)
+                                .cornerRadius(12)
+                                .shadow(color: .green.opacity(0.3), radius: 5, x: 0, y: 3)
+                        }
+                    }
                     .padding(.horizontal)
                 }
                 
@@ -114,6 +127,11 @@ struct TerritoryReturnView: View {
                     .padding(.vertical, 4)
                 }
             )
+        }
+        .sheet(isPresented: $showQRScanner) {
+            QRScannerView(isPresented: $showQRScanner) { code in
+                viewModel.selectTerritory(by: code)
+            }
         }
         .alert(isPresented: Binding<Bool>(
             get: { viewModel.errorMessage != nil },

@@ -108,4 +108,18 @@ class TerritoryReturnViewModel: ObservableObject {
             return false
         }
     }
+    func selectTerritory(by mapUrl: String) {
+        let sanitizedScannedUrl = mapUrl.replacingOccurrences(of: "&usp=sharing", with: "")
+        
+        if let territory = assignedTerritories.first(where: { 
+            $0.mapUrl.replacingOccurrences(of: "&usp=sharing", with: "") == sanitizedScannedUrl 
+        }) {
+            selectedTerritory = territory
+        } else {
+            ToastManager.shared.show(
+                String.localized("return.error.territory_not_found"),
+                style: .error
+            )
+        }
+    }
 }

@@ -168,4 +168,19 @@ class TerritoryAssignmentViewModel: ObservableObject {
     func selectSuggestion(_ territory: Territory) {
         selectedTerritory = territory
     }
+    
+    func selectTerritory(by mapUrl: String) {
+        let sanitizedScannedUrl = mapUrl.replacingOccurrences(of: "&usp=sharing", with: "")
+        
+        if let territory = availableTerritories.first(where: { 
+            $0.mapUrl.replacingOccurrences(of: "&usp=sharing", with: "") == sanitizedScannedUrl 
+        }) {
+            selectedTerritory = territory
+        } else {
+            ToastManager.shared.show(
+                String.localized("assignment.error.territory_not_found"),
+                style: .error
+            )
+        }
+    }
 }

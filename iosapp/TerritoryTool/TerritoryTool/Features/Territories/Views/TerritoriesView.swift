@@ -1,11 +1,9 @@
 import SwiftUI
 
 struct TerritoriesView: View {
-    @StateObject private var viewModel: TerritoriesViewModel
+    @StateObject private var viewModel = DIContainer.shared.makeTerritoriesViewModel()
     
-    init(viewModel: TerritoriesViewModel) {
-        self._viewModel = StateObject(wrappedValue: viewModel)
-    }
+    init() {}
     
     var body: some View {
         ScrollView {
@@ -13,7 +11,7 @@ struct TerritoriesView: View {
                 // Filters (Scrolls with content)
                 FilterScrollView(viewModel: viewModel)
                     
-                
+
                 // Content
                 if viewModel.isLoading && viewModel.territories.isEmpty {
                     ProgressView()
@@ -55,8 +53,15 @@ struct TerritoriesView: View {
             .padding(.bottom, 20)
         }
         .refreshable {
-            await viewModel.loadTerritories()
-            HapticManager.shared.notification(type: .success)
+            // Workaround for SwiftUI bug: .refreshable task gets cancelled when used with .searchable
+            // Wrapping in a detached Task prevents the cancellation
+            await withCheckedContinuation { continuation in
+                Task {
+                    await viewModel.loadTerritories()
+                    HapticManager.shared.notification(type: .success)
+                    continuation.resume()
+                }
+            }
         }
         .navigationTitle("territories.title")
         .navigationBarTitleDisplayMode(.large)
