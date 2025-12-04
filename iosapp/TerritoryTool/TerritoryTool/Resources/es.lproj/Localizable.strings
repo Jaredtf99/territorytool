@@ -86,3 +86,35 @@
 "territory.stats.idle_time_desc" = "Promedio de días que el territorio permanece sin asignar entre usos.";
 "territory.stats.avg_duration_desc" = "Promedio de días que se mantiene cada asignación del territorio.";
 "territory.stats.unique_users_desc" = "Número de personas diferentes que han usado este territorio.";
+
+// Assignment
+"assignment.title" = "Asignar Territorio";
+"assignment.section.territory" = "Seleccionar Territorio";
+"assignment.section.publisher" = "Seleccionar Publicador";
+"assignment.search_territory" = "Buscar territorio...";
+"assignment.search_publisher" = "Buscar publicador...";
+"assignment.no_territories" = "No se encontraron territorios disponibles";
+"assignment.suggestions" = "Sugerencias (Más antiguos libres)";
+"assignment.custom_date" = "Fecha Personalizada";
+"assignment.date" = "Fecha de Asignación";
+"assignment.button.assign" = "Asignar Territorio";
+"assignment.success" = "Territorio asignado correctamente";
+"assignment.error.missing_fields" = "Por favor selecciona un territorio y un publicador";
+
+// Return
+"return.title" = "Recoger Territorio";
+"return.section.territory" = "Seleccionar Territorio";
+"return.search_territory" = "Buscar territorio asignado...";
+"return.no_territories" = "No se encontraron territorios asignados";
+"return.custom_date" = "Fecha Personalizada";
+"return.date" = "Fecha de Recogida";
+"return.button.return" = "Recoger Territorio";
+"return.success" = "Territorio recogido correctamente";
+"return.error.missing_territory" = "Por favor selecciona un territorio";
+
+// Common
+"common.cancel" = "Cancelar";
+"common.error" = "Error";
+"common.days" = "días";
+"common.no_results" = "No hay resultados";
+"common.ok" = "OK";

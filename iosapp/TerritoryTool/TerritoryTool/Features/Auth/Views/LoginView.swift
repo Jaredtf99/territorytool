@@ -48,6 +48,11 @@ struct LoginView: View {
                     Button(action: {
                         Task {
                             await viewModel.login()
+                            if viewModel.errorMessage != nil {
+                                HapticManager.shared.notification(type: .error)
+                            } else {
+                                HapticManager.shared.notification(type: .success)
+                            }
                         }
                     }) {
                         Text(viewModel.isLoading ? "login.logging_in" : "login.button")

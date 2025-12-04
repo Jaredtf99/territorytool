@@ -87,4 +87,21 @@ class MockAPIService: APIService {
             fatalError("Mock not implemented for \(endpoint)")
         }
     }
+    func request(endpoint: APIEndpoint) async throws {
+        // Simulate network delay
+        try? await Task.sleep(nanoseconds: 500_000_000)
+        
+        // For void requests, we just simulate success unless we want to mock errors
+        switch endpoint {
+        case let territoryEndpoint as TerritoryEndpoint:
+            switch territoryEndpoint {
+            case .giveTerritory, .pickTerritory:
+                return // Success
+            default:
+                fatalError("Mock not implemented for \(endpoint)")
+            }
+        default:
+            fatalError("Mock not implemented for \(endpoint)")
+        }
+    }
 }

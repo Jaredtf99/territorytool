@@ -56,6 +56,7 @@ struct TerritoriesView: View {
         }
         .refreshable {
             await viewModel.loadTerritories()
+            HapticManager.shared.notification(type: .success)
         }
         .navigationTitle("territories.title")
         .navigationBarTitleDisplayMode(.large)
@@ -71,7 +72,10 @@ struct TerritoriesView: View {
                     
                     Divider()
                     
-                    Button(action: { viewModel.sortAscending.toggle() }) {
+                    Button(action: { 
+                        HapticManager.shared.selection()
+                        viewModel.sortAscending.toggle() 
+                    }) {
                         Label(
                             viewModel.sortAscending ? "territories.sort.ascending" : "territories.sort.descending",
                             systemImage: viewModel.sortAscending ? "arrow.up" : "arrow.down"
@@ -101,6 +105,7 @@ struct FilterScrollView: View {
             HStack(spacing: 12) {
                 ForEach(TerritoryFilter.allCases) { filter in
                     Button(action: {
+                        HapticManager.shared.selection()
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             viewModel.filterStatus = filter
                         }

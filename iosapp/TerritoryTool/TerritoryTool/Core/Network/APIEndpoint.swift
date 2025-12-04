@@ -35,6 +35,7 @@ enum TerritoryEndpoint: APIEndpoint {
     case getTerritoryStats(id: Int)
     case getTerritoryTransactions(id: Int)
     case giveTerritory(code: String, personName: String, date: Date?)
+    case pickTerritory(code: String, date: Date?)
     case getPersons(search: String?)
     case login(credentials: LoginCredentials)
     case getTerritories(term: String?, inUse: Bool?, orderBy: Int?, orderByAscending: Bool?, lastGivenDateFrom: Date?, lastGivenDateTo: Date?)
@@ -53,7 +54,12 @@ enum TerritoryEndpoint: APIEndpoint {
             return "/api/v1/territories/\(id)/transactions"
         case .giveTerritory:
             return "/api/v1/territories/give-territory"
-        case .getPersons:
+        case .pickTerritory:
+            return "/api/v1/territories/pick-territory"
+        case .getPersons(let search):
+            if let search = search, !search.isEmpty, let encoded = search.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) {
+                return "/api/v1/persons/\(encoded)"
+            }
             return "/api/v1/persons"
         case .login:
             return "/api/v1/users/login"
@@ -70,7 +76,7 @@ enum TerritoryEndpoint: APIEndpoint {
         switch self {
         case .getTerritory, .getTerritoryDetail, .getTerritoryStats, .getTerritoryTransactions, .getPersons, .getTerritories:
             return .GET
-        case .giveTerritory, .login, .refreshTerritoryImage:
+        case .giveTerritory, .pickTerritory, .login, .refreshTerritoryImage:
             return .POST
         case .deleteTerritory:
             return .DELETE
@@ -87,6 +93,13 @@ enum TerritoryEndpoint: APIEndpoint {
                 "customDate": date.map { ISO8601DateFormatter().string(from: $0) } ?? NSNull()
             ]
             return try? JSONSerialization.data(withJSONObject: params)
+        case .pickTerritory(let code, let date):
+            let params: [String: Any] = [
+                "territoryCode": code,
+                "isCustomDate": date != nil,
+                "customDate": date.map { ISO8601DateFormatter().string(from: $0) } ?? NSNull()
+            ]
+            return try? JSONSerialization.data(withJSONObject: params)
         case .login(let credentials):
             return try? JSONEncoder().encode(credentials)
         default:
@@ -96,11 +109,7 @@ enum TerritoryEndpoint: APIEndpoint {
     
     var queryItems: [URLQueryItem]? {
         switch self {
-        case .getPersons(let search):
-            if let search = search {
-                return [URLQueryItem(name: "search", value: search)]
-            }
-            return nil
+
         case .getTerritories(let term, let inUse, let orderBy, let orderByAscending, let lastGivenDateFrom, let lastGivenDateTo):
             var items: [URLQueryItem] = []
             if let term = term { items.append(URLQueryItem(name: "term", value: term)) }

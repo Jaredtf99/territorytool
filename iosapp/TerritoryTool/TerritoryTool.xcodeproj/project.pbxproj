@@ -11,6 +11,7 @@
 		2A5B90D32EE0E82200872A33 /* Nuke in Frameworks */ = {isa = PBXBuildFile; productRef = 2A5B90D22EE0E82200872A33 /* Nuke */; };
 		2A5B90D52EE0E82200872A33 /* NukeExtensions in Frameworks */ = {isa = PBXBuildFile; productRef = 2A5B90D42EE0E82200872A33 /* NukeExtensions */; };
 		2A5B90D72EE0E82200872A33 /* NukeUI in Frameworks */ = {isa = PBXBuildFile; productRef = 2A5B90D62EE0E82200872A33 /* NukeUI */; };
+		2A5B90F12EE1EEFA00872A33 /* SystemNotification in Frameworks */ = {isa = PBXBuildFile; productRef = 2A5B90F02EE1EEFA00872A33 /* SystemNotification */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,6 +34,7 @@
 			files = (
 				2A5B90D72EE0E82200872A33 /* NukeUI in Frameworks */,
 				2A5B90D32EE0E82200872A33 /* Nuke in Frameworks */,
+				2A5B90F12EE1EEFA00872A33 /* SystemNotification in Frameworks */,
 				2A5B90D52EE0E82200872A33 /* NukeExtensions in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -80,6 +82,7 @@
 				2A5B90D22EE0E82200872A33 /* Nuke */,
 				2A5B90D42EE0E82200872A33 /* NukeExtensions */,
 				2A5B90D62EE0E82200872A33 /* NukeUI */,
+				2A5B90F02EE1EEFA00872A33 /* SystemNotification */,
 			);
 			productName = TerritoryTool;
 			productReference = 2A0934192EE06355006E33C9 /* TerritoryTool.app */;
@@ -112,6 +115,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				2A5B90D12EE0E82100872A33 /* XCRemoteSwiftPackageReference "Nuke" */,
+				2A5B90EF2EE1EEFA00872A33 /* XCRemoteSwiftPackageReference "SystemNotification" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2A09341A2EE06355006E33C9 /* Products */;
@@ -370,6 +374,14 @@
 				minimumVersion = 12.8.0;
 			};
 		};
+		2A5B90EF2EE1EEFA00872A33 /* XCRemoteSwiftPackageReference "SystemNotification" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/danielsaidi/SystemNotification.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.4.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -387,6 +399,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2A5B90D12EE0E82100872A33 /* XCRemoteSwiftPackageReference "Nuke" */;
 			productName = NukeUI;
+		};
+		2A5B90F02EE1EEFA00872A33 /* SystemNotification */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2A5B90EF2EE1EEFA00872A33 /* XCRemoteSwiftPackageReference "SystemNotification" */;
+			productName = SystemNotification;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

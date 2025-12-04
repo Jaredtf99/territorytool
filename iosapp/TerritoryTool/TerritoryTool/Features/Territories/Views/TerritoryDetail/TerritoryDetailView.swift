@@ -124,7 +124,10 @@ struct TerritoryDetailView: View {
             Button("territory.detail.delete", role: .destructive) {
                 Task {
                     if await viewModel.deleteTerritory() {
+                        HapticManager.shared.notification(type: .success)
                         dismiss()
+                    } else {
+                        HapticManager.shared.notification(type: .error)
                     }
                 }
             }
@@ -193,6 +196,7 @@ struct TerritoryDetailView: View {
         HStack(spacing: 16) {
             if territory.personName == nil {
                 Button {
+                    HapticManager.shared.selection()
                     showAssignSheet = true
                 } label: {
                     Label("territory.detail.assign", systemImage: "person.badge.plus")
@@ -205,6 +209,7 @@ struct TerritoryDetailView: View {
                 }
             } else {
                 Button {
+                    HapticManager.shared.selection()
                     showReturnSheet = true
                 } label: {
                     Label("territory.detail.return", systemImage: "arrow.uturn.backward")

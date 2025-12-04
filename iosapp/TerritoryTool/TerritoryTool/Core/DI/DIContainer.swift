@@ -24,6 +24,14 @@ class DIContainer {
     func makeTerritoriesViewModel() -> TerritoriesViewModel {
         return TerritoriesViewModel(apiService: apiService)
     }
+    
+    func makeTerritoryAssignmentViewModel() -> TerritoryAssignmentViewModel {
+        return TerritoryAssignmentViewModel(apiService: apiService)
+    }
+    
+    func makeTerritoryReturnViewModel() -> TerritoryReturnViewModel {
+        return TerritoryReturnViewModel(apiService: apiService)
+    }
 }
 
 

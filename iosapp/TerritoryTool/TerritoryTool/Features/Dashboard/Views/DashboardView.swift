@@ -119,7 +119,7 @@ struct DashboardTerritoryRow: View {
                     Text("\(days)")
                         .font(.system(.title3, design: .rounded).weight(.bold))
                         .foregroundColor(.red)
-                    Text("days") // Using literal for now as "days" is common, but should be localized ideally.
+                    Text(String.localized("common.days"))
                         .font(.caption2)
                         .foregroundColor(.red.opacity(0.8))
                 }

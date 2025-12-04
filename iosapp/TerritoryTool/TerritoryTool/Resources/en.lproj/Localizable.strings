@@ -86,3 +86,35 @@
 "territory.stats.idle_time_desc" = "Average number of days the territory remains unassigned between uses.";
 "territory.stats.avg_duration_desc" = "Average number of days each assignment of the territory lasts.";
 "territory.stats.unique_users_desc" = "Number of different people who have used this territory.";
+
+// Assignment
+"assignment.title" = "Assign Territory";
+"assignment.section.territory" = "Select Territory";
+"assignment.section.publisher" = "Select Publisher";
+"assignment.search_territory" = "Search territory...";
+"assignment.search_publisher" = "Search publisher...";
+"assignment.no_territories" = "No available territories found";
+"assignment.suggestions" = "Suggestions (Oldest Free)";
+"assignment.custom_date" = "Custom Date";
+"assignment.date" = "Assignment Date";
+"assignment.button.assign" = "Assign Territory";
+"assignment.success" = "Territory assigned successfully";
+"assignment.error.missing_fields" = "Please select a territory and a publisher";
+
+// Return
+"return.title" = "Return Territory";
+"return.section.territory" = "Select Territory";
+"return.search_territory" = "Search assigned territory...";
+"return.no_territories" = "No assigned territories found";
+"return.custom_date" = "Custom Date";
+"return.date" = "Return Date";
+"return.button.return" = "Return Territory";
+"return.success" = "Territory returned successfully";
+"return.error.missing_territory" = "Please select a territory";
+
+// Common
+"common.cancel" = "Cancel";
+"common.error" = "Error";
+"common.days" = "days";
+"common.no_results" = "No results found";
+"common.ok" = "OK";
