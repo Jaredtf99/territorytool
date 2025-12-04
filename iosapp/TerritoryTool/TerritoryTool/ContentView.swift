@@ -8,15 +8,42 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var appViewModel = AppViewModel()
+    @StateObject private var languageManager = LanguageManager.shared
+    @StateObject private var themeManager = ThemeManager.shared
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        Group {
+            if appViewModel.isAuthenticated {
+                MainTabView()
+            } else {
+                NavigationStack {
+                    LoginView(viewModel: DIContainer.shared.makeLoginViewModel())
+                }
+            }
         }
-        .padding()
+        .environment(\.locale, languageManager.locale)
+        .preferredColorScheme(themeManager.colorScheme)
+        .onReceive(NotificationCenter.default.publisher(for: .authChanged)) { _ in
+            appViewModel.checkAuth()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .userRequestedLogout)) { _ in
+            appViewModel.logout()
+        }
+        .overlay {
+            if appViewModel.showSessionExpiredAlert {
+                SessionExpiredAlertView(onLogout: {
+                    appViewModel.logout()
+                })
+                .transition(.opacity)
+            }
+        }
     }
+}
+
+extension Notification.Name {
+    static let authChanged = Notification.Name("authChanged")
+    // userRequestedLogout is defined in SettingsView.swift or should be moved to a shared extension file
 }
 
 #Preview {

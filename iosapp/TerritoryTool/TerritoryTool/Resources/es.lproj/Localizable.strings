@@ -1,0 +1,88 @@
+/* 
+  Localizable.strings
+  TerritoryTool
+
+  Created by Jared Trapiello on 3/12/25.
+*/
+
+// General
+"dashboard.title" = "Tablero";
+"settings.title" = "Configuración";
+"login.title" = "Iniciar Sesión";
+"logout.title" = "Cerrar Sesión";
+"cancel" = "Cancelar";
+"loading" = "Cargando...";
+
+// Login
+"login.welcome" = "Bienvenido de nuevo";
+"login.username" = "Usuario";
+"login.password" = "Contraseña";
+"login.button" = "Entrar";
+"login.logging_in" = "Entrando...";
+"session.expired.title" = "Sesión Caducada";
+"session.expired.message" = "Tu sesión ha expirado. Por favor, inicia sesión de nuevo para continuar.";
+
+
+// Dashboard
+"dashboard.needs_attention" = "Entregados hace 4+ meses";
+"dashboard.no_territories" = "No hay territorios que necesiten atención ahora.";
+"dashboard.last_assigned" = "Última asignación";
+"dashboard.days_ago" = "hace %d días";
+
+// Territories
+"territories.title" = "Territorios";
+"territories.search_placeholder" = "Buscar territorios...";
+"territories.filter.all" = "Todos";
+"territories.filter.free" = "Libres";
+"territories.filter.in_use" = "En Uso";
+"territories.empty_list" = "No se encontraron territorios";
+"territories.sort.name" = "Nombre";
+"territories.sort.code" = "Código";
+"territories.sort.given_date" = "Fecha de Entrega";
+"territories.sort.ascending" = "Ascendente";
+"territories.sort.descending" = "Descendente";
+
+// Settings
+"settings.appearance" = "Apariencia";
+"settings.language" = "Idioma";
+"settings.account" = "Cuenta";
+"settings.theme.system" = "Sistema";
+"settings.theme.light" = "Claro";
+"settings.theme.dark" = "Oscuro";
+"settings.logout.confirmation" = "¿Estás seguro de que quieres cerrar sesión?";
+
+// Territory Detail
+"territory.detail.title" = "Detalle de Territorio";
+"territory.detail.error" = "Error";
+"territory.detail.retry" = "Reintentar";
+"territory.detail.map_unavailable" = "Mapa no disponible";
+"territory.detail.assigned_to" = "Asignado a";
+"territory.detail.assign" = "Asignar Territorio";
+"territory.detail.return" = "Devolver Territorio";
+"territory.detail.edit" = "Editar";
+"territory.detail.refresh_image" = "Actualizar Imagen";
+"territory.detail.delete" = "Eliminar";
+"territory.detail.delete_confirmation_title" = "Eliminar Territorio";
+"territory.detail.delete_confirmation_message" = "¿Estás seguro de que quieres eliminar este territorio? Esta acción no se puede deshacer.";
+"territory.stats.times_picked" = "Veces Entregado";
+"territory.stats.avg_holding" = "Tiempo Promedio";
+"territory.stats.unique_users" = "Usuarios Únicos";
+"territory.stats.usage_rank" = "Ranking de Uso";
+"territory.stats.days" = "%.0f días";
+"territory.history.title" = "Historial";
+"territory.history.returned" = "Devuelto:";
+"territory.history.currently_assigned" = "Actualmente Asignado";
+"territory.status.assigned" = "Asignado";
+"territory.status.available" = "Disponible";
+"territory.stats.rank_label" = "Ranking de Uso";
+"territory.stats.rank_value" = "#%d de %d";
+"territory.stats.active_time" = "Tiempo Activo";
+"territory.stats.idle_time" = "Tiempo Inactivo";
+"territory.stats.avg_duration" = "Duración Media";
+"territory.stats.global_avg" = "Media: %@";
+"territory.stats.percentage" = "%.1f%%";
+"territory.stats.rank_desc" = "Posición en el ranking de territorios más utilizados. Cuanto más bajo, más se usa.";
+"territory.stats.active_time_desc" = "Porcentaje del tiempo que el territorio ha estado asignado desde su creación.";
+"territory.stats.idle_time_desc" = "Promedio de días que el territorio permanece sin asignar entre usos.";
+"territory.stats.avg_duration_desc" = "Promedio de días que se mantiene cada asignación del territorio.";
+"territory.stats.unique_users_desc" = "Número de personas diferentes que han usado este territorio.";
