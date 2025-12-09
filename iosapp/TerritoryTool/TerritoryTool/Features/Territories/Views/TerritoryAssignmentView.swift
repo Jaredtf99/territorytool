@@ -202,6 +202,7 @@ struct TerritoryAssignmentView: View {
             QRScannerView(isPresented: $showQRScanner) { code in
                 viewModel.selectTerritory(by: code)
             }
+            .ignoresSafeArea()
         }
         .alert(isPresented: Binding<Bool>(
             get: { viewModel.errorMessage != nil },

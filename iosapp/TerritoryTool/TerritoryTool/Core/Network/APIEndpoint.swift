@@ -42,8 +42,10 @@ enum TerritoryEndpoint: APIEndpoint {
     case refreshTerritoryImage(id: Int)
     case deleteTerritory(id: Int)
     case addPerson(name: String)
+    case addTerritory(code: String, name: String, mapUrl: String)
     case updatePerson(id: Int, name: String, enabled: Bool)
     case deletePerson(name: String)
+    case updateTerritory(id: Int, code: String, name: String, mapUrl: String)
     
     var path: String {
         switch self {
@@ -79,8 +81,10 @@ enum TerritoryEndpoint: APIEndpoint {
             return "/api/v1/territories/all"
         case .refreshTerritoryImage(let id):
             return "/api/v1/territories/\(id)/refresh-image"
-        case .deleteTerritory(let id):
+        case .deleteTerritory(let id), .updateTerritory(let id, _, _, _):
             return "/api/v1/territories/\(id)"
+        case .addTerritory:
+            return "/api/v1/territories"
         }
     }
     
@@ -88,7 +92,7 @@ enum TerritoryEndpoint: APIEndpoint {
         switch self {
         case .getTerritory, .getTerritoryDetail, .getTerritoryStats, .getTerritoryTransactions, .getPersons, .getTerritories:
             return .GET
-        case .giveTerritory, .pickTerritory, .login, .refreshTerritoryImage, .addPerson:
+        case .giveTerritory, .pickTerritory, .login, .refreshTerritoryImage, .addPerson, .updateTerritory, .addTerritory:
             return .POST
         case .updatePerson:
             return .PUT
@@ -125,6 +129,20 @@ enum TerritoryEndpoint: APIEndpoint {
             return try? JSONSerialization.data(withJSONObject: params)
         case .login(let credentials):
             return try? JSONEncoder().encode(credentials)
+        case .updateTerritory(_, let code, let name, let mapUrl):
+            let params: [String: Any] = [
+                "code": code,
+                "name": name,
+                "mapUrl": mapUrl
+            ]
+            return try? JSONSerialization.data(withJSONObject: params)
+        case .addTerritory(let code, let name, let mapUrl):
+            let params: [String: Any] = [
+                "code": code,
+                "name": name,
+                "mapUrl": mapUrl
+            ]
+            return try? JSONSerialization.data(withJSONObject: params)
         default:
             return nil
         }

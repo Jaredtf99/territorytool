@@ -41,8 +41,10 @@ struct SearchSelectionSheet<T: Identifiable, Content: View>: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("common.cancel") {
+                    Button() {
                         dismiss()
+                    }label: {
+                        Image(systemName: "multiply")
                     }
                 }
             }

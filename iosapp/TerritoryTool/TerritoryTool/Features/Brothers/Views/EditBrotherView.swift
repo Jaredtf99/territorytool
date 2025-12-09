@@ -62,8 +62,10 @@ struct EditBrotherView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("common.cancel") {
+                    Button() {
                         dismiss()
+                    }label: {
+                        Image(systemName: "multiply")
                     }
                 }
             }

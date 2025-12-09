@@ -64,6 +64,7 @@
 "territory.detail.delete" = "Delete";
 "territory.detail.delete_confirmation_title" = "Delete Territory";
 "territory.detail.delete_confirmation_message" = "Are you sure you want to delete this territory? This action cannot be undone.";
+"territory.delete.success" = "Territory deleted successfully";
 "territory.stats.times_picked" = "Times Picked";
 "territory.stats.avg_holding" = "Avg. Holding";
 "territory.stats.unique_users" = "Unique Users";
@@ -139,4 +140,26 @@
 "assignment.error.territory_not_found" = "Territory not found or not available";
 "return.error.territory_not_found" = "Territory not found or not assigned";
 "brothers.error.exists" = "Brother already exists";
+"brothers.error.exists" = "This brother already exists";
 "brothers.error.not_found" = "Brother not found";
+
+"territory.detail.refresh_image_success" = "Image refreshed successfully";
+
+// Edit Territory
+"territory.edit.title" = "Edit Territory";
+"territory.code" = "Code";
+"territory.name" = "Name";
+"territory.mapUrl" = "Map URL";
+"common.save" = "Save";
+// Add Territory
+"territory.add.title" = "Add Territory";
+"territory.add.success" = "Territory created successfully";
+"territory.edit.success" = "Territory updated successfully";
+
+// Territory Errors
+"error.territory.code_exists" = "A territory with this code already exists";
+"error.territory.name_exists" = "A territory with this name already exists";
+"error.territory.map_url_exists" = "A territory with this Map URL already exists";
+"error.territory.not_found" = "Territory not found";
+"error.invalid_parameters" = "Please fill in all required fields";
+"common.required_field" = "*";

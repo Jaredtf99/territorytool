@@ -64,6 +64,7 @@
 "territory.detail.delete" = "Eliminar";
 "territory.detail.delete_confirmation_title" = "Eliminar Territorio";
 "territory.detail.delete_confirmation_message" = "¿Estás seguro de que quieres eliminar este territorio? Esta acción no se puede deshacer.";
+"territory.delete.success" = "Territorio eliminado correctamente";
 "territory.stats.times_picked" = "Veces Entregado";
 "territory.stats.avg_holding" = "Tiempo Promedio";
 "territory.stats.unique_users" = "Usuarios Únicos";
@@ -139,4 +140,28 @@
 "assignment.error.territory_not_found" = "Territorio no encontrado o no disponible";
 "return.error.territory_not_found" = "Territorio no encontrado o no asignado";
 "brothers.error.exists" = "Este hermano ya existe";
+"brothers.error.exists" = "Este hermano ya existe";
 "brothers.error.not_found" = "Hermano no encontrado";
+
+"territory.detail.refresh_image_success" = "Imagen actualizada correctamente";
+
+// Edit Territory
+"territory.edit.title" = "Editar Territorio";
+"territory.code" = "Código";
+"territory.name" = "Nombre";
+"territory.mapUrl" = "URL del Mapa";
+"common.save" = "Guardar";
+// Add Territory
+"territory.add.title" = "Añadir Territorio";
+"territory.add.success" = "Territorio creado correctamente";
+"territory.edit.success" = "Territorio actualizado correctamente";
+
+// Territory Errors
+"error.territory.code_exists" = "Ya existe un territorio con este código";
+"error.territory.name_exists" = "Ya existe un territorio con este nombre";
+"error.territory.map_url_exists" = "Ya existe un territorio con esta URL de mapa";
+"error.territory.not_found" = "Territorio no encontrado";
+"error.invalid_parameters" = "Por favor rellena todos los campos obligatorios";
+"common.required_field" = "*";
+
+"NSCameraUsageDescription" = "Esta app utiliza la cámara para escanear códigos QR y seleccionar territorios.";

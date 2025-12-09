@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Combine
 
 enum TerritoryFilter: String, CaseIterable, Identifiable {
@@ -52,6 +53,15 @@ class TerritoriesViewModel: ObservableObject {
                 }
             }
             .store(in: &cancellables)
+        // Reload when territory is deleted
+        NotificationCenter.default.publisher(for: .territoryDeleted)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                Task { [weak self] in
+                    await self?.loadTerritories()
+                }
+            }
+            .store(in: &cancellables)
     }
     
     func loadTerritories() async {
@@ -81,9 +91,27 @@ class TerritoriesViewModel: ObservableObject {
                 lastGivenDateTo: nil
             ))
             
-            self.territories = result
+            withAnimation {
+                self.territories = result
+            }
         } catch {
             self.errorMessage = error.localizedDescription
+        }
+    }
+    
+    func deleteTerritory(_ territory: Territory) async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            try await apiService.request(endpoint: TerritoryEndpoint.deleteTerritory(id: territory.id))
+            // Refresh list
+            await loadTerritories()
+            // Notify other parts of the app if needed, though loadTerritories updates the list
+            NotificationCenter.default.post(name: .territoryDeleted, object: nil)
+        } catch {
+            self.errorMessage = "Error deleting territory: \(error.localizedDescription)"
+            isLoading = false
         }
     }
 }

@@ -80,28 +80,45 @@ struct TerritoryDetailView: View {
         .navigationTitle(viewModel.territory?.name ?? territoryName)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Menu {
-                    Button {
-                        showEditSheet = true
-                    } label: {
-                        Label("territory.detail.edit", systemImage: "pencil")
-                    }
-                    
-                    Button {
-                        Task { await viewModel.refreshImage() }
-                    } label: {
-                        Label("territory.detail.refresh_image", systemImage: "arrow.clockwise")
-                    }
-                    
-                    Button(role: .destructive) {
-                        showDeleteAlert = true
-                    } label: {
-                        Label("territory.detail.delete", systemImage: "trash")
+            ToolbarItem() {
+                Button {
+                    HapticManager.shared.selection()
+                    Task { 
+                        if await viewModel.refreshImage() {
+                            HapticManager.shared.notification(type: .success)
+                            ToastManager.shared.show(NSLocalizedString("territory.detail.refresh_image_success", comment: ""), style: .success)
+                        } else {
+                            HapticManager.shared.notification(type: .error)
+                        }
                     }
                 } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .font(.title3)
+                    if viewModel.isRefreshingImage {
+                        ProgressView()
+                    } else {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                }
+                .disabled(viewModel.isRefreshingImage)
+            }
+            
+            ToolbarSpacer(.flexible)
+            
+            ToolbarItem() {
+                Button {
+                    showEditSheet = true
+                } label: {
+                    Image(systemName: "pencil")
+                }
+            }
+            
+            ToolbarSpacer(.flexible)
+            
+            ToolbarItem(placement: .destructiveAction) {
+                Button(role: .destructive) {
+                    showDeleteAlert = true
+                } label: {
+                    Image(systemName: "trash")
+                        .foregroundColor(.red)
                 }
             }
         }
@@ -122,7 +139,8 @@ struct TerritoryDetailView: View {
             Button("territory.detail.delete", role: .destructive) {
                 Task {
                     if await viewModel.deleteTerritory() {
-                        HapticManager.shared.notification(type: .success)
+                        ToastManager.shared.show(NSLocalizedString("territory.delete.success", value: "Territory deleted", comment: ""), style: .success)
+                        NotificationCenter.default.post(name: .territoryDeleted, object: nil)
                         dismiss()
                     } else {
                         HapticManager.shared.notification(type: .error)
@@ -131,6 +149,16 @@ struct TerritoryDetailView: View {
             }
         } message: {
             Text("territory.detail.delete_confirmation_message")
+        }
+        .sheet(isPresented: $showEditSheet) {
+            if let territory = viewModel.territory {
+                EditTerritoryView(territory: territory, apiService: NetworkManager())
+                    .onDisappear {
+                        Task {
+                            await viewModel.loadData()
+                        }
+                    }
+            }
         }
     }
     
@@ -164,8 +192,7 @@ struct TerritoryDetailView: View {
                     )
                 )
                 .clipped()
-                .cornerRadius(12) // Optional: rounded corners for the image itself if desired, or just square. User didn't specify, but usually looks better. I'll stick to just removing the glass card style.
-                // .glassCardStyle(padding: 0) REMOVED
+                .cornerRadius(12)
             .overlay(
                 TerritoryCodeBadge(code: territory.code)
                     .padding()
@@ -183,7 +210,6 @@ struct TerritoryDetailView: View {
                 , alignment: .topTrailing
             )
             
-            // Removed badge VStack from here
         }
     }
     

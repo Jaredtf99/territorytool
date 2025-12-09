@@ -2,21 +2,31 @@ import SwiftUI
 
 struct TerritoriesView: View {
     @StateObject private var viewModel = DIContainer.shared.makeTerritoriesViewModel()
+    @State private var showAddSheet = false
+    @State private var territoryToEdit: Territory?
+    @State private var territoryToDelete: Territory?
+    @State private var showDeleteConfirmation = false
     
     init() {}
     
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 16) {
-                // Filters (Scrolls with content)
-                FilterScrollView(viewModel: viewModel)
-                    
+        List {
+            // Filters
+            FilterScrollView(viewModel: viewModel)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                .padding(.vertical, 8)
+                .padding(.horizontal, 16) // Add padding back
 
-                // Content
-                if viewModel.isLoading && viewModel.territories.isEmpty {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, minHeight: 200)
-                } else if let error = viewModel.errorMessage {
+            // Content
+            if viewModel.isLoading && viewModel.territories.isEmpty {
+                ProgressView()
+                    .frame(maxWidth: .infinity, minHeight: 200)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+            } else if let error = viewModel.errorMessage {
+                VStack {
                     Text(error)
                         .foregroundColor(.error)
                         .padding()
@@ -27,34 +37,60 @@ struct TerritoriesView: View {
                         Task { await viewModel.loadTerritories() }
                     }
                     .buttonStyle(.bordered)
-                } else if viewModel.territories.isEmpty {
-                    VStack(spacing: 16) {
-                        Image(systemName: "map.fill")
-                            .font(.system(size: 50))
-                            .foregroundColor(.secondary)
-                        Text("territories.empty_list")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 200)
-                } else {
-                    ForEach(viewModel.territories) { territory in
+                }
+                .frame(maxWidth: .infinity)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+            } else if viewModel.territories.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "map.fill")
+                        .font(.system(size: 50))
+                        .foregroundColor(.secondary)
+                    Text("territories.empty_list")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, minHeight: 200)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+            } else {
+                ForEach(viewModel.territories) { territory in
+                    ZStack { // wrapper to handle navigation link visual if needed, but standard Link works too.
+                        // However, TerritoriesView used NavigationLink.
                         NavigationLink(destination: TerritoryDetailView(territoryId: territory.id, territoryName: territory.name)) {
-                            TerritoryCard(territory: territory)
+                           EmptyView() 
                         }
-                        .buttonStyle(PlainButtonStyle())
-                        .contentShape(Rectangle())
+                        .opacity(0)
+                        
+                        TerritoryCard(territory: territory)
                     }
-                    .opacity(viewModel.isLoading ? 0.5 : 1.0)
-                    .animation(.easeInOut(duration: 0.2), value: viewModel.isLoading)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            HapticManager.shared.selection()
+                            territoryToDelete = territory
+                            showDeleteConfirmation = true
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        
+                        Button {
+                            HapticManager.shared.selection()
+                            territoryToEdit = territory
+                        } label: {
+                            Image(systemName: "pencil")
+                        }
+                        .tint(.brandPrimary)
+                    }
                 }
             }
-            .padding(.horizontal)
-            .padding(.bottom, 20)
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.territories)
         .refreshable {
-            // Workaround for SwiftUI bug: .refreshable task gets cancelled when used with .searchable
-            // Wrapping in a detached Task prevents the cancellation
             await withCheckedContinuation { continuation in
                 Task {
                     await viewModel.loadTerritories()
@@ -67,7 +103,7 @@ struct TerritoriesView: View {
         .navigationBarTitleDisplayMode(.large)
         .searchable(text: $viewModel.searchText, placement: .automatic, prompt: "territories.search_placeholder")
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItem() {
                 Menu {
                     Picker("Sort By", selection: $viewModel.sortOption) {
                         ForEach(TerritorySortOption.allCases) { option in
@@ -87,9 +123,49 @@ struct TerritoriesView: View {
                         )
                     }
                 } label: {
-                    Image(systemName: "arrow.up.arrow.down.circle")
+                    Image(systemName: "arrow.up.arrow.down")
                 }
             }
+            
+            ToolbarSpacer(.flexible)
+            
+            ToolbarItem() {
+                Button {
+                    showAddSheet = true
+                } label: {
+                    Image(systemName: "plus")
+                }
+            }
+        }
+        .sheet(isPresented: $showAddSheet) {
+            AddTerritoryView()
+                .onDisappear {
+                    Task {
+                        await viewModel.loadTerritories()
+                    }
+                }
+        }
+        .sheet(item: $territoryToEdit) { territory in
+            EditTerritoryView(territory: territory, apiService: NetworkManager())
+                .onDisappear {
+                    Task {
+                        await viewModel.loadTerritories()
+                    }
+                }
+        }
+        .alert("territory.detail.delete_confirmation_title", isPresented: $showDeleteConfirmation) {
+            Button("territory.detail.delete", role: .destructive) {
+                if let territory = territoryToDelete {
+                    Task {
+                        await viewModel.deleteTerritory(territory)
+                        HapticManager.shared.notification(type: .success)
+                        ToastManager.shared.show(NSLocalizedString("territory.delete.success", value: "Territory deleted", comment: ""), style: .success)
+                    }
+                }
+            }
+            Button("common.cancel", role: .cancel) {}
+        } message: {
+            Text("territory.detail.delete_confirmation_message")
         }
         .background {
             LiquidBackgroundView()

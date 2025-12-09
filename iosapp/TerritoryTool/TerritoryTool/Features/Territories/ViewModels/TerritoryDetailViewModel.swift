@@ -39,22 +39,25 @@ class TerritoryDetailViewModel: ObservableObject {
         isLoading = false
     }
     
-    func refreshImage() async {
+    func refreshImage() async -> Bool {
         isRefreshingImage = true
         do {
-            let _: EmptyResponse = try await apiService.request(endpoint: TerritoryEndpoint.refreshTerritoryImage(id: territoryId))
+            try await apiService.request(endpoint: TerritoryEndpoint.refreshTerritoryImage(id: territoryId))
             // Reload detail to get new image URL
             let updatedDetail: TerritoryDetail = try await apiService.request(endpoint: TerritoryEndpoint.getTerritoryDetail(id: territoryId))
             self.territory = updatedDetail
+            isRefreshingImage = false
+            return true
         } catch {
             self.errorMessage = "Error refreshing image: \(error.localizedDescription)"
+            isRefreshingImage = false
+            return false
         }
-        isRefreshingImage = false
     }
     
     func deleteTerritory() async -> Bool {
         do {
-            let _: EmptyResponse = try await apiService.request(endpoint: TerritoryEndpoint.deleteTerritory(id: territoryId))
+            try await apiService.request(endpoint: TerritoryEndpoint.deleteTerritory(id: territoryId))
             return true
         } catch {
             self.errorMessage = "Error deleting territory: \(error.localizedDescription)"
