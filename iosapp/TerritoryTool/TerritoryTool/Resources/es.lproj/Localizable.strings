@@ -88,7 +88,7 @@
 "territory.stats.unique_users_desc" = "Número de personas diferentes que han usado este territorio.";
 
 // Assignment
-"assignment.title" = "Asignar Territorio";
+"assignment.title" = "Asignar";
 "assignment.section.territory" = "Seleccionar Territorio";
 "assignment.section.publisher" = "Seleccionar Publicador";
 "assignment.search_territory" = "Buscar territorio...";
@@ -102,7 +102,7 @@
 "assignment.error.missing_fields" = "Por favor selecciona un territorio y un publicador";
 
 // Return
-"return.title" = "Recoger Territorio";
+"return.title" = "Recoger";
 "return.section.territory" = "Seleccionar Territorio";
 "return.search_territory" = "Buscar territorio asignado...";
 "return.no_territories" = "No se encontraron territorios asignados";
@@ -112,6 +112,21 @@
 "return.success" = "Territorio recogido correctamente";
 "return.error.missing_territory" = "Por favor selecciona un territorio";
 
+// Brothers
+"brothers.title" = "Hermanos";
+"brothers.search_placeholder" = "Buscar hermanos...";
+"brothers.name" = "Nombre";
+"brothers.enabled" = "Habilitado";
+"brothers.save" = "Guardar";
+"brothers.add.title" = "Añadir Hermano";
+"brothers.edit.title" = "Editar Hermano";
+"brothers.delete" = "Eliminar";
+"brothers.delete_confirmation" = "¿Estás seguro de que quieres eliminar este hermano?";
+"brothers.territories_assigned" = "Territorios Asignados";
+"brothers.add_success" = "Hermano añadido correctamente";
+"brothers.update_success" = "Hermano actualizado correctamente";
+"brothers.delete_success" = "Hermano eliminado correctamente";
+
 // Common
 "common.cancel" = "Cancelar";
 "common.error" = "Error";
@@ -119,6 +134,9 @@
 "common.no_results" = "No hay resultados";
 "common.ok" = "OK";
 
+
 // QR Scan Errors
 "assignment.error.territory_not_found" = "Territorio no encontrado o no disponible";
 "return.error.territory_not_found" = "Territorio no encontrado o no asignado";
+"brothers.error.exists" = "Este hermano ya existe";
+"brothers.error.not_found" = "Hermano no encontrado";

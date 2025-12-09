@@ -1,6 +1,15 @@
 {
-  "originHash" : "9514b2a2da61e17f4e6ec9f70ceabb127b85293deac3e1e5886fd182fe765591",
+  "originHash" : "3e84398ea57595fa5be83c541943699cf69baa3a5682a54c44f64833c23aa801",
   "pins" : [
+    {
+      "identity" : "lazyswipeactions",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/gorpello/LazySwipeActions",
+      "state" : {
+        "branch" : "main",
+        "revision" : "b40a63c419b700725120dba0336ce0490b8c7395"
+      }
+    },
     {
       "identity" : "nuke",
       "kind" : "remoteSourceControl",

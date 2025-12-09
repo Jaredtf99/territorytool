@@ -41,6 +41,9 @@ enum TerritoryEndpoint: APIEndpoint {
     case getTerritories(term: String?, inUse: Bool?, orderBy: Int?, orderByAscending: Bool?, lastGivenDateFrom: Date?, lastGivenDateTo: Date?)
     case refreshTerritoryImage(id: Int)
     case deleteTerritory(id: Int)
+    case addPerson(name: String)
+    case updatePerson(id: Int, name: String, enabled: Bool)
+    case deletePerson(name: String)
     
     var path: String {
         switch self {
@@ -61,6 +64,15 @@ enum TerritoryEndpoint: APIEndpoint {
                 return "/api/v1/persons/\(encoded)"
             }
             return "/api/v1/persons"
+        case .addPerson:
+            return "/api/v1/persons"
+        case .updatePerson(let id, _, _):
+            return "/api/v1/persons/\(id)"
+        case .deletePerson(let name):
+            if let encoded = name.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) {
+                return "/api/v1/persons/\(encoded)"
+            }
+            return "/api/v1/persons/\(name)"
         case .login:
             return "/api/v1/users/login"
         case .getTerritories:
@@ -76,9 +88,11 @@ enum TerritoryEndpoint: APIEndpoint {
         switch self {
         case .getTerritory, .getTerritoryDetail, .getTerritoryStats, .getTerritoryTransactions, .getPersons, .getTerritories:
             return .GET
-        case .giveTerritory, .pickTerritory, .login, .refreshTerritoryImage:
+        case .giveTerritory, .pickTerritory, .login, .refreshTerritoryImage, .addPerson:
             return .POST
-        case .deleteTerritory:
+        case .updatePerson:
+            return .PUT
+        case .deleteTerritory, .deletePerson:
             return .DELETE
         }
     }
@@ -98,6 +112,15 @@ enum TerritoryEndpoint: APIEndpoint {
                 "territoryCode": code,
                 "isCustomDate": date != nil,
                 "customDate": date.map { ISO8601DateFormatter().string(from: $0) } ?? NSNull()
+            ]
+            return try? JSONSerialization.data(withJSONObject: params)
+        case .addPerson(let name):
+            let params: [String: Any] = ["name": name]
+            return try? JSONSerialization.data(withJSONObject: params)
+        case .updatePerson(_, let name, let enabled):
+            let params: [String: Any] = [
+                "name": name,
+                "enabled": enabled
             ]
             return try? JSONSerialization.data(withJSONObject: params)
         case .login(let credentials):

@@ -12,6 +12,7 @@
 		2A5B90D52EE0E82200872A33 /* NukeExtensions in Frameworks */ = {isa = PBXBuildFile; productRef = 2A5B90D42EE0E82200872A33 /* NukeExtensions */; };
 		2A5B90D72EE0E82200872A33 /* NukeUI in Frameworks */ = {isa = PBXBuildFile; productRef = 2A5B90D62EE0E82200872A33 /* NukeUI */; };
 		2A5B90F12EE1EEFA00872A33 /* SystemNotification in Frameworks */ = {isa = PBXBuildFile; productRef = 2A5B90F02EE1EEFA00872A33 /* SystemNotification */; };
+		2ACF3E1A2EE3349B0051F0C1 /* LazySwipeActions in Frameworks */ = {isa = PBXBuildFile; productRef = 2ACF3E192EE3349B0051F0C1 /* LazySwipeActions */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,6 +34,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2A5B90D72EE0E82200872A33 /* NukeUI in Frameworks */,
+				2ACF3E1A2EE3349B0051F0C1 /* LazySwipeActions in Frameworks */,
 				2A5B90D32EE0E82200872A33 /* Nuke in Frameworks */,
 				2A5B90F12EE1EEFA00872A33 /* SystemNotification in Frameworks */,
 				2A5B90D52EE0E82200872A33 /* NukeExtensions in Frameworks */,
@@ -83,6 +85,7 @@
 				2A5B90D42EE0E82200872A33 /* NukeExtensions */,
 				2A5B90D62EE0E82200872A33 /* NukeUI */,
 				2A5B90F02EE1EEFA00872A33 /* SystemNotification */,
+				2ACF3E192EE3349B0051F0C1 /* LazySwipeActions */,
 			);
 			productName = TerritoryTool;
 			productReference = 2A0934192EE06355006E33C9 /* TerritoryTool.app */;
@@ -116,6 +119,7 @@
 			packageReferences = (
 				2A5B90D12EE0E82100872A33 /* XCRemoteSwiftPackageReference "Nuke" */,
 				2A5B90EF2EE1EEFA00872A33 /* XCRemoteSwiftPackageReference "SystemNotification" */,
+				2ACF3E182EE3349B0051F0C1 /* XCRemoteSwiftPackageReference "LazySwipeActions" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2A09341A2EE06355006E33C9 /* Products */;
@@ -277,11 +281,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 6BEY9XYCSJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSCameraUsageDescription = "We need camera access to scan QR codes for territory selection.";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -314,11 +317,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 6BEY9XYCSJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSCameraUsageDescription = "We need camera access to scan QR codes for territory selection.";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -384,6 +386,14 @@
 				minimumVersion = 1.4.0;
 			};
 		};
+		2ACF3E182EE3349B0051F0C1 /* XCRemoteSwiftPackageReference "LazySwipeActions" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gorpello/LazySwipeActions";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -406,6 +416,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2A5B90EF2EE1EEFA00872A33 /* XCRemoteSwiftPackageReference "SystemNotification" */;
 			productName = SystemNotification;
+		};
+		2ACF3E192EE3349B0051F0C1 /* LazySwipeActions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2ACF3E182EE3349B0051F0C1 /* XCRemoteSwiftPackageReference "LazySwipeActions" */;
+			productName = LazySwipeActions;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

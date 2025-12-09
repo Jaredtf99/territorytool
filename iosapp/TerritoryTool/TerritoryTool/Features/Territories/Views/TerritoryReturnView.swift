@@ -1,9 +1,11 @@
 import SwiftUI
 
 struct TerritoryReturnView: View {
-    @StateObject private var viewModel = DIContainer.shared.makeTerritoryReturnViewModel()
+    @StateObject private var viewModel: TerritoryReturnViewModel
     
-    init() {}
+    init(territory: Territory? = nil) {
+        _viewModel = StateObject(wrappedValue: DIContainer.shared.makeTerritoryReturnViewModel(territory: territory))
+    }
     
     @State private var showTerritorySheet = false
     @State private var showQRScanner = false

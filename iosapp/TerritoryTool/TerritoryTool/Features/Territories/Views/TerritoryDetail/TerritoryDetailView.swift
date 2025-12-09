@@ -5,8 +5,6 @@ struct TerritoryDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showDeleteAlert = false
     @State private var showEditSheet = false
-    @State private var showAssignSheet = false
-    @State private var showReturnSheet = false
     
     // Animation states
     @State private var isHeaderVisible = false
@@ -134,9 +132,6 @@ struct TerritoryDetailView: View {
         } message: {
             Text("territory.detail.delete_confirmation_message")
         }
-        // Sheets for actions would go here
-        // .sheet(isPresented: $showEditSheet) { EditTerritoryView(...) }
-        // .sheet(isPresented: $showAssignSheet) { AssignTerritoryView(...) }
     }
     
     private func headerSection(territory: TerritoryDetail) -> some View {
@@ -195,9 +190,8 @@ struct TerritoryDetailView: View {
     private func actionButtons(territory: TerritoryDetail) -> some View {
         HStack(spacing: 16) {
             if territory.personName == nil {
-                Button {
-                    HapticManager.shared.selection()
-                    showAssignSheet = true
+                NavigationLink {
+                    TerritoryAssignmentView(territory: territory.toTerritory())
                 } label: {
                     Label("territory.detail.assign", systemImage: "person.badge.plus")
                         .frame(maxWidth: .infinity)
@@ -207,10 +201,12 @@ struct TerritoryDetailView: View {
                         .cornerRadius(12)
                         .shadow(color: .blue.opacity(0.3), radius: 5, x: 0, y: 3)
                 }
-            } else {
-                Button {
+                .simultaneousGesture(TapGesture().onEnded {
                     HapticManager.shared.selection()
-                    showReturnSheet = true
+                })
+            } else {
+                NavigationLink {
+                    TerritoryReturnView(territory: territory.toTerritory())
                 } label: {
                     Label("territory.detail.return", systemImage: "arrow.uturn.backward")
                         .frame(maxWidth: .infinity)
@@ -220,6 +216,9 @@ struct TerritoryDetailView: View {
                         .cornerRadius(12)
                         .shadow(color: .green.opacity(0.3), radius: 5, x: 0, y: 3)
                 }
+                .simultaneousGesture(TapGesture().onEnded {
+                    HapticManager.shared.selection()
+                })
             }
         }
     }
@@ -303,6 +302,21 @@ struct TerritoryDetailView: View {
                 .padding(.bottom, 16)
             }
         }
+    }
+}
+
+extension TerritoryDetail {
+    func toTerritory() -> Territory {
+        return Territory(
+            id: self.id,
+            code: self.code,
+            name: self.name,
+            mapUrl: self.mapUrl,
+            imgUrl: self.imgUrl,
+            personName: self.personName,
+            givenDateUtc: self.givenDateUtc,
+            lastPickedDateUtc: self.lastPickedDateUtc
+        )
     }
 }
 

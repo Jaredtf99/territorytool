@@ -8,7 +8,7 @@ struct MainTabView: View {
     var body: some View {
         TabView {
             NavigationStack {
-                DashboardView()
+                DashboardView(viewModel: DIContainer.shared.makeDashboardViewModel())
             }
             .tabItem {
                 Label("dashboard.title", systemImage: "house.fill")
@@ -33,6 +33,13 @@ struct MainTabView: View {
             }
             .tabItem {
                 Label("return.title", systemImage: "tray.and.arrow.down")
+            }
+            
+            NavigationStack {
+                BrothersView()
+            }
+            .tabItem {
+                Label("brothers.title", systemImage: "person.3.fill")
             }
         }
         .systemNotification(notificationContext)

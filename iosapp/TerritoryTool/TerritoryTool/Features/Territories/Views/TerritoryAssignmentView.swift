@@ -1,9 +1,11 @@
 import SwiftUI
 
 struct TerritoryAssignmentView: View {
-    @StateObject private var viewModel = DIContainer.shared.makeTerritoryAssignmentViewModel()
+    @StateObject private var viewModel: TerritoryAssignmentViewModel
     
-    init() {}
+    init(territory: Territory? = nil) {
+        _viewModel = StateObject(wrappedValue: DIContainer.shared.makeTerritoryAssignmentViewModel(territory: territory))
+    }
     
     @State private var showTerritorySheet = false
     @State private var showPersonSheet = false

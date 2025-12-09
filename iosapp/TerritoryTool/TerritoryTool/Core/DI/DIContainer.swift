@@ -25,12 +25,24 @@ class DIContainer {
         return TerritoriesViewModel(apiService: apiService)
     }
     
-    func makeTerritoryAssignmentViewModel() -> TerritoryAssignmentViewModel {
-        return TerritoryAssignmentViewModel(apiService: apiService)
+    func makeTerritoryAssignmentViewModel(territory: Territory? = nil) -> TerritoryAssignmentViewModel {
+        let viewModel = TerritoryAssignmentViewModel(apiService: apiService)
+        if let territory = territory {
+            viewModel.selectedTerritory = territory
+        }
+        return viewModel
     }
     
-    func makeTerritoryReturnViewModel() -> TerritoryReturnViewModel {
-        return TerritoryReturnViewModel(apiService: apiService)
+    func makeTerritoryReturnViewModel(territory: Territory? = nil) -> TerritoryReturnViewModel {
+        let viewModel = TerritoryReturnViewModel(apiService: apiService)
+        if let territory = territory {
+            viewModel.selectedTerritory = territory
+        }
+        return viewModel
+    }
+    
+    func makeBrothersViewModel() -> BrothersViewModel {
+        return BrothersViewModel(networkManager: apiService)
     }
 }
 

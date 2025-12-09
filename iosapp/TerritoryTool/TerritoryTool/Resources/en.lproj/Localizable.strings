@@ -88,7 +88,7 @@
 "territory.stats.unique_users_desc" = "Number of different people who have used this territory.";
 
 // Assignment
-"assignment.title" = "Assign Territory";
+"assignment.title" = "Assign";
 "assignment.section.territory" = "Select Territory";
 "assignment.section.publisher" = "Select Publisher";
 "assignment.search_territory" = "Search territory...";
@@ -102,7 +102,7 @@
 "assignment.error.missing_fields" = "Please select a territory and a publisher";
 
 // Return
-"return.title" = "Return Territory";
+"return.title" = "Return";
 "return.section.territory" = "Select Territory";
 "return.search_territory" = "Search assigned territory...";
 "return.no_territories" = "No assigned territories found";
@@ -112,6 +112,21 @@
 "return.success" = "Territory returned successfully";
 "return.error.missing_territory" = "Please select a territory";
 
+// Brothers
+"brothers.title" = "Brothers";
+"brothers.search_placeholder" = "Search brothers...";
+"brothers.name" = "Name";
+"brothers.enabled" = "Enabled";
+"brothers.save" = "Save";
+"brothers.add.title" = "Add Brother";
+"brothers.edit.title" = "Edit Brother";
+"brothers.delete" = "Delete";
+"brothers.delete_confirmation" = "Are you sure you want to delete this brother?";
+"brothers.territories_assigned" = "Territories Assigned";
+"brothers.add_success" = "Brother added successfully";
+"brothers.update_success" = "Brother updated successfully";
+"brothers.delete_success" = "Brother deleted successfully";
+
 // Common
 "common.cancel" = "Cancel";
 "common.error" = "Error";
@@ -119,6 +134,9 @@
 "common.no_results" = "No results found";
 "common.ok" = "OK";
 
+
 // QR Scan Errors
 "assignment.error.territory_not_found" = "Territory not found or not available";
 "return.error.territory_not_found" = "Territory not found or not assigned";
+"brothers.error.exists" = "Brother already exists";
+"brothers.error.not_found" = "Brother not found";
