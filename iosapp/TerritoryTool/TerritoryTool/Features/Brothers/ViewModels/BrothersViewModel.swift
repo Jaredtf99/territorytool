@@ -1,12 +1,13 @@
 import Foundation
 import Combine
+import SwiftUI
 
 @MainActor
 class BrothersViewModel: ObservableObject {
     @Published var brothers: [Person] = []
     @Published var filteredBrothers: [Person] = []
     @Published var searchText: String = ""
-    @Published var isLoading: Bool = false
+    @Published var isLoading: Bool = true
     @Published var errorMessage: String?
     @Published var showAddSheet: Bool = false
     @Published var showEditSheet: Bool = false
@@ -31,16 +32,37 @@ class BrothersViewModel: ObservableObject {
     init(networkManager: APIService = NetworkManager.shared) {
         self.networkManager = networkManager
         
+        // Debounce search text
         $searchText
-            .combineLatest($brothers)
-            .map { searchText, brothers in
-                if searchText.isEmpty {
-                    return brothers
-                } else {
-                    return brothers.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
-                }
+            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
+            .removeDuplicates()
+            .sink { [weak self] _ in
+                self?.filterBrothers()
             }
-            .assign(to: &$filteredBrothers)
+            .store(in: &cancellables)
+            
+        // Also refilter when brothers list changes
+        $brothers
+            .sink { [weak self] _ in
+                self?.filterBrothers()
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func filterBrothers() {
+        let text = searchText
+        let currentBrothers = brothers
+        
+        let filtered: [Person]
+        if text.isEmpty {
+            filtered = currentBrothers
+        } else {
+            filtered = currentBrothers.filter { $0.name.localizedCaseInsensitiveContains(text) }
+        }
+        
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            self.filteredBrothers = filtered
+        }
     }
     
     func fetchBrothers() {

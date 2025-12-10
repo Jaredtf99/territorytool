@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TerritoriesView: View {
     @StateObject private var viewModel = DIContainer.shared.makeTerritoriesViewModel()
+    @ObservedObject private var permissionManager = PermissionManager.shared
     @State private var showAddSheet = false
     @State private var territoryToEdit: Territory?
     @State private var territoryToDelete: Territory?
@@ -55,8 +56,7 @@ struct TerritoriesView: View {
                 .listRowSeparator(.hidden)
             } else {
                 ForEach(viewModel.territories) { territory in
-                    ZStack { // wrapper to handle navigation link visual if needed, but standard Link works too.
-                        // However, TerritoriesView used NavigationLink.
+                    ZStack {
                         NavigationLink(destination: TerritoryDetailView(territoryId: territory.id, territoryName: territory.name)) {
                            EmptyView() 
                         }
@@ -68,21 +68,25 @@ struct TerritoriesView: View {
                     .listRowSeparator(.hidden)
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) {
-                            HapticManager.shared.selection()
-                            territoryToDelete = territory
-                            showDeleteConfirmation = true
-                        } label: {
-                            Image(systemName: "trash")
+                        // Only show edit/delete swipe actions for ADMIN+ roles
+                        if permissionManager.canManageTerritories {
+                            Button {
+                                HapticManager.shared.selection()
+                                territoryToDelete = territory
+                                showDeleteConfirmation = true
+                            } label: {
+                                Image(systemName: "trash")
+                            }
+                            .tint(.red)
+                            
+                            Button {
+                                HapticManager.shared.selection()
+                                territoryToEdit = territory
+                            } label: {
+                                Image(systemName: "pencil")
+                            }
+                            .tint(.brandPrimary)
                         }
-                        
-                        Button {
-                            HapticManager.shared.selection()
-                            territoryToEdit = territory
-                        } label: {
-                            Image(systemName: "pencil")
-                        }
-                        .tint(.brandPrimary)
                     }
                 }
             }
@@ -129,11 +133,14 @@ struct TerritoriesView: View {
             
             ToolbarSpacer(.flexible)
             
-            ToolbarItem() {
-                Button {
-                    showAddSheet = true
-                } label: {
-                    Image(systemName: "plus")
+            // Only show add button for ADMIN+ roles
+            if permissionManager.canManageTerritories {
+                ToolbarItem() {
+                    Button {
+                        showAddSheet = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
                 }
             }
         }

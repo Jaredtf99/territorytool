@@ -133,6 +133,7 @@
 "common.error" = "Error";
 "common.days" = "días";
 "common.no_results" = "No hay resultados";
+"common.delete_confirmation" = "¿Estás seguro de que quieres eliminarlo?";
 "common.ok" = "OK";
 
 
@@ -165,3 +166,25 @@
 "common.required_field" = "*";
 
 "NSCameraUsageDescription" = "Esta app utiliza la cámara para escanear códigos QR y seleccionar territorios.";
+
+// Usuarios
+"users.title" = "Usuarios";
+"users.add_title" = "Añadir Usuario";
+"users.edit_title" = "Editar Usuario";
+"users.username" = "Nombre de usuario";
+"users.password" = "Contraseña";
+"users.role" = "Rol";
+"users.new_password_optional" = "Nueva Contraseña (Opcional)";
+"users.search_placeholder" = "Buscar usuarios...";
+"users.add_success" = "Usuario añadido correctamente";
+"users.update_success" = "Usuario actualizado correctamente";
+"users.delete_success" = "Usuario eliminado correctamente";
+"users.change_password_success" = "Contraseña cambiada correctamente";
+"users.section_info" = "Información del Usuario";
+"users.section_security" = "Seguridad";
+"users.confirm_password" = "Confirmar Contraseña";
+"users.passwords_do_not_match" = "Las contraseñas no coinciden";
+"common.create" = "Crear";
+"common.delete" = "Eliminar";
+"common.edit" = "Editar";
+"users.permission_error" = "No tienes permisos";

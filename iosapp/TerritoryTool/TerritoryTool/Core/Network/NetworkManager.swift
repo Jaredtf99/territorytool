@@ -86,6 +86,13 @@ class NetworkManager: APIService {
         }
         
         guard (200...299).contains(httpResponse.statusCode) else {
+            // Log raw response for debugging
+            print("⚠️ API Error - Status Code: \(httpResponse.statusCode)")
+            print("⚠️ API Error - URL: \(url.absoluteString)")
+            if let rawResponse = String(data: data, encoding: .utf8) {
+                print("⚠️ API Error - Raw Response: \(rawResponse)")
+            }
+            
             if httpResponse.statusCode == 401 {
                 NotificationCenter.default.post(name: .sessionExpired, object: nil)
                 throw NetworkError.unauthorized
@@ -93,6 +100,7 @@ class NetworkManager: APIService {
             
             // Try to decode error message
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                print("⚠️ API Error - JSON: \(json)")
                 if let message = json["message"] as? String {
                      throw NetworkError.serverError(message)
                 } else if let error = json["error"] as? String {

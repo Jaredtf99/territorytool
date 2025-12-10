@@ -44,6 +44,10 @@ class DIContainer {
     func makeBrothersViewModel() -> BrothersViewModel {
         return BrothersViewModel(networkManager: apiService)
     }
+    
+    func makeUsersViewModel() -> UsersViewModel {
+        return UsersViewModel(networkManager: apiService)
+    }
 }
 
 

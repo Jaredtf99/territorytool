@@ -1,6 +1,6 @@
 import Foundation
 
-struct Person: Codable, Identifiable {
+struct Person: Codable, Identifiable, Equatable {
     let id: Int
     let name: String
     let enabled: Bool
@@ -38,7 +38,7 @@ struct Person: Codable, Identifiable {
     }
 }
 
-struct TerritoryInUse: Codable {
+struct TerritoryInUse: Codable, Equatable {
     let territoryName: String
     let territoryCode: String
     let givenDate: Date

@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import SwiftUI
 
 @MainActor
 class TerritoryAssignmentViewModel: ObservableObject {
@@ -70,7 +71,9 @@ class TerritoryAssignmentViewModel: ObservableObject {
                 lastGivenDateFrom: nil,
                 lastGivenDateTo: nil
             ))
-            self.availableTerritories = result
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                self.availableTerritories = result
+            }
         } catch {
             self.errorMessage = error.localizedDescription
         }
@@ -84,7 +87,9 @@ class TerritoryAssignmentViewModel: ObservableObject {
         do {
             let term = personSearchText.isEmpty ? nil : personSearchText
             let result: [Person] = try await apiService.request(endpoint: TerritoryEndpoint.getPersons(search: term))
-            self.persons = result
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                self.persons = result
+            }
         } catch {
             print("Error loading persons: \(error)")
         }

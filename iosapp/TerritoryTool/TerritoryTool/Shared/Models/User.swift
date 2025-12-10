@@ -7,9 +7,9 @@ struct User: Codable, Identifiable {
     let role: UserRole
     
     enum CodingKeys: String, CodingKey {
-        case id = "userID"
-        case userName
-        case role
+        case id = "UserID"
+        case userName = "UserName"
+        case role = "Role"
     }
 }
 

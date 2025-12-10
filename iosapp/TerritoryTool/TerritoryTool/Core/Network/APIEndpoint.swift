@@ -29,6 +29,17 @@ extension APIEndpoint {
     }
 }
 
+// Helper function to convert role string to backend enum integer
+// Backend RoleType: Unknown=0, SUPERADMIN=1, ADMIN=2, USER=3
+private func roleStringToInt(_ role: String) -> Int {
+    switch role.uppercased() {
+    case "SUPERADMIN": return 1
+    case "ADMIN": return 2
+    case "USER": return 3
+    default: return 0 // Unknown
+    }
+}
+
 enum TerritoryEndpoint: APIEndpoint {
     case getTerritory(id: Int)
     case getTerritoryDetail(id: Int)
@@ -46,6 +57,11 @@ enum TerritoryEndpoint: APIEndpoint {
     case updatePerson(id: Int, name: String, enabled: Bool)
     case deletePerson(name: String)
     case updateTerritory(id: Int, code: String, name: String, mapUrl: String)
+    case getUsers
+    case addUser(name: String, role: String, password: String)
+    case updateUser(id: String, name: String, role: String)
+    case deleteUser(id: String)
+    case changeUserPassword(id: String, newPassword: String)
     
     var path: String {
         switch self {
@@ -85,6 +101,16 @@ enum TerritoryEndpoint: APIEndpoint {
             return "/api/v1/territories/\(id)"
         case .addTerritory:
             return "/api/v1/territories"
+        case .getUsers:
+            return "/api/v1/users"
+        case .addUser:
+            return "/api/v1/users/register"
+        case .updateUser(let id, _, _):
+            return "/api/v1/users/\(id)"
+        case .deleteUser(let id):
+            return "/api/v1/users/\(id)"
+        case .changeUserPassword(let id, _):
+            return "/api/v1/users/\(id)/change-password"
         }
     }
     
@@ -96,8 +122,12 @@ enum TerritoryEndpoint: APIEndpoint {
             return .POST
         case .updatePerson:
             return .PUT
-        case .deleteTerritory, .deletePerson:
+        case .deleteTerritory, .deletePerson, .deleteUser:
             return .DELETE
+        case .addUser, .updateUser, .changeUserPassword:
+             return .POST
+        case .getUsers:
+            return .GET
         }
     }
     
@@ -143,6 +173,30 @@ enum TerritoryEndpoint: APIEndpoint {
                 "mapUrl": mapUrl
             ]
             return try? JSONSerialization.data(withJSONObject: params)
+        case .addUser(let name, let role, let password):
+            // Backend expects PascalCase keys and Role as integer enum
+            let roleInt = roleStringToInt(role)
+            let params: [String: Any] = [
+                "UserName": name,
+                "Role": roleInt,
+                "Password": password
+            ]
+            return try? JSONSerialization.data(withJSONObject: params)
+        case .updateUser(_, let name, let role):
+            // Backend expects PascalCase keys and Role as integer enum
+            let roleInt = roleStringToInt(role)
+            let params: [String: Any] = [
+                "UserName": name,
+                "Role": roleInt
+            ]
+            return try? JSONSerialization.data(withJSONObject: params)
+        case .changeUserPassword(_, let newPassword):
+            let params: [String: Any] = [
+                "NewPassword": newPassword
+            ]
+            return try? JSONSerialization.data(withJSONObject: params)
+        case .getUsers, .deleteUser:
+            return nil
         default:
             return nil
         }

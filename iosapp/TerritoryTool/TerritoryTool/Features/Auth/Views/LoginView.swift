@@ -34,89 +34,73 @@ struct LoginView: View {
                         .font(.headline)
                         .foregroundColor(.textSecondary)
                     
-                    CustomTextField(icon: "person.fill", placeholder: String(localized: "login.username"), text: $viewModel.userName)
+                    // Username Field with Glass Style
+                    HStack {
+                        Image(systemName: "person.fill")
+                            .foregroundColor(.secondary)
+                            .frame(width: 20)
+                        
+                        TextField(LocalizedStringKey("login.username"), text: $viewModel.userName)
+                            .foregroundColor(.textPrimary)
+                            .autocapitalization(.none)
+                            .disableAutocorrection(true)
+                    }
+                    .padding()
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
                     
-                    CustomSecureField(icon: "lock.fill", placeholder: String(localized: "login.password"), text: $viewModel.password)
+                    // Password Field with Glass Style
+                    HStack {
+                        Image(systemName: "lock.fill")
+                            .foregroundColor(.secondary)
+                            .frame(width: 20)
+                        
+                        SecureField(LocalizedStringKey("login.password"), text: $viewModel.password)
+                            .foregroundColor(.textPrimary)
+                    }
+                    .padding()
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
                     
                     if let error = viewModel.errorMessage {
                         Text(error)
                             .font(.caption)
                             .foregroundColor(.error)
                             .padding(.top, 5)
+                            .multilineTextAlignment(.center)
                     }
                     
-                    Button(action: {
-                        Task {
-                            await viewModel.login()
-                            if viewModel.errorMessage != nil {
-                                HapticManager.shared.notification(type: .error)
-                            } else {
-                                HapticManager.shared.notification(type: .success)
+                    PrimaryButton(
+                        title: LocalizedStringKey("login.button"),
+                        isLoading: viewModel.isLoading,
+                        action: {
+                            Task {
+                                await viewModel.login()
+                                if viewModel.errorMessage != nil {
+                                    HapticManager.shared.notification(type: .error)
+                                } else {
+                                    HapticManager.shared.notification(type: .success)
+                                }
                             }
                         }
-                    }) {
-                        Text(viewModel.isLoading ? "login.logging_in" : "login.button")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.brandPrimary)
-                            .cornerRadius(10)
-                    }
-                    .disabled(viewModel.isLoading)
-                    .opacity(viewModel.isLoading ? 0.7 : 1)
+                    )
+                    .padding(.top, 10)
                 }
-                .padding()
-                .background(.regularMaterial)
-                .cornerRadius(16)
-                .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
+                .padding(30)
+                .glassCardStyle(cornerRadius: 20, padding: 0)
                 .padding(.horizontal)
                 
                 Spacer()
             }
             .padding()
         }
-    }
-}
-
-struct CustomTextField: View {
-    let icon: String
-    let placeholder: String
-    @Binding var text: String
-    
-    var body: some View {
-        HStack {
-            Image(systemName: icon)
-                .foregroundColor(.secondary)
-                .frame(width: 20)
-            
-            TextField(placeholder, text: $text)
-                .foregroundColor(.textPrimary)
-                .autocapitalization(.none)
-                .disableAutocorrection(true)
-        }
-        .padding()
-        .background(Color.secondaryBackground)
-        .cornerRadius(10)
-    }
-}
-
-struct CustomSecureField: View {
-    let icon: String
-    let placeholder: String
-    @Binding var text: String
-    
-    var body: some View {
-        HStack {
-            Image(systemName: icon)
-                .foregroundColor(.secondary)
-                .frame(width: 20)
-            
-            SecureField(placeholder, text: $text)
-                .foregroundColor(.textPrimary)
-        }
-        .padding()
-        .background(Color.secondaryBackground)
-        .cornerRadius(10)
     }
 }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct SearchSelectionSheet<T: Identifiable, Content: View>: View {
+struct SearchSelectionSheet<T: Identifiable & Equatable, Content: View>: View {
     let title: String
     @Binding var searchText: String
     let items: [T]
@@ -36,6 +36,7 @@ struct SearchSelectionSheet<T: Identifiable, Content: View>: View {
                     }
                 }
             }
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: items)
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)

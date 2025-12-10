@@ -5,12 +5,16 @@ struct EditTerritoryView: View {
     @StateObject private var viewModel: EditTerritoryViewModel
     @FocusState private var focusedField: Bool
     
-    init(territory: TerritoryDetail, apiService: APIService) {
+    private let onSuccess: (() -> Void)?
+    
+    init(territory: TerritoryDetail, apiService: APIService, onSuccess: (() -> Void)? = nil) {
         _viewModel = StateObject(wrappedValue: EditTerritoryViewModel(territory: territory, apiService: apiService))
+        self.onSuccess = onSuccess
     }
     
-    init(territory: Territory, apiService: APIService) {
+    init(territory: Territory, apiService: APIService, onSuccess: (() -> Void)? = nil) {
         _viewModel = StateObject(wrappedValue: EditTerritoryViewModel(territory: territory, apiService: apiService))
+        self.onSuccess = onSuccess
     }
     
     var body: some View {
@@ -61,6 +65,7 @@ struct EditTerritoryView: View {
                                 if await viewModel.save() {
                                     ToastManager.shared.show(NSLocalizedString("territory.edit.success", comment: ""), style: .success)
                                     HapticManager.shared.notification(type: .success)
+                                    onSuccess?()
                                     dismiss()
                                 } else {
                                     HapticManager.shared.notification(type: .error)

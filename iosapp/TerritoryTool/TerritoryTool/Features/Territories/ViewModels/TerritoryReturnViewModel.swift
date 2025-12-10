@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import SwiftUI
 
 @MainActor
 class TerritoryReturnViewModel: ObservableObject {
@@ -52,7 +53,9 @@ class TerritoryReturnViewModel: ObservableObject {
                 lastGivenDateFrom: nil,
                 lastGivenDateTo: nil
             ))
-            self.assignedTerritories = result
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                self.assignedTerritories = result
+            }
         } catch {
             self.errorMessage = error.localizedDescription
         }

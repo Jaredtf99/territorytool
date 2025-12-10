@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TerritoryDetailView: View {
     @StateObject private var viewModel: TerritoryDetailViewModel
+    @ObservedObject private var permissionManager = PermissionManager.shared
     @Environment(\.dismiss) private var dismiss
     @State private var showDeleteAlert = false
     @State private var showEditSheet = false
@@ -80,45 +81,48 @@ struct TerritoryDetailView: View {
         .navigationTitle(viewModel.territory?.name ?? territoryName)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            ToolbarItem() {
-                Button {
-                    HapticManager.shared.selection()
-                    Task { 
-                        if await viewModel.refreshImage() {
-                            HapticManager.shared.notification(type: .success)
-                            ToastManager.shared.show(NSLocalizedString("territory.detail.refresh_image_success", comment: ""), style: .success)
+            // Only show management buttons (refresh, edit, delete) for ADMIN+ roles
+            if permissionManager.canManageTerritories {
+                ToolbarItem() {
+                    Button {
+                        HapticManager.shared.selection()
+                        Task { 
+                            if await viewModel.refreshImage() {
+                                HapticManager.shared.notification(type: .success)
+                                ToastManager.shared.show(NSLocalizedString("territory.detail.refresh_image_success", comment: ""), style: .success)
+                            } else {
+                                HapticManager.shared.notification(type: .error)
+                            }
+                        }
+                    } label: {
+                        if viewModel.isRefreshingImage {
+                            ProgressView()
                         } else {
-                            HapticManager.shared.notification(type: .error)
+                            Image(systemName: "arrow.clockwise")
                         }
                     }
-                } label: {
-                    if viewModel.isRefreshingImage {
-                        ProgressView()
-                    } else {
-                        Image(systemName: "arrow.clockwise")
+                    .disabled(viewModel.isRefreshingImage)
+                }
+                
+                ToolbarSpacer(.flexible)
+                
+                ToolbarItem() {
+                    Button {
+                        showEditSheet = true
+                    } label: {
+                        Image(systemName: "pencil")
                     }
                 }
-                .disabled(viewModel.isRefreshingImage)
-            }
-            
-            ToolbarSpacer(.flexible)
-            
-            ToolbarItem() {
-                Button {
-                    showEditSheet = true
-                } label: {
-                    Image(systemName: "pencil")
-                }
-            }
-            
-            ToolbarSpacer(.flexible)
-            
-            ToolbarItem(placement: .destructiveAction) {
-                Button(role: .destructive) {
-                    showDeleteAlert = true
-                } label: {
-                    Image(systemName: "trash")
-                        .foregroundColor(.red)
+                
+                ToolbarSpacer(.flexible)
+                
+                ToolbarItem(placement: .destructiveAction) {
+                    Button(role: .destructive) {
+                        showDeleteAlert = true
+                    } label: {
+                        Image(systemName: "trash")
+                            .foregroundColor(.red)
+                    }
                 }
             }
         }
@@ -152,12 +156,11 @@ struct TerritoryDetailView: View {
         }
         .sheet(isPresented: $showEditSheet) {
             if let territory = viewModel.territory {
-                EditTerritoryView(territory: territory, apiService: NetworkManager())
-                    .onDisappear {
-                        Task {
-                            await viewModel.loadData()
-                        }
+                EditTerritoryView(territory: territory, apiService: NetworkManager()) {
+                    Task {
+                        await viewModel.loadData()
                     }
+                }
             }
         }
     }

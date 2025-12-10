@@ -4,6 +4,7 @@ import SystemNotification
 struct MainTabView: View {
     @ObservedObject private var toastManager = ToastManager.shared
     @StateObject private var notificationContext = SystemNotificationContext()
+    @ObservedObject private var permissionManager = PermissionManager.shared
     
     var body: some View {
         TabView {
@@ -35,11 +36,19 @@ struct MainTabView: View {
                 Label("return.title", systemImage: "tray.and.arrow.down")
             }
             
-            NavigationStack {
-                BrothersView()
-            }
+            // Note: Brothers and Users go to "More" section which has its own NavigationController
+            // So we don't wrap them in NavigationStack to avoid double navigation
+            BrothersView()
             .tabItem {
                 Label("brothers.title", systemImage: "person.3.fill")
+            }
+            
+            // Users tab only visible for ADMIN+ roles
+            if permissionManager.canManageUsers {
+                UsersView()
+                .tabItem {
+                    Label("users.title", systemImage: "person.2.badge.gearshape.fill")
+                }
             }
         }
         .systemNotification(notificationContext)

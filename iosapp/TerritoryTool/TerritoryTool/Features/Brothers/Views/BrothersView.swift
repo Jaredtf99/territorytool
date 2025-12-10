@@ -3,8 +3,10 @@ import SwiftUI
 
 struct BrothersView: View {
     @StateObject private var viewModel = DIContainer.shared.makeBrothersViewModel()
+    @ObservedObject private var permissionManager = PermissionManager.shared
     @State private var showingDeleteConfirmation = false
     @State private var brotherToDelete: Person?
+    @State private var isSearching = false
     
     var body: some View {
         List {
@@ -50,22 +52,26 @@ struct BrothersView: View {
                     .listRowSeparator(.hidden)
                     .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) {
-                            HapticManager.shared.selection()
-                            brotherToDelete = brother
-                            showingDeleteConfirmation = true
-                        } label: {
-                            Image(systemName: "trash")
+                        // Only show edit/delete swipe actions for ADMIN+ roles
+                        if permissionManager.canManageBrothers {
+                            Button {
+                                HapticManager.shared.selection()
+                                brotherToDelete = brother
+                                showingDeleteConfirmation = true
+                            } label: {
+                                Image(systemName: "trash")
+                            }
+                            .tint(.red)
+                            
+                            Button {
+                                HapticManager.shared.selection()
+                                viewModel.selectedBrother = brother
+                                viewModel.showEditSheet = true
+                            } label: {
+                                Image(systemName: "pencil")
+                            }
+                            .tint(.brandPrimary)
                         }
-                        
-                        Button {
-                            HapticManager.shared.selection()
-                            viewModel.selectedBrother = brother
-                            viewModel.showEditSheet = true
-                        } label: {
-                            Image(systemName: "pencil")
-                        }
-                        .tint(.brandPrimary)
                     }
                 }
                 .opacity(viewModel.isLoading ? 0.5 : 1.0)
@@ -74,6 +80,7 @@ struct BrothersView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: viewModel.expandedBrotherIds)
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.filteredBrothers)
         .refreshable {
             await withCheckedContinuation { continuation in
                 Task {
@@ -84,15 +91,28 @@ struct BrothersView: View {
             }
         }
         .navigationTitle("brothers.title")
-        .navigationBarTitleDisplayMode(.large)
-        .searchable(text: $viewModel.searchText, placement: .automatic, prompt: "brothers.search_placeholder")
+        .navigationBarTitleDisplayMode(.inline)
+        .searchable(text: $viewModel.searchText, isPresented: $isSearching, prompt: "brothers.search_placeholder")
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button(action: {
-                    HapticManager.shared.selection()
-                    viewModel.showAddSheet = true
-                }) {
-                    Image(systemName: "plus")
+            ToolbarItem() {
+                Button {
+                    isSearching.toggle()
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                }
+            }
+            
+            ToolbarSpacer(.flexible)
+            
+            // Only show add button for ADMIN+ roles
+            if permissionManager.canManageBrothers {
+                ToolbarItem() {
+                    Button(action: {
+                        HapticManager.shared.selection()
+                        viewModel.showAddSheet = true
+                    }) {
+                        Image(systemName: "plus")
+                    }
                 }
             }
         }

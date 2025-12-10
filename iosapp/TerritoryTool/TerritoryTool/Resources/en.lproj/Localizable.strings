@@ -133,6 +133,7 @@
 "common.error" = "Error";
 "common.days" = "days";
 "common.no_results" = "No results found";
+"common.delete_confirmation" = "Are you sure you want to delete this?";
 "common.ok" = "OK";
 
 
@@ -163,3 +164,25 @@
 "error.territory.not_found" = "Territory not found";
 "error.invalid_parameters" = "Please fill in all required fields";
 "common.required_field" = "*";
+
+// Users
+"users.title" = "Users";
+"users.add_title" = "Add User";
+"users.edit_title" = "Edit User";
+"users.username" = "Username";
+"users.password" = "Password";
+"users.role" = "Role";
+"users.new_password_optional" = "New Password (Optional)";
+"users.search_placeholder" = "Search users...";
+"users.add_success" = "User added successfully";
+"users.update_success" = "User updated successfully";
+"users.delete_success" = "User deleted successfully";
+"users.section_info" = "User Information";
+"users.section_security" = "Security";
+"users.confirm_password" = "Confirm Password";
+"users.passwords_do_not_match" = "Passwords do not match";
+"users.change_password_success" = "Password changed successfully";
+"common.create" = "Create";
+"common.delete" = "Delete";
+"common.edit" = "Edit";
+"users.permission_error" = "You don't have permission";
