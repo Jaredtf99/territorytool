@@ -28,6 +28,17 @@
 "dashboard.no_territories" = "No territories need attention right now.";
 "dashboard.last_assigned" = "Last Assigned";
 "dashboard.days_ago" = "%d days ago";
+"dashboard.recent_transactions" = "Recent Transactions";
+"dashboard.no_recent_transactions" = "No recent transactions";
+"dashboard.edit_transaction.title_generic" = "Edit Transaction";
+"dashboard.edit_transaction.select_person" = "Select Person";
+"dashboard.edit_transaction.select_territory" = "Select Territory";
+"dashboard.edit_transaction.given_date" = "Assignment Date";
+"dashboard.edit_transaction.returned_date" = "Return Date";
+"dashboard.edit_transaction.success" = "Transaction updated";
+"dashboard.delete_transaction_success" = "Transaction deleted";
+"dashboard.delete_transaction_message" = "Are you sure you want to delete this transaction? This will remove both assignment and return records.";
+"dashboard.see_all" = "See All";
 
 // Territories
 "territories.title" = "Territories";
@@ -128,8 +139,32 @@
 "brothers.update_success" = "Brother updated successfully";
 "brothers.delete_success" = "Brother deleted successfully";
 
+// Action Logs
+"actionlogs.title" = "Action Logs";
+"actionlogs.empty" = "No logs available";
+"actionlogs.no_message" = "No message";
+"actionlogs.type.add_territory" = "Add Territory";
+"actionlogs.type.edit_territory" = "Edit Territory";
+"actionlogs.type.delete_territory" = "Delete Territory";
+"actionlogs.type.add_user" = "Add User";
+"actionlogs.type.delete_user" = "Delete User";
+"actionlogs.type.change_password" = "Change Password";
+"actionlogs.type.edit_user" = "Edit User";
+"actionlogs.type.add_person" = "Add Brother";
+"actionlogs.type.edit_person" = "Edit Brother";
+"actionlogs.type.delete_person" = "Delete Brother";
+"actionlogs.type.give_territory" = "Assign Territory";
+"actionlogs.type.pick_territory" = "Return Territory";
+"actionlogs.type.refresh_image" = "Refresh Image";
+"actionlogs.type.edit_transaction" = "Edit Transaction";
+"actionlogs.type.delete_transaction" = "Delete Transaction";
+"actionlogs.type.unknown" = "System Action";
+"common.see_more" = "Show more";
+
 // Common
 "common.cancel" = "Cancel";
+"common.add" = "Add";
+"common.today" = "Today";
 "common.error" = "Error";
 "common.days" = "days";
 "common.no_results" = "No results found";

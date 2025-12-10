@@ -28,6 +28,17 @@
 "dashboard.no_territories" = "No hay territorios que necesiten atención ahora.";
 "dashboard.last_assigned" = "Última asignación";
 "dashboard.days_ago" = "hace %d días";
+"dashboard.recent_transactions" = "Transacciones Recientes";
+"dashboard.no_recent_transactions" = "No hay transacciones recientes";
+"dashboard.edit_transaction.title_generic" = "Editar Transacción";
+"dashboard.edit_transaction.select_person" = "Seleccionar Persona";
+"dashboard.edit_transaction.select_territory" = "Seleccionar Territorio";
+"dashboard.edit_transaction.given_date" = "Fecha de Asignación";
+"dashboard.edit_transaction.returned_date" = "Fecha de Entrega";
+"dashboard.edit_transaction.success" = "Transacción actualizada";
+"dashboard.delete_transaction_success" = "Transacción eliminada";
+"dashboard.delete_transaction_message" = "¿Estás seguro de que quieres eliminar esta transacción? Esto eliminará tanto el registro de asignación como el de entrega.";
+"dashboard.see_all" = "Ver todos";
 
 // Territories
 "territories.title" = "Territorios";
@@ -128,8 +139,32 @@
 "brothers.update_success" = "Hermano actualizado correctamente";
 "brothers.delete_success" = "Hermano eliminado correctamente";
 
+// Action Logs
+"actionlogs.title" = "Logs de Acciones";
+"actionlogs.empty" = "No hay registros disponibles";
+"actionlogs.no_message" = "Sin mensaje";
+"actionlogs.type.add_territory" = "Añadir Territorio";
+"actionlogs.type.edit_territory" = "Editar Territorio";
+"actionlogs.type.delete_territory" = "Eliminar Territorio";
+"actionlogs.type.add_user" = "Añadir Usuario";
+"actionlogs.type.delete_user" = "Eliminar Usuario";
+"actionlogs.type.change_password" = "Cambiar Contraseña";
+"actionlogs.type.edit_user" = "Editar Usuario";
+"actionlogs.type.add_person" = "Añadir Hermano";
+"actionlogs.type.edit_person" = "Editar Hermano";
+"actionlogs.type.delete_person" = "Eliminar Hermano";
+"actionlogs.type.give_territory" = "Asignar Territorio";
+"actionlogs.type.pick_territory" = "Devolver Territorio";
+"actionlogs.type.refresh_image" = "Actualizar Imagen";
+"actionlogs.type.edit_transaction" = "Editar Transacción";
+"actionlogs.type.delete_transaction" = "Eliminar Transacción";
+"actionlogs.type.unknown" = "Acción del Sistema";
+"common.see_more" = "Ver más";
+
 // Common
 "common.cancel" = "Cancelar";
+"common.add" = "Añadir";
+"common.today" = "Hoy";
 "common.error" = "Error";
 "common.days" = "días";
 "common.no_results" = "No hay resultados";

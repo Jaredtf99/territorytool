@@ -122,11 +122,14 @@ struct TerritoryReturnView: View {
                 },
                 content: { territory in
                     HStack {
-                        TerritoryCodeBadge(code: territory.code, fontSize: .caption)
+                        Text(territory.code)
+                            .fontWeight(.bold)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                            .frame(width: 50, alignment: .leading)
                         Text(territory.name)
-                            .font(.body)
+                        Spacer()
                     }
-                    .padding(.vertical, 4)
                 }
             )
         }

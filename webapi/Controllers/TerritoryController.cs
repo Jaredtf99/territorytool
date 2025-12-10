@@ -300,7 +300,7 @@ namespace TerritoryTool.ServerSide.Controllers
 
             _territoryRepository.PickTerritory(territoryToPick.Id, userId, !info.IsCustomDate, pickedDate);
 
-            _userActionLogFacade.AddNewActionLog(ActionType.GiveTerritory, $"Picked territory ({territoryToPick.Code}) {territoryToPick.Name}. IsCustomDate: {info.IsCustomDate}", userId, true);
+            _userActionLogFacade.AddNewActionLog(ActionType.PickTerritory, $"Picked territory ({territoryToPick.Code}) {territoryToPick.Name}. IsCustomDate: {info.IsCustomDate}", userId, true);
 
             return Ok();
         }

@@ -50,6 +50,16 @@ struct MainTabView: View {
                     Label("users.title", systemImage: "person.2.badge.gearshape.fill")
                 }
             }
+            
+            // Action Logs tab only visible for SUPERADMIN role
+            if permissionManager.canViewActionLogs {
+                NavigationStack {
+                    ActionLogsView()
+                }
+                .tabItem {
+                    Label("actionlogs.title", systemImage: "list.bullet.clipboard")
+                }
+            }
         }
         .systemNotification(notificationContext)
         .onChange(of: toastManager.pendingMessage) { _, newValue in

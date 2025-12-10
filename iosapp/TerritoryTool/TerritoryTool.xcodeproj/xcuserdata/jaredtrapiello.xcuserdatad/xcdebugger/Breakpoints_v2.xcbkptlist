@@ -276,32 +276,124 @@
             landmarkType = "7">
             <Locations>
                <Location
-                  uuid = "DC7DDA4C-D5E0-4971-9619-54C5CD0DCC6D - 6bbebcc2f877a962"
+                  uuid = "DC7DDA4C-D5E0-4971-9619-54C5CD0DCC6D - 8f87301ef985443b"
                   shouldBeEnabled = "Yes"
                   ignoreCount = "0"
                   continueAfterRunningActions = "No"
-                  symbolName = "(1) suspend resume partial function for TerritoryTool.BrothersViewModel.deleteBrother(person: TerritoryTool.Person) async -&gt; ()"
+                  symbolName = "(1) suspend resume partial function for TerritoryTool.BrothersViewModel.addBrother(name: Swift.String) async -&gt; Swift.Bool"
                   moduleName = "TerritoryTool.debug.dylib"
                   usesParentBreakpointCondition = "Yes"
                   urlString = "file:///Users/jaredtrapiello/Proyectos/territorytool/iosapp/TerritoryTool/TerritoryTool/Features/Brothers/ViewModels/BrothersViewModel.swift"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "88"
-                  endingLineNumber = "88">
+                  startingLineNumber = "89"
+                  endingLineNumber = "89">
                </Location>
                <Location
-                  uuid = "DC7DDA4C-D5E0-4971-9619-54C5CD0DCC6D - 7e53ed96f41ae275"
+                  uuid = "DC7DDA4C-D5E0-4971-9619-54C5CD0DCC6D - ff40d08d08824a41"
                   shouldBeEnabled = "Yes"
                   ignoreCount = "0"
                   continueAfterRunningActions = "No"
-                  symbolName = "(2) await resume partial function for TerritoryTool.BrothersViewModel.deleteBrother(person: TerritoryTool.Person) async -&gt; ()"
+                  symbolName = "(2) await resume partial function for TerritoryTool.BrothersViewModel.addBrother(name: Swift.String) async -&gt; Swift.Bool"
                   moduleName = "TerritoryTool.debug.dylib"
                   usesParentBreakpointCondition = "Yes"
                   urlString = "file:///Users/jaredtrapiello/Proyectos/territorytool/iosapp/TerritoryTool/TerritoryTool/Features/Brothers/ViewModels/BrothersViewModel.swift"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "88"
-                  endingLineNumber = "88">
+                  startingLineNumber = "89"
+                  endingLineNumber = "89">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "21A77B7E-DE6A-4839-861A-587FC4AC6E84"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "TerritoryTool/Features/Dashboard/Views/Components/EditTransactionSheet.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "266"
+            endingLineNumber = "266"
+            landmarkName = "body"
+            landmarkType = "24">
+            <Locations>
+               <Location
+                  uuid = "21A77B7E-DE6A-4839-861A-587FC4AC6E84 - e70db5cd82fa8d86"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for closure #1 () async -&gt; () in TerritoryTool.EditTransactionSheet.save() -&gt; ()"
+                  moduleName = "TerritoryTool.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/jaredtrapiello/Proyectos/territorytool/iosapp/TerritoryTool/TerritoryTool/Features/Dashboard/Views/Components/EditTransactionSheet.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "266"
+                  endingLineNumber = "266">
+               </Location>
+               <Location
+                  uuid = "21A77B7E-DE6A-4839-861A-587FC4AC6E84 - ffee07b0c413d3b6"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(2) await resume partial function for closure #1 () async -&gt; () in TerritoryTool.EditTransactionSheet.save() -&gt; ()"
+                  moduleName = "TerritoryTool.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/jaredtrapiello/Proyectos/territorytool/iosapp/TerritoryTool/TerritoryTool/Features/Dashboard/Views/Components/EditTransactionSheet.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "266"
+                  endingLineNumber = "266">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "E255FE77-D7B5-45A2-A108-42535ACE3214"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "TerritoryTool/Features/Territories/ViewModels/TerritoryDetailViewModel.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "105"
+            endingLineNumber = "105"
+            landmarkName = "updateFullTransaction(originalTransactionId:territoryId:personId:givenDate:pickedDate:)"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "E255FE77-D7B5-45A2-A108-42535ACE3214 - dbc21885fb3c7be1"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for TerritoryTool.TerritoryDetailViewModel.updateFullTransaction(originalTransactionId: Swift.Int, territoryId: Swift.Int, personId: Swift.Int, givenDate: Foundation.Date, pickedDate: Swift.Optional&lt;Foundation.Date&gt;) async -&gt; ()"
+                  moduleName = "TerritoryTool.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/jaredtrapiello/Proyectos/territorytool/iosapp/TerritoryTool/TerritoryTool/Features/Territories/ViewModels/TerritoryDetailViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "105"
+                  endingLineNumber = "105">
+               </Location>
+               <Location
+                  uuid = "E255FE77-D7B5-45A2-A108-42535ACE3214 - 763e266d63aef46b"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(2) await resume partial function for TerritoryTool.TerritoryDetailViewModel.updateFullTransaction(originalTransactionId: Swift.Int, territoryId: Swift.Int, personId: Swift.Int, givenDate: Foundation.Date, pickedDate: Swift.Optional&lt;Foundation.Date&gt;) async -&gt; ()"
+                  moduleName = "TerritoryTool.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/jaredtrapiello/Proyectos/territorytool/iosapp/TerritoryTool/TerritoryTool/Features/Territories/ViewModels/TerritoryDetailViewModel.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "105"
+                  endingLineNumber = "105">
                </Location>
             </Locations>
          </BreakpointContent>

@@ -58,4 +58,11 @@ class PermissionManager: ObservableObject {
     var canManageUsers: Bool {
         isAdminOrHigher
     }
+    
+    // MARK: - Action Logs Permissions
+    
+    /// Can view action logs (SUPERADMIN only)
+    var canViewActionLogs: Bool {
+        currentUserRole == .superAdmin
+    }
 }

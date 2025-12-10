@@ -3,6 +3,20 @@
    version = "1.0">
    <ContextStates>
       <ContextState
+         contextName = "NetworkManager.request&lt;[TerritoryTool.Territory]&gt;(endpoint:):NetworkManager.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "httpResponse.statusCode">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "TerritoryDetailViewModel.updateFullTransaction(originalTransactionId:territoryId:personId:givenDate:pickedDate:):TerritoryDetailViewModel.swift">
+      </ContextState>
+      <ContextState
+         contextName = "closure #1 in closure #1 in TerritoryCard.body.getter:TerritoryCard.swift">
+      </ContextState>
+      <ContextState
          contextName = "TerritoriesViewModel.loadTerritories():TerritoriesViewModel.swift">
          <PersistentStrings>
             <PersistentString
@@ -11,13 +25,10 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
-         contextName = "closure #1 in closure #1 in TerritoryCard.body.getter:TerritoryCard.swift">
-      </ContextState>
-      <ContextState
-         contextName = "NetworkManager.request&lt;[TerritoryTool.Territory]&gt;(endpoint:):NetworkManager.swift">
+         contextName = "closure #1 in EditTransactionSheet.save():EditTransactionSheet.swift">
          <PersistentStrings>
             <PersistentString
-               value = "httpResponse.statusCode">
+               value = "givenDate">
             </PersistentString>
          </PersistentStrings>
       </ContextState>

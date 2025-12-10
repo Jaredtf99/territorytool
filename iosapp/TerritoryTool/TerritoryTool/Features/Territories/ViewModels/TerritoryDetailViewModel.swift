@@ -64,4 +64,56 @@ class TerritoryDetailViewModel: ObservableObject {
             return false
         }
     }
+    
+    // MARK: - Transaction Management
+    
+    func deleteTransaction(id: Int) async -> Bool {
+        do {
+            try await apiService.request(endpoint: TerritoryEndpoint.deleteTransaction(id: id))
+            // Remove from local list
+            if let index = transactions.firstIndex(where: { $0.id == id }) {
+                transactions.remove(at: index)
+            }
+            // Refresh stats and detail as they might change
+            await loadData()
+            return true
+        } catch {
+            self.errorMessage = "Error deleting transaction: \(error.localizedDescription)"
+            return false
+        }
+    }
+    
+    func fetchDataForEdit() async throws -> ([Person], [Territory]) {
+        // Reuse getPersons and getTerritories from TerritoryEndpoint
+        async let personsRequest: [Person] = apiService.request(endpoint: TerritoryEndpoint.getPersons(search: nil))
+        async let territoriesRequest: [Territory] = apiService.request(
+            endpoint: TerritoryEndpoint.getTerritories(
+                term: nil,
+                inUse: nil,
+                orderBy: nil,
+                orderByAscending: nil,
+                lastGivenDateFrom: nil,
+                lastGivenDateTo: nil
+            )
+        )
+        
+        return try await (personsRequest, territoriesRequest)
+    }
+    
+    func updateFullTransaction(originalTransactionId: Int, territoryId: Int, personId: Int, givenDate: Date, pickedDate: Date?) async {
+        do {
+            try await apiService.request(endpoint: TerritoryEndpoint.updateTransaction(
+                id: originalTransactionId,
+                territoryId: territoryId,
+                personId: personId, // Ensure optionality is handled if API expects it
+                date: givenDate,
+                pickedDate: pickedDate
+            ))
+            
+            // Reload data to reflect changes
+            await loadData()
+        } catch {
+            self.errorMessage = "Error updating transaction: \(error.localizedDescription)"
+        }
+    }
 }

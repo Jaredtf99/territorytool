@@ -48,6 +48,10 @@ class DIContainer {
     func makeUsersViewModel() -> UsersViewModel {
         return UsersViewModel(networkManager: apiService)
     }
+    
+    func makeActionLogsViewModel() -> ActionLogsViewModel {
+        return ActionLogsViewModel(apiService: apiService)
+    }
 }
 
 

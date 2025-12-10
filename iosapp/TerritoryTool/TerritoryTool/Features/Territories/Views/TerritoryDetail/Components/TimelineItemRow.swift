@@ -2,6 +2,8 @@ import SwiftUI
 
 struct TimelineItemRow: View {
     let transaction: Transaction
+    var onEdit: (() -> Void)?
+    var onDelete: (() -> Void)?
     
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
@@ -23,16 +25,40 @@ struct TimelineItemRow: View {
             .frame(width: 20)
             
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text(transaction.personName)
-                        .font(.headline)
-                        .foregroundColor(.primary)
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(transaction.personName)
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        Text(formatDate(transaction.givenDateUtc))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                     
                     Spacer()
                     
-                    Text(formatDate(transaction.givenDateUtc))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    if onEdit != nil || onDelete != nil {
+                        Menu {
+                            if let onEdit = onEdit {
+                                Button(action: onEdit) {
+                                    Label("common.edit", systemImage: "pencil")
+                                }
+                            }
+                            
+                            if let onDelete = onDelete {
+                                Button(role: .destructive, action: onDelete) {
+                                    Label("common.delete", systemImage: "trash")
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 20)) // Larger touch target
+                                .foregroundColor(.secondary)
+                                .frame(width: 30, height: 30)
+                                .contentShape(Rectangle())
+                        }
+                    }
                 }
                 
                 if let pickedDate = transaction.pickedDateUtc {

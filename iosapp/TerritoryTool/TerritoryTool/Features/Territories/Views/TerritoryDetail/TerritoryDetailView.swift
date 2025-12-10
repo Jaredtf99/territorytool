@@ -6,6 +6,9 @@ struct TerritoryDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showDeleteAlert = false
     @State private var showEditSheet = false
+    @State private var editingTransaction: Transaction? // For history edit
+    @State private var transactionToDelete: Transaction?
+    @State private var showDeleteTransactionAlert = false
     
     // Animation states
     @State private var isHeaderVisible = false
@@ -154,6 +157,18 @@ struct TerritoryDetailView: View {
         } message: {
             Text("territory.detail.delete_confirmation_message")
         }
+        .alert("common.delete_confirmation", isPresented: $showDeleteTransactionAlert, presenting: transactionToDelete) { transaction in
+            Button("common.delete", role: .destructive) {
+                Task {
+                    if await viewModel.deleteTransaction(id: transaction.id) {
+                        ToastManager.shared.show(NSLocalizedString("dashboard.delete_transaction_success", value: "Transaction deleted", comment: ""), style: .success)
+                    }
+                }
+            }
+            Button("common.cancel", role: .cancel) {}
+        } message: { _ in
+            Text("dashboard.delete_transaction_message")
+        }
         .sheet(isPresented: $showEditSheet) {
             if let territory = viewModel.territory {
                 EditTerritoryView(territory: territory, apiService: NetworkManager()) {
@@ -162,6 +177,23 @@ struct TerritoryDetailView: View {
                     }
                 }
             }
+        }
+        .sheet(item: $editingTransaction) { transaction in
+            EditTransactionSheet(
+                transactionEvent: TransactionEvent(
+                    txnId: transaction.id,
+                    type: .given,
+                    date: transaction.givenDateUtc,
+                    transaction: transaction
+                ),
+                isPresented: Binding(
+                    get: { self.editingTransaction != nil },
+                    set: { if !$0 { self.editingTransaction = nil } }
+                ),
+                onComplete: {
+                    await self.viewModel.loadData()
+                }
+            )
         }
     }
     
@@ -323,9 +355,18 @@ struct TerritoryDetailView: View {
             GlassCard {
                 LazyVStack(spacing: 0) {
                     ForEach(transactions.reversed()) { transaction in
-                        TimelineItemRow(transaction: transaction)
-                            .padding(.horizontal)
-                            .padding(.top, 16)
+                        TimelineItemRow(
+                            transaction: transaction,
+                            onEdit: permissionManager.canManageTerritories ? {
+                                editingTransaction = transaction
+                            } : nil,
+                            onDelete: permissionManager.canManageTerritories ? {
+                                transactionToDelete = transaction
+                                showDeleteTransactionAlert = true
+                            } : nil
+                        )
+                        .padding(.horizontal)
+                        .padding(.top, 16)
                     }
                 }
                 .padding(.bottom, 16)

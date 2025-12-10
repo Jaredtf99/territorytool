@@ -62,6 +62,10 @@ enum TerritoryEndpoint: APIEndpoint {
     case updateUser(id: String, name: String, role: String)
     case deleteUser(id: String)
     case changeUserPassword(id: String, newPassword: String)
+    case getRecentTransactions(days: Int)
+    case getActionLogs(page: Int, pageSize: Int, sortField: String, sortOrder: String)
+    case deleteTransaction(id: Int)
+    case updateTransaction(id: Int, territoryId: Int, personId: Int?, date: Date, pickedDate: Date?)
     
     var path: String {
         switch self {
@@ -111,6 +115,12 @@ enum TerritoryEndpoint: APIEndpoint {
             return "/api/v1/users/\(id)"
         case .changeUserPassword(let id, _):
             return "/api/v1/users/\(id)/change-password"
+        case .getRecentTransactions:
+            return "/api/v1/transactions/recent"
+        case .getActionLogs:
+            return "/api/v1/actionlogs"
+        case .deleteTransaction(let id), .updateTransaction(let id, _, _, _, _):
+            return "/api/v1/transactions/\(id)"
         }
     }
     
@@ -126,8 +136,12 @@ enum TerritoryEndpoint: APIEndpoint {
             return .DELETE
         case .addUser, .updateUser, .changeUserPassword:
              return .POST
-        case .getUsers:
+        case .getUsers, .getRecentTransactions, .getActionLogs:
             return .GET
+        case .deleteTransaction:
+            return .DELETE
+        case .updateTransaction:
+            return .PUT
         }
     }
     
@@ -195,8 +209,30 @@ enum TerritoryEndpoint: APIEndpoint {
                 "NewPassword": newPassword
             ]
             return try? JSONSerialization.data(withJSONObject: params)
-        case .getUsers, .deleteUser:
+        case .getUsers, .deleteUser, .deleteTransaction:
             return nil
+        case .updateTransaction(_, let territoryId, let personId, let date, let pickedDate):
+            // Use a properly configured date formatter
+            let dateFormatter = ISO8601DateFormatter()
+            dateFormatter.formatOptions = [.withInternetDateTime]
+            dateFormatter.timeZone = TimeZone(identifier: "UTC")
+            
+            var params: [String: Any] = [
+                "territoryId": territoryId,
+                "givenDateUtc": dateFormatter.string(from: date)
+            ]
+            
+            if let personId = personId {
+                params["personId"] = personId
+            }
+            
+            if let pickedDate = pickedDate {
+                params["pickedDateUtc"] = dateFormatter.string(from: pickedDate)
+            } else {
+                params["pickedDateUtc"] = NSNull()
+            }
+            
+            return try? JSONSerialization.data(withJSONObject: params)
         default:
             return nil
         }
@@ -215,6 +251,15 @@ enum TerritoryEndpoint: APIEndpoint {
             if let lastGivenDateFrom = lastGivenDateFrom { items.append(URLQueryItem(name: "lastGivenDateFrom", value: formatter.string(from: lastGivenDateFrom))) }
             if let lastGivenDateTo = lastGivenDateTo { items.append(URLQueryItem(name: "lastGivenDateTo", value: formatter.string(from: lastGivenDateTo))) }
             return items.isEmpty ? nil : items
+        case .getRecentTransactions(let days):
+            return [URLQueryItem(name: "days", value: String(days))]
+        case .getActionLogs(let page, let pageSize, let sortField, let sortOrder):
+             return [
+                 URLQueryItem(name: "pageNumber", value: String(page)),
+                 URLQueryItem(name: "pageSize", value: String(pageSize)),
+                 URLQueryItem(name: "sortField", value: sortField),
+                 URLQueryItem(name: "sortOrder", value: sortOrder)
+             ]
         default:
             return nil
         }
