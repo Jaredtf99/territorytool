@@ -7,6 +7,7 @@ angularapp/obj
 webapi/logs
 webapi/Properties
 webapi/webapi.csproj.user
+node_modules/
 
 webapi/Resources
 /webapi/appsettings.Development.json
@@ -24,6 +25,10 @@ iosapp/TerritoryTool/*.pbxuser
 iosapp/TerritoryTool/*.mode1v3
 iosapp/TerritoryTool/*.mode2v3
 iosapp/TerritoryTool/*.perspectivev3
+**/xcuserdata/
+**/*.xcuserstate
+**/*.xcscmblueprint
+**/*.xccheckout
 
 # Swift Package Manager
 iosapp/TerritoryTool/.build/
