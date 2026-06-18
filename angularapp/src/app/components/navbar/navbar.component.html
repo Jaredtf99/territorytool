@@ -34,7 +34,7 @@
       <div class="dropdown">
         <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button"
                 data-bs-toggle="dropdown" aria-expanded="false" [disabled]="switching">
-          <i class="fa fa-church me-1"></i> {{ active.name }}
+          <i class="fa me-1"></i> {{ active.name }}
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
           <li *ngFor="let c of congregations">
@@ -48,7 +48,7 @@
       </div>
     </ng-container>
     <ng-template #singleCongregation>
-      <span class="navbar-text text-light"><i class="fa fa-church me-1"></i>{{ active.name }}</span>
+      <span class="navbar-text text-light"><i class="fa me-1"></i>{{ active.name }}</span>
     </ng-template>
   </div>
 
