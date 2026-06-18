@@ -46,6 +46,12 @@ class BrothersViewModel: ObservableObject {
                 Task { [weak self] in await self?.fetchBrothers() }
             }
             .store(in: &cancellables)
+        NotificationCenter.default.publisher(for: .territoryDataChanged)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                Task { [weak self] in await self?.fetchBrothers() }
+            }
+            .store(in: &cancellables)
     }
 
     func fetchBrothers() async {
@@ -53,7 +59,7 @@ class BrothersViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            let fetched: [Person] = try await networkManager.request(endpoint: TerritoryEndpoint.getPersons(search: nil))
+            let fetched: [Person] = try await networkManager.request(endpoint: TerritoryEndpoint.getPersonsWithAssignments(search: nil))
             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                 self.brothers = fetched.sorted { $0.name < $1.name }
             }

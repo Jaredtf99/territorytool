@@ -24,18 +24,19 @@ Los colores se definen como **Color Sets en `Assets.xcassets`** (con variante An
 
 | Token | Light | Dark | Uso |
 |-------|-------|------|-----|
-| `accent` (Primary) | `#0F8A8A` | `#2DD4BF` | Acción principal, tinte de glass, enlaces, selección |
-| `secondary` | `#4F46E5` | `#818CF8` | Acentos puntuales, badges secundarios |
-| `success` | `#16A34A` | `#22C55E` | Confirmaciones, estado "devuelto/OK" |
-| `warning` | `#D97706` | `#F59E0B` | Avisos, "necesita atención" |
-| `danger` | `#DC2626` | `#F87171` | Destructivo, errores, días vencidos |
-| `info` | `#2563EB` | `#60A5FA` | Información neutra |
+| `accent` (Primary) | `#2F6B4F` | `#5FB389` | Acción principal, selección y territorios disponibles |
+| `accentDeep` | `#234E39` | `#6FC298` | Titulares y selección sobre mapa |
+| `accentSecondary` | `#D98A2B` | `#E8A857` | Territorios asignados |
+| `accentTertiary` | `#C4633B` | `#D98A63` | Territorios que requieren atención |
+| `danger` | `#BC4B2E` | `#E07A52` | Destructivo y errores |
+| `info` | `#3E6B8C` | `#7FAAC9` | Información y ubicación |
 
 ### Neutros (usar SIEMPRE los del sistema, adaptan claro/oscuro y accesibilidad)
 
-- Fondos: `Color(.systemBackground)`, `Color(.secondarySystemBackground)`, `Color(.systemGroupedBackground)`.
-- Texto: `Color(.label)`, `Color(.secondaryLabel)`, `Color(.tertiaryLabel)`.
-- Separadores: `Color(.separator)`.
+- Fondos: `appBackground`, `appBackgroundDeep`.
+- Superficies: `surface`, `surfaceRaised`.
+- Texto: `textPrimary`, `textSecondary`.
+- Separadores: `hairline`.
 
 ### Reglas
 

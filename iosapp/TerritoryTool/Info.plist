@@ -24,6 +24,8 @@
 	<string>public.app-category.utilities</string>
 	<key>NSCameraUsageDescription</key>
 	<string>This app uses the camera to scan QR codes for selecting territories.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Your location is used only when you ask to find nearby territories.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

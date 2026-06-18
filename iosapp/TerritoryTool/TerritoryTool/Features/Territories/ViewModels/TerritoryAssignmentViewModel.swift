@@ -148,6 +148,7 @@ class TerritoryAssignmentViewModel: ObservableObject {
                 NSLocalizedString("assignment.success", comment: ""),
                 style: .success
             )
+            NotificationCenter.default.post(name: .territoryDataChanged, object: nil)
             
             // Reset form
             selectedTerritory = nil

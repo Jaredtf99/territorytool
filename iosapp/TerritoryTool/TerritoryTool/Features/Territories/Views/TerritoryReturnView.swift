@@ -2,8 +2,10 @@ import SwiftUI
 
 struct TerritoryReturnView: View {
     @StateObject private var viewModel: TerritoryReturnViewModel
+    private let onSuccess: (() -> Void)?
     
-    init(territory: Territory? = nil) {
+    init(territory: Territory? = nil, onSuccess: (() -> Void)? = nil) {
+        self.onSuccess = onSuccess
         _viewModel = StateObject(wrappedValue: DIContainer.shared.makeTerritoryReturnViewModel(territory: territory))
     }
     
@@ -69,7 +71,9 @@ struct TerritoryReturnView: View {
                 // MARK: - Action Button
                 Button(action: {
                     Task {
-                        _ = await viewModel.returnTerritory()
+                        if await viewModel.returnTerritory() {
+                            onSuccess?()
+                        }
                     }
                 }) {
                     HStack(spacing: AppSpacing.xs) {

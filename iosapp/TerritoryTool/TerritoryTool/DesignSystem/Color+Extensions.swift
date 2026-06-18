@@ -16,6 +16,8 @@ extension Color {
     // MARK: Acento / marca
     /// Verde bosque — acción principal, selección, rutas.
     static let accent          = Color(light: 0x2F6B4F, dark: 0x5FB389)
+    /// Verde bosque profundo — titulares grandes sobre papel (p. ej. saludo del tablero).
+    static let accentDeep      = Color(light: 0x234E39, dark: 0x6FC298)
     /// Ámbar — acento cálido secundario, énfasis.
     static let accentSecondary = Color(light: 0xD98A2B, dark: 0xE8A857)
     /// Terracota — tercer acento, marcadores.

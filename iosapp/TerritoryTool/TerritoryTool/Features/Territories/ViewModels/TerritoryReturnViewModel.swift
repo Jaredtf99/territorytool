@@ -93,6 +93,7 @@ class TerritoryReturnViewModel: ObservableObject {
                 NSLocalizedString("return.success", comment: ""),
                 style: .success
             )
+            NotificationCenter.default.post(name: .territoryDataChanged, object: nil)
             
             // Reset form
             selectedTerritory = nil

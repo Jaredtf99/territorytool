@@ -21,14 +21,25 @@ struct CongregationSwitcher: View {
                         }
                     }
                 } label: {
-                    Label(active.name, systemImage: "building.2.fill")
-                        .font(.subheadline)
+                    HStack(spacing: 4) {
+                        Image(systemName: "location.north.fill")
+                        Text(active.name)
+                        Image(systemName: "chevron.down")
+                            .font(.caption2.weight(.semibold))
+                    }
+                    .font(.subheadline.weight(.medium))
                 }
                 .disabled(store.isSwitching)
             } else {
-                Label(active.name, systemImage: "building.2.fill")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                // Una sola congregación: informativo, no interactivo y sin chevron.
+                // .fixedSize evita que la toolbar trunque el nombre a "...".
+                HStack(spacing: 4) {
+                    Image(systemName: "location.north.fill")
+                    Text(active.name)
+                }
+                .font(.subheadline.weight(.medium))
+                .lineLimit(1)
+                .fixedSize()
             }
         }
     }

@@ -48,8 +48,12 @@ enum TerritoryEndpoint: APIEndpoint {
     case giveTerritory(code: String, personName: String, date: Date?)
     case pickTerritory(code: String, date: Date?)
     case getPersons(search: String?)
+    case getPersonsWithAssignments(search: String?)
+    case resolveTerritorySelector(value: String)
+    case getDashboardSnapshot(weekStart: Date, timeZone: String, attentionDays: Int)
     case login(credentials: LoginCredentials)
     case getTerritories(term: String?, inUse: Bool?, orderBy: Int?, orderByAscending: Bool?, lastGivenDateFrom: Date?, lastGivenDateTo: Date?)
+    case getTerritoryExplorer(term: String?, filter: TerritoryFilter, attentionDays: Int)
     case refreshTerritoryImage(id: Int)
     case syncTerritoryMap(id: Int)
     case syncAllTerritoryMaps
@@ -75,7 +79,9 @@ enum TerritoryEndpoint: APIEndpoint {
     
     var method: HTTPMethod {
         switch self {
-        case .getTerritory, .getTerritoryDetail, .getTerritoryStats, .getTerritoryTransactions, .getPersons, .getTerritories:
+        case .getTerritory, .getTerritoryDetail, .getTerritoryStats, .getTerritoryTransactions,
+             .getPersons, .getPersonsWithAssignments, .resolveTerritorySelector,
+             .getDashboardSnapshot, .getTerritories, .getTerritoryExplorer:
             return .GET
         case .giveTerritory, .pickTerritory, .login, .refreshTerritoryImage, .syncTerritoryMap, .syncAllTerritoryMaps, .addPerson, .updateTerritory, .addTerritory:
             return .POST
@@ -158,7 +164,8 @@ enum TerritoryEndpoint: APIEndpoint {
                 "NewPassword": newPassword
             ]
             return try? JSONSerialization.data(withJSONObject: params)
-        case .getUsers, .deleteUser, .deleteTransaction:
+        case .getUsers, .deleteUser, .deleteTransaction,
+             .getPersonsWithAssignments, .resolveTerritorySelector, .getDashboardSnapshot:
             return nil
         case .updateTransaction(_, let territoryId, let personId, let date, let pickedDate):
             // Use a properly configured date formatter
@@ -200,6 +207,13 @@ enum TerritoryEndpoint: APIEndpoint {
             if let lastGivenDateFrom = lastGivenDateFrom { items.append(URLQueryItem(name: "lastGivenDateFrom", value: formatter.string(from: lastGivenDateFrom))) }
             if let lastGivenDateTo = lastGivenDateTo { items.append(URLQueryItem(name: "lastGivenDateTo", value: formatter.string(from: lastGivenDateTo))) }
             return items.isEmpty ? nil : items
+        case .getTerritoryExplorer(let term, let filter, let attentionDays):
+            var items = [
+                URLQueryItem(name: "status", value: filter.backendValue),
+                URLQueryItem(name: "attentionDays", value: String(attentionDays))
+            ]
+            if let term { items.append(URLQueryItem(name: "term", value: term)) }
+            return items
         case .getRecentTransactions(let days):
             return [URLQueryItem(name: "days", value: String(days))]
         case .getActionLogs(let page, let pageSize, let sortField, let sortOrder):

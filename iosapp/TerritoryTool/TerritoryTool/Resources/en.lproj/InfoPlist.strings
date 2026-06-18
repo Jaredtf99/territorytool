@@ -1,0 +1,2 @@
+"NSCameraUsageDescription" = "The camera is used to scan QR codes and select territories.";
+"NSLocationWhenInUseUsageDescription" = "Your location is used only when you ask to find nearby territories.";

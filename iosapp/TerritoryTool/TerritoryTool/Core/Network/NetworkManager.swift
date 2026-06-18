@@ -89,6 +89,15 @@ final class NetworkManager: APIService {
             }
             return sortTerritories(territories, orderBy: orderBy, ascending: ascending ?? true)
 
+        case .getTerritoryExplorer(let term, let filter, let attentionDays):
+            let rows = try await rpcRows("search_territory_explorer", body: [
+                "term": term ?? NSNull(),
+                "status": filter.backendValue,
+                "attention_days": attentionDays,
+                "take": 1000
+            ])
+            return mapExplorerTerritories(rows)
+
         case .getTerritory(let id):
             let row = try await singleRow("/rest/v1/territory_current_state", queryItems: [
                 URLQueryItem(name: "select", value: "*"),
@@ -119,6 +128,13 @@ final class NetworkManager: APIService {
             ])
             return mapTransactions(rows)
 
+        case .getDashboardSnapshot(let weekStart, let timeZone, let attentionDays):
+            return try await rpcObject("get_dashboard_snapshot", body: [
+                "p_week_start": isoFormatter.string(from: weekStart),
+                "p_timezone": timeZone,
+                "p_attention_days": attentionDays
+            ])
+
         case .giveTerritory(let code, let personName, let date):
             return try await rpcObject("give_territory", body: [
                 "territory_code": code,
@@ -138,7 +154,7 @@ final class NetworkManager: APIService {
             // mirroring the Angular client. search_persons only returns id/name/
             // enabled, which is why the territories never showed up.
             var items: [URLQueryItem] = [
-                URLQueryItem(name: "select", value: "id,name,enabled,territory_transactions(given_at,picked_at,territories(name,code))"),
+                URLQueryItem(name: "select", value: "id,name,enabled,territory_transactions(given_at,picked_at,territories(id,name,code))"),
                 URLQueryItem(name: "order", value: "name.asc")
             ]
             if let search = search, !search.isEmpty {
@@ -152,6 +168,7 @@ final class NetworkManager: APIService {
                     .map { tx in
                         let territory = tx["territories"] as? [String: Any]
                         return [
+                            "territoryId": territory?["id"] ?? 0,
                             "territoryName": territory?["name"] ?? "",
                             "territoryCode": territory?["code"] ?? "",
                             "givenDate": tx["given_at"] ?? ""
@@ -164,6 +181,33 @@ final class NetworkManager: APIService {
                     "territoriesInUse": territoriesInUse
                 ]
             }
+
+        case .getPersonsWithAssignments(let search):
+            let rows = try await rpcRows("search_persons_with_assignments", body: [
+                "term": search ?? NSNull(),
+                "take": 1000
+            ])
+            return rows.map { row in
+                [
+                    "id": row["id"] ?? 0,
+                    "name": row["name"] ?? "",
+                    "enabled": row["enabled"] ?? true,
+                    "territoriesInUse": row["territories_in_use"] ?? []
+                ]
+            }
+
+        case .resolveTerritorySelector(let value):
+            let rows = try await rpcRows("resolve_territory_selector", body: ["value": value])
+            guard let territory = try await mapTerritories(rows).first else {
+                throw NetworkError.serverError(
+                    NSLocalizedString(
+                        "quick_action.territory_not_found",
+                        value: "Territory not found",
+                        comment: ""
+                    )
+                )
+            }
+            return territory
 
         case .addPerson(let name):
             return try await rpcObject("add_person", body: ["name": name])
@@ -423,6 +467,22 @@ final class NetworkManager: APIService {
             ])
         }
         return territories
+    }
+
+    private func mapExplorerTerritories(_ rows: [[String: Any]]) -> [[String: Any]] {
+        rows.map { row in
+            [
+                "id": row["id"] ?? 0,
+                "code": row["code"] ?? "",
+                "name": row["name"] ?? "",
+                "mapUrl": row["map_url"] ?? "",
+                "imgUrl": NSNull(),
+                "personName": row["person_name"] ?? NSNull(),
+                "givenDateUtc": row["given_at"] ?? NSNull(),
+                "lastPickedDateUtc": row["last_picked_at"] ?? NSNull(),
+                "mapGeometry": row["map_geometry"] ?? NSNull()
+            ]
+        }
     }
 
     private func mapTransactions(_ rows: [[String: Any]]) -> [[String: Any]] {

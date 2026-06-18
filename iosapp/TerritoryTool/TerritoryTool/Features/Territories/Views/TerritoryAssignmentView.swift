@@ -2,9 +2,20 @@ import SwiftUI
 
 struct TerritoryAssignmentView: View {
     @StateObject private var viewModel: TerritoryAssignmentViewModel
+    private let onSuccess: (() -> Void)?
     
-    init(territory: Territory? = nil) {
-        _viewModel = StateObject(wrappedValue: DIContainer.shared.makeTerritoryAssignmentViewModel(territory: territory))
+    init(
+        territory: Territory? = nil,
+        person: Person? = nil,
+        onSuccess: (() -> Void)? = nil
+    ) {
+        self.onSuccess = onSuccess
+        _viewModel = StateObject(
+            wrappedValue: DIContainer.shared.makeTerritoryAssignmentViewModel(
+                territory: territory,
+                person: person
+            )
+        )
     }
     
     @State private var showTerritorySheet = false
@@ -115,7 +126,9 @@ struct TerritoryAssignmentView: View {
                 // MARK: - Action Button
                 Button(action: {
                     Task {
-                        _ = await viewModel.assignTerritory()
+                        if await viewModel.assignTerritory() {
+                            onSuccess?()
+                        }
                     }
                 }) {
                     HStack(spacing: AppSpacing.xs) {

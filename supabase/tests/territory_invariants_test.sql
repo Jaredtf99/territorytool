@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(16);
+SELECT plan(20);
 
 SELECT has_type('public', 'app_role', 'app_role enum exists');
 SELECT has_table('public', 'profiles', 'profiles exists');
@@ -40,6 +40,34 @@ SELECT isnt_empty(
 SELECT has_view('public', 'territory_current_state', 'territory_current_state view exists');
 SELECT has_view('public', 'territory_details', 'territory_details view exists');
 SELECT has_view('public', 'recent_transactions', 'recent_transactions view exists');
+
+SELECT has_function(
+  'public',
+  'get_dashboard_snapshot',
+  ARRAY['timestamp with time zone', 'text', 'integer'],
+  'dashboard snapshot RPC exists'
+);
+
+SELECT has_function(
+  'public',
+  'search_persons_with_assignments',
+  ARRAY['text', 'integer'],
+  'person quick-action search RPC exists'
+);
+
+SELECT has_function(
+  'public',
+  'resolve_territory_selector',
+  ARRAY['text'],
+  'territory selector resolver RPC exists'
+);
+
+SELECT has_function(
+  'public',
+  'search_territory_explorer',
+  ARRAY['text', 'text', 'integer', 'integer'],
+  'territory explorer RPC exists without changing the legacy search contract'
+);
 
 SELECT * FROM finish();
 ROLLBACK;

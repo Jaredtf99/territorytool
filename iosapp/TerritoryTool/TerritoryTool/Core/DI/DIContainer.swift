@@ -25,10 +25,16 @@ class DIContainer {
         return TerritoriesViewModel(apiService: apiService)
     }
     
-    func makeTerritoryAssignmentViewModel(territory: Territory? = nil) -> TerritoryAssignmentViewModel {
+    func makeTerritoryAssignmentViewModel(
+        territory: Territory? = nil,
+        person: Person? = nil
+    ) -> TerritoryAssignmentViewModel {
         let viewModel = TerritoryAssignmentViewModel(apiService: apiService)
         if let territory = territory {
             viewModel.selectedTerritory = territory
+        }
+        if let person {
+            viewModel.selectedPerson = person
         }
         return viewModel
     }
@@ -53,5 +59,4 @@ class DIContainer {
         return ActionLogsViewModel(apiService: apiService)
     }
 }
-
 

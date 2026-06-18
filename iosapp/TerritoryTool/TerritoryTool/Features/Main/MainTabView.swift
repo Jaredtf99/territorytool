@@ -8,41 +8,60 @@ struct MainTabView: View {
     @ObservedObject private var toastManager = ToastManager.shared
     @StateObject private var notificationContext = SystemNotificationContext()
     @ObservedObject private var permissionManager = PermissionManager.shared
+    @StateObject private var router = AppRouter.shared
+
+    /// Variante rellena del símbolo solo cuando la pestaña está activa.
+    private func icon(_ base: String, _ tab: AppTab) -> String {
+        router.selectedTab == tab ? "\(base).fill" : base
+    }
 
     var body: some View {
-        TabView {
-            Tab("dashboard.title", systemImage: "house.fill") {
-                NavigationStack {
+        TabView(selection: $router.selectedTab) {
+            Tab("dashboard.title", systemImage: icon("house", .dashboard), value: AppTab.dashboard) {
+                NavigationStack(path: $router.dashboardPath) {
                     DashboardView()
                 }
             }
 
-            Tab("territories.title", systemImage: "map.fill") {
-                NavigationStack {
+            Tab("territories.title", systemImage: icon("map", .territories), value: AppTab.territories) {
+                NavigationStack(path: $router.territoriesPath) {
                     TerritoriesView()
                 }
             }
 
-            Tab("brothers.title", systemImage: "person.3.fill") {
-                NavigationStack {
+            Tab("brothers.title", systemImage: icon("person.3", .brothers), value: AppTab.brothers) {
+                NavigationStack(path: $router.brothersPath) {
                     BrothersView()
                 }
             }
 
             // Registros: solo SUPERADMIN.
             if permissionManager.canViewActionLogs {
-                Tab("actionlogs.title", systemImage: "list.bullet.clipboard") {
-                    NavigationStack {
+                Tab("tab.logs", systemImage: icon("list.bullet.clipboard", .actionLogs), value: AppTab.actionLogs) {
+                    NavigationStack(path: $router.actionLogsPath) {
                         ActionLogsView()
                     }
                 }
             }
 
-            Tab("settings.title", systemImage: "gearshape.fill") {
-                NavigationStack {
-                    SettingsView()
-                }
+            // Acción rápida: pestaña de rol .search (iOS 26) — separada a la derecha,
+            // siempre visible. No abre contenido: dispara la hoja de Acción rápida.
+            // Título vacío -> solo icono (la tab bar ignora labelStyle, así que es la
+            // forma fiable de ocultar el texto). El tinte verde oscuro viene de .tint.
+            Tab("", systemImage: "qrcode.viewfinder", value: AppTab.quickAction, role: .search) {
+                Color.clear
             }
+        }
+        .tint(.accentDeep)
+        .tabBarMinimizeBehavior(.never)
+        .onChange(of: router.selectedTab) { oldValue, newValue in
+            guard newValue == .quickAction else { return }
+            // No navegamos a la pestaña; volvemos a la anterior y presentamos la hoja.
+            router.selectedTab = oldValue == .quickAction ? .dashboard : oldValue
+            router.isQuickActionPresented = true
+        }
+        .sheet(isPresented: $router.isQuickActionPresented) {
+            QuickActionHubView()
         }
         .systemNotification(notificationContext)
         .onChange(of: toastManager.pendingMessage) { _, newValue in

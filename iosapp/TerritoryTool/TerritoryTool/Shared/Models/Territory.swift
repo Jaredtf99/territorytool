@@ -12,6 +12,35 @@ struct Territory: Codable, Identifiable, Equatable {
     let mapGeometry: TerritoryMapGeometry?
 }
 
+enum TerritoryOperationalStatus: Equatable {
+    case available
+    case assigned(days: Int)
+    case attention(days: Int)
+
+    var isAssigned: Bool {
+        switch self {
+        case .available: false
+        case .assigned, .attention: true
+        }
+    }
+
+    var daysAssigned: Int? {
+        switch self {
+        case .available: nil
+        case .assigned(let days), .attention(let days): days
+        }
+    }
+}
+
+extension Territory {
+    func operationalStatus(attentionDays: Int = 120, now: Date = Date()) -> TerritoryOperationalStatus {
+        guard personName != nil else { return .available }
+        guard let givenDateUtc else { return .assigned(days: 0) }
+        let days = max(Calendar.current.dateComponents([.day], from: givenDateUtc, to: now).day ?? 0, 0)
+        return days >= attentionDays ? .attention(days: days) : .assigned(days: days)
+    }
+}
+
 struct TerritoryDetail: Codable, Identifiable {
     let id: Int
     let code: String

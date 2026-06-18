@@ -39,24 +39,27 @@ struct Person: Codable, Identifiable, Equatable {
 }
 
 struct TerritoryInUse: Codable, Equatable {
+    let territoryId: Int
     let territoryName: String
     let territoryCode: String
     let givenDate: Date
     
     enum CodingKeys: String, CodingKey {
-        case territoryName, territoryCode, givenDate
-        case TerritoryName, TerritoryCode, GivenDate
+        case territoryId, territoryName, territoryCode, givenDate
+        case TerritoryId, TerritoryName, TerritoryCode, GivenDate
     }
     
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
+        territoryId = try container.decodeIfPresent(Int.self, forKey: .territoryId) ?? container.decodeIfPresent(Int.self, forKey: .TerritoryId) ?? 0
         territoryName = try container.decodeIfPresent(String.self, forKey: .territoryName) ?? container.decode(String.self, forKey: .TerritoryName)
         territoryCode = try container.decodeIfPresent(String.self, forKey: .territoryCode) ?? container.decode(String.self, forKey: .TerritoryCode)
         givenDate = try container.decodeIfPresent(Date.self, forKey: .givenDate) ?? container.decode(Date.self, forKey: .GivenDate)
     }
     
-    init(territoryName: String, territoryCode: String, givenDate: Date) {
+    init(territoryId: Int, territoryName: String, territoryCode: String, givenDate: Date) {
+        self.territoryId = territoryId
         self.territoryName = territoryName
         self.territoryCode = territoryCode
         self.givenDate = givenDate
@@ -64,6 +67,7 @@ struct TerritoryInUse: Codable, Equatable {
     
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(territoryId, forKey: .territoryId)
         try container.encode(territoryName, forKey: .territoryName)
         try container.encode(territoryCode, forKey: .territoryCode)
         try container.encode(givenDate, forKey: .givenDate)

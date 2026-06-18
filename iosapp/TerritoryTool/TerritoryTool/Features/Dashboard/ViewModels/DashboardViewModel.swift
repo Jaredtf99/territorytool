@@ -3,6 +3,9 @@ import Combine
 
 @MainActor
 class DashboardViewModel: ObservableObject {
+    static let attentionDays = 120
+
+    @Published var snapshot: DashboardSnapshot?
     @Published var oldTerritories: [Territory] = []
     @Published var recentTransactions: [Transaction] = []
     @Published var recentEvents: [TransactionEvent] = []
@@ -21,36 +24,42 @@ class DashboardViewModel: ObservableObject {
             .sink { [weak self] _ in
                 self?.oldTerritories = []
                 self?.recentEvents = []
-                Task { [weak self] in await self?.loadOldTerritories() }
+                self?.snapshot = nil
+                Task { [weak self] in await self?.loadDashboard() }
+            }
+            .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: .territoryDataChanged)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                Task { [weak self] in await self?.loadDashboard() }
             }
             .store(in: &cancellables)
     }
 
-    func loadOldTerritories() async {
+    func loadDashboard() async {
         isLoading = true
         errorMessage = nil
         
         do {
-            // Calculate date 4 months ago
-            let fourMonthsAgo = Calendar.current.date(byAdding: .month, value: -4, to: Date())
-            
-            // Fetch territories: inUse=true, orderBy=3 (Oldest), lastGivenDateTo=4 months ago
-            let territories: [Territory] = try await apiService.request(endpoint: TerritoryEndpoint.getTerritories(
-                term: nil,
-                inUse: true,
-                orderBy: 3,
-                orderByAscending: true,
-                lastGivenDateFrom: nil,
-                lastGivenDateTo: fourMonthsAgo
-            ))
-            
-            // Store all fetched territories, logic for display limit moved to View
-            self.oldTerritories = territories
-            
-            // Fetch recent transactions (last 3 days)
-            let transactions: [Transaction] = try await apiService.request(endpoint: TerritoryEndpoint.getRecentTransactions(days: 3))
-            self.recentTransactions = transactions
-            self.processRecentEvents(transactions: transactions)
+            let snapshot: DashboardSnapshot = try await apiService.request(
+                endpoint: TerritoryEndpoint.getDashboardSnapshot(
+                    weekStart: Self.startOfCurrentWeek(),
+                    timeZone: TimeZone.current.identifier,
+                    attentionDays: Self.attentionDays
+                )
+            )
+            guard !Task.isCancelled else { return }
+            self.snapshot = snapshot
+            recentTransactions = snapshot.weeklyEvents.map(\.transaction)
+            recentEvents = snapshot.weeklyEvents.map { movement in
+                TransactionEvent(
+                    txnId: movement.transactionId,
+                    type: movement.eventType == .given ? .given : .returned,
+                    date: movement.eventDate,
+                    transaction: movement.transaction
+                )
+            }
 
         } catch {
             // Una cancelación (refresh interrumpido) no es un fallo: conservamos
@@ -61,6 +70,11 @@ class DashboardViewModel: ObservableObject {
         }
 
         isLoading = false
+    }
+
+    /// Compatibility entry point used by existing transaction-edit sheets.
+    func loadOldTerritories() async {
+        await loadDashboard()
     }
     
     private func processRecentEvents(transactions: [Transaction]) {
@@ -83,6 +97,91 @@ class DashboardViewModel: ObservableObject {
         
         // Sort by date descending
         self.recentEvents = events.sorted { $0.date > $1.date }
+    }
+
+    var userName: String {
+        guard let token = TokenManager.shared.getToken() else { return "" }
+        return JWTHelper.getUserName(from: token) ?? ""
+    }
+
+    var greetingKey: String {
+        switch Calendar.current.component(.hour, from: Date()) {
+        case 5..<13: return "dashboard.greeting.morning"
+        case 13..<20: return "dashboard.greeting.afternoon"
+        default: return "dashboard.greeting.evening"
+        }
+    }
+
+    var priorityDays: Int {
+        guard let date = snapshot?.priority?.givenAt else { return 0 }
+        return max(0, Calendar.current.dateComponents([.day], from: date, to: Date()).day ?? 0)
+    }
+
+    var totalGivenThisWeek: Int {
+        snapshot?.activity.reduce(0) { $0 + $1.givenCount } ?? 0
+    }
+
+    var totalReturnedThisWeek: Int {
+        snapshot?.activity.reduce(0) { $0 + $1.returnedCount } ?? 0
+    }
+
+    var geographicClusters: [DashboardGeographicCluster] {
+        Self.cluster(snapshot?.attentionTerritories ?? [])
+    }
+
+    private static func startOfCurrentWeek() -> Date {
+        let calendar = Calendar.autoupdatingCurrent
+        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
+        return calendar.date(from: components) ?? calendar.startOfDay(for: Date())
+    }
+
+    private static func cluster(
+        _ territories: [DashboardAttentionTerritory],
+        maximumDistanceKilometers: Double = 1
+    ) -> [DashboardGeographicCluster] {
+        var groups: [[DashboardAttentionTerritory]] = []
+
+        for territory in territories where territory.mapBounds != nil {
+            if let index = groups.firstIndex(where: { group in
+                guard let first = group.first?.mapBounds,
+                      let bounds = territory.mapBounds else { return false }
+                return haversine(
+                    first.latitude,
+                    first.longitude,
+                    bounds.latitude,
+                    bounds.longitude
+                ) <= maximumDistanceKilometers
+            }) {
+                groups[index].append(territory)
+            } else {
+                groups.append([territory])
+            }
+        }
+
+        return groups.enumerated().map { index, group in
+            let bounds = group.compactMap(\.mapBounds)
+            return DashboardGeographicCluster(
+                id: "cluster-\(index)",
+                latitude: bounds.map(\.latitude).reduce(0, +) / Double(max(bounds.count, 1)),
+                longitude: bounds.map(\.longitude).reduce(0, +) / Double(max(bounds.count, 1)),
+                territoryIds: group.map(\.territoryId)
+            )
+        }
+    }
+
+    private static func haversine(
+        _ latitude1: Double,
+        _ longitude1: Double,
+        _ latitude2: Double,
+        _ longitude2: Double
+    ) -> Double {
+        let radius = 6_371.0
+        let dLat = (latitude2 - latitude1) * .pi / 180
+        let dLon = (longitude2 - longitude1) * .pi / 180
+        let a = sin(dLat / 2) * sin(dLat / 2)
+            + cos(latitude1 * .pi / 180) * cos(latitude2 * .pi / 180)
+            * sin(dLon / 2) * sin(dLon / 2)
+        return radius * 2 * atan2(sqrt(a), sqrt(1 - a))
     }
     
     // MARK: - Permissions
@@ -108,8 +207,7 @@ class DashboardViewModel: ObservableObject {
         
         do {
             try await apiService.request(endpoint: TerritoryEndpoint.deleteTransaction(id: event.transaction.id))
-            // Reload data to ensure sync
-            await loadOldTerritories()
+            NotificationCenter.default.post(name: .territoryDataChanged, object: nil)
         } catch {
             self.errorMessage = "Error deleting transaction: \(error.localizedDescription)"
             // Revert on error
@@ -140,7 +238,7 @@ class DashboardViewModel: ObservableObject {
                 date: givenDate,
                 pickedDate: pickedDate
             ))
-            await loadOldTerritories()
+            NotificationCenter.default.post(name: .territoryDataChanged, object: nil)
         } catch {
             self.errorMessage = "Error updating transaction: \(error.localizedDescription)"
         }
@@ -157,7 +255,7 @@ class DashboardViewModel: ObservableObject {
                 date: givenDate,
                 pickedDate: pickedDate
             ))
-            await loadOldTerritories()
+            NotificationCenter.default.post(name: .territoryDataChanged, object: nil)
         } catch {
             self.errorMessage = "Error updating transaction: \(error.localizedDescription)"
         }

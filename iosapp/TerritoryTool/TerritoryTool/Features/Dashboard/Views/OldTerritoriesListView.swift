@@ -18,7 +18,15 @@ struct OldTerritoriesListView: View {
                             .glassCardStyle()
                     } else {
                         ForEach(territories, id: \.id) { territory in
-                            DashboardTerritoryRow(territory: territory)
+                            NavigationLink {
+                                TerritoryDetailView(
+                                    territoryId: territory.id,
+                                    territoryName: territory.name
+                                )
+                            } label: {
+                                TerritoryCard(territory: territory)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
