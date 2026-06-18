@@ -17,7 +17,7 @@
   <!-- right menu toggler -->
   <div class="nav-toggler-right me-4 d-md-none" role="button">
     <div class="user-initial" [routerLink]="['/user-configuration']">
-      {{ userService.getUserName()[0].toUpperCase() }}
+      {{ (userService.getUserName() || '?')[0].toUpperCase() }}
     </div>
     <span class="user-profile nav-alert bg-danger"></span>
   </div>
@@ -27,6 +27,30 @@
       <a class="btn nav-link" (click)="toggleSidebarPin()"><i class="fa fa-bars"></i></a>
     </li>
   </ul>
+
+  <!-- congregation selector -->
+  <div class="ms-auto me-3 d-flex align-items-center" *ngIf="active">
+    <ng-container *ngIf="congregations.length > 1; else singleCongregation">
+      <div class="dropdown">
+        <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false" [disabled]="switching">
+          <i class="fa fa-church me-1"></i> {{ active.name }}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li *ngFor="let c of congregations">
+            <a class="dropdown-item" [class.active]="c.is_active" role="button"
+               (click)="switchCongregation(c.id)">
+              {{ c.name }}
+              <small class="text-muted ms-1">({{ c.role }})</small>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </ng-container>
+    <ng-template #singleCongregation>
+      <span class="navbar-text text-light"><i class="fa fa-church me-1"></i>{{ active.name }}</span>
+    </ng-template>
+  </div>
 
   <!-- right menu -->
   <div class="collapse navbar-collapse right-nav">

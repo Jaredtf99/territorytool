@@ -68,7 +68,7 @@ struct AddEditUserView: View {
                         if let error = viewModel.errorMessage {
                             Text(error)
                                 .font(.caption)
-                                .foregroundColor(.red)
+                                .foregroundColor(.danger)
                                 .padding(.horizontal)
                                 .multilineTextAlignment(.center)
                         }
@@ -165,7 +165,7 @@ struct AddEditUserView: View {
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: 12)
                                                     .stroke(
-                                                        password == confirmPassword ? Color.green.opacity(0.5) : Color.red.opacity(0.5),
+                                                        password == confirmPassword ? Color.success.opacity(0.5) : Color.danger.opacity(0.5),
                                                         lineWidth: 1
                                                     )
                                             )
@@ -173,7 +173,7 @@ struct AddEditUserView: View {
                                         if !confirmPassword.isEmpty && password != confirmPassword {
                                             Text("users.passwords_do_not_match")
                                                 .font(.caption)
-                                                .foregroundColor(.red)
+                                                .foregroundColor(.danger)
                                                 .frame(maxWidth: .infinity, alignment: .leading)
                                         }
                                     }

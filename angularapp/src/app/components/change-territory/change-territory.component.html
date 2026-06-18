@@ -91,7 +91,8 @@
             <div class="preview-info">
               <div class="info-line">
                 <i class="fas fa-calendar"></i>
-                <span class="preview-date">{{selectedTerritory.lastPickedDateUtc | timeago}}</span>
+                <span class="preview-date" *ngIf="selectedTerritory.lastPickedDateUtc">{{selectedTerritory.lastPickedDateUtc | timeago}}</span>
+                <span class="preview-date" *ngIf="!selectedTerritory.lastPickedDateUtc">Nunca asignado</span>
               </div>
             </div>
           </div>

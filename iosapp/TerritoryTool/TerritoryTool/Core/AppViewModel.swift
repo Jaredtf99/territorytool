@@ -28,7 +28,8 @@ class AppViewModel: ObservableObject {
     }
     
     @objc func handleSessionExpired() {
-        DispatchQueue.main.async {
+        // La clase ya es @MainActor; saltamos al actor principal sin DispatchQueue.
+        Task { @MainActor in
             self.showSessionExpiredAlert = true
         }
     }

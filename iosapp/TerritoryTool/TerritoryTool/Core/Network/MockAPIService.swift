@@ -24,7 +24,8 @@ class MockAPIService: APIService {
                         TimelineItem(id: 1, description: "Picked by John", type: .picked, date: Date().addingTimeInterval(-86400 * 2)),
                         TimelineItem(id: 2, description: "Returned by Jane", type: .gave, date: Date().addingTimeInterval(-86400 * 5)),
                         TimelineItem(id: 3, description: "Created", type: .added, date: Date().addingTimeInterval(-86400 * 30))
-                    ]
+                    ],
+                    mapGeometry: nil
                 ) as! T
                 
             case .getTerritoryStats:

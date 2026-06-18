@@ -1,34 +1,59 @@
-import { Injectable, Inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http'
+import { Injectable } from '@angular/core';
+import { from } from 'rxjs';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { SupabaseService } from './supabase.service';
 
 @Injectable()
 export class PersonService {
 
-  constructor(private http: HttpClient, @Inject('BASE_URL') private baseUrl: string) { }
+  constructor(private supabase: SupabaseService) { }
 
   addPerson(name: string): Observable<any> {
-    const body = { name };
-
-    return this.http.post(this.baseUrl + '/persons', body).pipe()
+    return from(this.supabase.client.rpc('add_person', { name }));
   }
 
   getAllPersons(): Observable<any> {
-    return this.http.get(this.baseUrl + '/persons').pipe()
+    return from(this.supabase.client
+      .from('persons')
+      .select('id, name, enabled, territoriesInUse:territory_transactions(territory:territories(name, code), given_at, picked_at)')
+      .order('name')).pipe(
+        map((result: any) => {
+          if (result.error) throw result.error;
+          return result.data.map((person: any) => ({
+            id: person.id,
+            name: person.name,
+            enabled: person.enabled,
+            territoriesInUse: (person.territoriesInUse ?? [])
+              .filter((tx: any) => tx.picked_at == null)
+              .map((tx: any) => ({
+                territoryName: tx.territory?.name,
+                territoryCode: tx.territory?.code,
+                givenDate: tx.given_at
+              }))
+          }));
+        })
+      );
   }
 
   deletePerson(name: string): Observable<any> {
-    const url = `${this.baseUrl}/persons/${name}`;
-
-    return this.http.delete(url).pipe()
+    return from(this.supabase.client.rpc('delete_person', { name }));
   }
 
   searchPersons(term: string, take: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/persons/${term}?take=${take}`).pipe()
+    return from(this.supabase.client.rpc('search_persons', { term, take })).pipe(
+      map((result: any) => {
+        if (result.error) throw result.error;
+        return result.data.map((person: any) => ({
+          id: person.id,
+          name: person.name,
+          enabled: person.enabled
+        }));
+      })
+    );
   }
 
   updatePerson(id: number, name: string, enabled: boolean): Observable<any> {
-    const body = { name, enabled };
-    return this.http.put(`${this.baseUrl}/persons/${id}`, body).pipe();
+    return from(this.supabase.client.rpc('update_person', { person_id: id, name, enabled }));
   }
 }

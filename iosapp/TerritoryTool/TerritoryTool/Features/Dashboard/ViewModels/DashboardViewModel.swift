@@ -10,11 +10,22 @@ class DashboardViewModel: ObservableObject {
     @Published var errorMessage: String?
     
     private let apiService: APIService
-    
+    private var cancellables = Set<AnyCancellable>()
+
     init(apiService: APIService) {
         self.apiService = apiService
+
+        // Reload when the active congregation changes (multi-tenant).
+        NotificationCenter.default.publisher(for: .congregationChanged)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.oldTerritories = []
+                self?.recentEvents = []
+                Task { [weak self] in await self?.loadOldTerritories() }
+            }
+            .store(in: &cancellables)
     }
-    
+
     func loadOldTerritories() async {
         isLoading = true
         errorMessage = nil
@@ -40,11 +51,15 @@ class DashboardViewModel: ObservableObject {
             let transactions: [Transaction] = try await apiService.request(endpoint: TerritoryEndpoint.getRecentTransactions(days: 3))
             self.recentTransactions = transactions
             self.processRecentEvents(transactions: transactions)
-            
+
         } catch {
-            errorMessage = "Failed to load dashboard data: \(error.localizedDescription)"
+            // Una cancelación (refresh interrumpido) no es un fallo: conservamos
+            // los datos actuales sin pintar un mensaje de error.
+            if !error.isCancellation {
+                errorMessage = "Failed to load dashboard data: \(error.localizedDescription)"
+            }
         }
-        
+
         isLoading = false
     }
     

@@ -70,7 +70,8 @@ struct EditTransactionSheet: View {
             imgUrl: nil,
             personName: nil,
             givenDateUtc: nil,
-            lastPickedDateUtc: nil
+            lastPickedDateUtc: nil,
+            mapGeometry: nil
         )
     }
     
@@ -107,9 +108,9 @@ struct EditTransactionSheet: View {
                                     .font(.system(size: 24))
                                     .foregroundColor(.white)
                                     .frame(width: 50, height: 50)
-                                    .background(Color.blue)
+                                    .background(Color.accent)
                                     .cornerRadius(12)
-                                    .shadow(color: .blue.opacity(0.3), radius: 5, x: 0, y: 3)
+                                    .shadow(color: .accent.opacity(0.3), radius: 5, x: 0, y: 3)
                             }
                         }
                         
@@ -131,7 +132,7 @@ struct EditTransactionSheet: View {
                                             .foregroundColor(.white)
                                             .padding(.horizontal, 8)
                                             .padding(.vertical, 4)
-                                            .background(Color.blue)
+                                            .background(Color.accent)
                                             .clipShape(Capsule())
                                     }
                                 }
@@ -162,7 +163,7 @@ struct EditTransactionSheet: View {
                                                 .foregroundColor(.white)
                                                 .padding(.horizontal, 8)
                                                 .padding(.vertical, 4)
-                                                .background(Color.blue)
+                                                .background(Color.accent)
                                                 .clipShape(Capsule())
                                         }
                                         
@@ -182,7 +183,7 @@ struct EditTransactionSheet: View {
                                                 .foregroundColor(.white)
                                                 .padding(.horizontal, 8)
                                                 .padding(.vertical, 4)
-                                                .background(Color.blue)
+                                                .background(Color.accent)
                                                 .clipShape(Capsule())
                                         }
                                     }

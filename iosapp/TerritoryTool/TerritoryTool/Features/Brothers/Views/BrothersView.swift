@@ -6,8 +6,7 @@ struct BrothersView: View {
     @ObservedObject private var permissionManager = PermissionManager.shared
     @State private var showingDeleteConfirmation = false
     @State private var brotherToDelete: Person?
-    @State private var isSearching = false
-    
+
     var body: some View {
         List {
             if viewModel.isLoading && viewModel.brothers.isEmpty {
@@ -15,6 +14,20 @@ struct BrothersView: View {
                     .frame(maxWidth: .infinity, minHeight: 200)
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
+            } else if let error = viewModel.errorMessage, viewModel.brothers.isEmpty {
+                ContentUnavailableView {
+                    Label("common.error", systemImage: "exclamationmark.triangle.fill")
+                } description: {
+                    Text(error)
+                } actions: {
+                    Button("common.retry") {
+                        Task { await viewModel.fetchBrothers() }
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .frame(maxWidth: .infinity, minHeight: 200)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
             } else if viewModel.filteredBrothers.isEmpty {
                 VStack(spacing: 16) {
                     Image(systemName: "person.slash")
@@ -61,8 +74,8 @@ struct BrothersView: View {
                             } label: {
                                 Image(systemName: "trash")
                             }
-                            .tint(.red)
-                            
+                            .tint(.danger)
+
                             Button {
                                 HapticManager.shared.selection()
                                 viewModel.selectedBrother = brother
@@ -70,7 +83,7 @@ struct BrothersView: View {
                             } label: {
                                 Image(systemName: "pencil")
                             }
-                            .tint(.brandPrimary)
+                            .tint(.accent)
                         }
                     }
                 }
@@ -82,28 +95,15 @@ struct BrothersView: View {
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: viewModel.expandedBrotherIds)
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.filteredBrothers)
         .refreshable {
-            await withCheckedContinuation { continuation in
-                Task {
-                    viewModel.fetchBrothers()
-                    HapticManager.shared.notification(type: .success)
-                    continuation.resume()
-                }
-            }
+            await viewModel.fetchBrothers()
+            HapticManager.shared.notification(type: .success)
         }
         .navigationTitle("brothers.title")
-        .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $viewModel.searchText, isPresented: $isSearching, prompt: "brothers.search_placeholder")
+        .navigationBarTitleDisplayMode(.large)
+        // Título .large: la barra de búsqueda queda fija bajo el título y no
+        // compite con el gesto de pull-to-refresh (igual que en Territorios).
+        .searchable(text: $viewModel.searchText, placement: .automatic, prompt: "brothers.search_placeholder")
         .toolbar {
-            ToolbarItem() {
-                Button {
-                    isSearching.toggle()
-                } label: {
-                    Image(systemName: "magnifyingglass")
-                }
-            }
-            
-            ToolbarSpacer(.flexible)
-            
             // Only show add button for ADMIN+ roles
             if permissionManager.canManageBrothers {
                 ToolbarItem() {
@@ -138,9 +138,7 @@ struct BrothersView: View {
             Button("common.cancel", role: .cancel) {}
         }
         .task {
-            if viewModel.brothers.isEmpty {
-                viewModel.fetchBrothers()
-            }
+            await viewModel.fetchBrothers()
         }
     }
 }

@@ -5,13 +5,18 @@ import SwiftUI
 @MainActor
 class UsersViewModel: ObservableObject {
     @Published var users: [User] = []
-    @Published var filteredUsers: [User] = []
     @Published var searchText: String = ""
     @Published var isLoading: Bool = false // Start false, fetch will set true
     @Published var errorMessage: String?
     @Published var showAddSheet: Bool = false
     @Published var showEditSheet: Bool = false
     @Published var selectedUser: User?
+
+    /// Lista filtrada derivada de `users` + `searchText` (computada, sin estado duplicado).
+    var filteredUsers: [User] {
+        guard !searchText.isEmpty else { return users }
+        return users.filter { $0.userName.localizedCaseInsensitiveContains(searchText) }
+    }
     
     // Configurable User - logic to determine if current user can edit/delete another user
     // We need the current user's role. For now, we decode it from the token or fetch it.
@@ -33,55 +38,32 @@ class UsersViewModel: ObservableObject {
     
     init(networkManager: APIService = NetworkManager.shared) {
         self.networkManager = networkManager
-        
-        // Debounce search text
-        $searchText
-            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
-            .removeDuplicates()
+
+        // Reload when the active congregation changes (multi-tenant).
+        NotificationCenter.default.publisher(for: .congregationChanged)
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.filterUsers()
-            }
-            .store(in: &cancellables)
-            
-        // Also refilter when users list changes
-        $users
-            .sink { [weak self] _ in
-                self?.filterUsers()
+                self?.users = []
+                Task { [weak self] in await self?.fetchUsers() }
             }
             .store(in: &cancellables)
     }
-    
-    private func filterUsers() {
-        let text = searchText
-        let currentUsers = users
-        
-        let filtered: [User]
-        if text.isEmpty {
-            filtered = currentUsers
-        } else {
-            filtered = currentUsers.filter { $0.userName.localizedCaseInsensitiveContains(text) }
-        }
-        
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-            self.filteredUsers = filtered
-        }
-    }
-    
-    func fetchUsers() {
+
+    func fetchUsers() async {
         isLoading = true
         errorMessage = nil
-        
-        Task {
-            do {
-                let fetchedUsers: [User] = try await networkManager.request(endpoint: TerritoryEndpoint.getUsers)
-                // Sort by name
+
+        do {
+            let fetchedUsers: [User] = try await networkManager.request(endpoint: TerritoryEndpoint.getUsers)
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                 self.users = fetchedUsers.sorted { $0.userName < $1.userName }
-                self.isLoading = false
-            } catch {
+            }
+        } catch {
+            if !error.isCancellation {
                 self.errorMessage = error.localizedDescription
-                self.isLoading = false
             }
         }
+        self.isLoading = false
     }
     
     func addUser(name: String, role: UserRole, password: String) async -> Bool {
@@ -91,7 +73,7 @@ class UsersViewModel: ObservableObject {
         do {
             try await networkManager.request(endpoint: TerritoryEndpoint.addUser(name: name, role: role.rawValue, password: password))
             ToastManager.shared.show("users.add_success", style: .success)
-            fetchUsers()
+            await fetchUsers()
             return true
         } catch {
             self.errorMessage = error.localizedDescription
@@ -108,7 +90,7 @@ class UsersViewModel: ObservableObject {
         do {
             try await networkManager.request(endpoint: TerritoryEndpoint.updateUser(id: user.id, name: newName, role: newRole.rawValue))
             ToastManager.shared.show("users.update_success", style: .success)
-            fetchUsers()
+            await fetchUsers()
             return true
         } catch {
             self.errorMessage = error.localizedDescription
@@ -142,7 +124,7 @@ class UsersViewModel: ObservableObject {
         do {
             try await networkManager.request(endpoint: TerritoryEndpoint.deleteUser(id: user.id))
             ToastManager.shared.show("users.delete_success", style: .success)
-            fetchUsers()
+            await fetchUsers()
         } catch {
              self.errorMessage = error.localizedDescription
              ToastManager.shared.show(error.localizedDescription, style: .error)

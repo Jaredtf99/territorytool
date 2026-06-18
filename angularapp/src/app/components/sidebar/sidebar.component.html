@@ -4,7 +4,7 @@
   <div class="sidebar-profile d-flex flex-row justify-content-start align-items-center p-3">
     <div class="picture-wrapper">
       <div class="user-initial">
-        {{ userService.getUserName()[0].toUpperCase() }}
+        {{ (userService.getUserName() || '?')[0].toUpperCase() }}
       </div>
     </div>
     <div class="profile-details ms-3">
@@ -46,7 +46,7 @@
         </a>
       </li>
 
-      <li>
+      <li *ngIf="userService.roleMatch(['SUPERADMIN', 'ADMIN'])">
         <a [routerLink]="['/add-territory']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
           <i class="fa-solid fa-address-card"></i>
           <span>Añadir territorio</span>
@@ -65,7 +65,7 @@
           <span>Usuarios</span>
         </a>
       </li>
-      <li>
+      <li *ngIf="userService.roleMatch(['SUPERADMIN', 'ADMIN'])">
         <a [routerLink]="['/add-person']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
           <i class="fas fa-user-tie"></i>
           <span>Registrar hermano</span>
@@ -77,13 +77,19 @@
           <span>Ver hermanos</span>
         </a>
       </li>
+      <li *ngIf="userService.isSuperAdmin()">
+        <a [routerLink]="['/congregations']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
+          <i class="fa-solid fa-church"></i>
+          <span>Congregaciones</span>
+        </a>
+      </li>
       <li *ngIf="userService.roleMatch(['SUPERADMIN'])">
         <a [routerLink]="['/action-logs']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
           <i class="fa-solid fa-clock-rotate-left"></i>
           <span>Action logs</span>
         </a>
       </li>
-      <li *ngIf="userService.roleMatch(['SUPERADMIN'])">
+      <li *ngIf="userService.roleMatch(['SUPERADMIN', 'ADMIN'])">
         <a [routerLink]="['/registration']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
           <i class="fa fa-user"></i>
           <span>Añadir usuario</span>

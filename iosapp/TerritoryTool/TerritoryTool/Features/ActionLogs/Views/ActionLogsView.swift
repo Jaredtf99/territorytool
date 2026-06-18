@@ -54,12 +54,8 @@ struct ActionLogsView: View {
         }
         .navigationTitle("actionlogs.title")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear {
-            if viewModel.logs.isEmpty {
-                Task {
-                    await viewModel.loadLogs(reset: true)
-                }
-            }
+        .task {
+            await viewModel.loadLogs(reset: true)
         }
         .alert(isPresented: Binding<Bool>(
             get: { viewModel.errorMessage != nil },
@@ -120,7 +116,7 @@ struct ActionLogGlassRow: View {
                 // Status Indicator
                 if !log.successful {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundColor(.orange)
+                        .foregroundColor(.warning)
                         .font(.caption)
                 }
             }

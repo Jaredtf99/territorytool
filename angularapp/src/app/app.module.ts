@@ -1,7 +1,6 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 import { NgxSpinnerModule } from "ngx-spinner";
 import { CollapseModule } from 'ngx-bootstrap/collapse';
@@ -22,7 +21,6 @@ import { RegistrationComponent } from './components/registration/registration.co
 import { LoginComponent } from './components/login/login.component';
 import { LoggedComponent } from './components/logged/logged.component';
 import { AuthGuard } from './auth/auth.guard';
-import { AuthInterceptor } from './auth/auth.interceptor';
 import { ForbiddenComponent } from './components/forbidden/forbidden.component';
 import { ViewActionlogsComponent } from './components/view-actionlogs/view-actionlogs.component';
 import { UserConfigurationComponent } from './components/user-configuration/user-configuration.component';
@@ -46,6 +44,7 @@ import { TerritoryTransactionsComponent } from './components/territory-transacti
 import { EditTransactionModalComponent } from './components/edit-transaction-modal/edit-transaction-modal.component';
 import { TerritoryCardComponent } from './components/territory-card/territory-card.component';
 import { RecentTransactionsComponent } from './components/recent-transactions/recent-transactions.component';
+import { CongregationsComponent } from './components/congregations/congregations.component';
 
 LOAD_WASM().subscribe((res: any) => console.log('LOAD_WASM', res));
 
@@ -80,11 +79,11 @@ export class MyIntl extends TimeagoIntl {
     TerritoryTransactionsComponent,
     EditTransactionModalComponent,
     RecentTransactionsComponent,
+    CongregationsComponent,
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
     BrowserAnimationsModule,
-    HttpClientModule,
     FormsModule,
     ReactiveFormsModule,
     NgxSpinnerModule,
@@ -107,6 +106,7 @@ export class MyIntl extends TimeagoIntl {
           { path: 'user-configuration', component: UserConfigurationComponent },
           { path: 'action-logs', component: ViewActionlogsComponent, data: { permittedRoles: ['SUPERADMIN'] } },
           { path: 'users', component: UsersComponent, data: { permittedRoles: ['SUPERADMIN', 'ADMIN'] } },
+          { path: 'congregations', component: CongregationsComponent, data: { permittedRoles: ['SUPERADMIN'] } },
           { path: 'add-person', component: AddPersonComponent, data: { permittedRoles: ['SUPERADMIN', 'ADMIN'] } },
           { path: 'persons', component: PersonsComponent }
 
@@ -126,11 +126,7 @@ export class MyIntl extends TimeagoIntl {
       formatter: { provide: TimeagoFormatter, useClass: TimeagoCustomFormatter },
     }),
   ],
-  providers: [UserService, PersonService, TerritoryService, TerritoryTransactionService, AuthGuard, {
-    provide: HTTP_INTERCEPTORS,
-    useClass: AuthInterceptor,
-    multi: true,
-  }, Globals],
+  providers: [UserService, PersonService, TerritoryService, TerritoryTransactionService, AuthGuard, Globals],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

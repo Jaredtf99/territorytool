@@ -67,7 +67,7 @@ export class PersonsComponent {
         {
           title: "", formatter: this.deleteIcon, width: 40, hozAlign: "center", headerSort: false,
           visible: this.canDelete, // Use this.canDelete
-          cellClick: (e, cell) => this.openDeleteUserModal(cell.getRow().getData().Name)
+          cellClick: (e, cell) => this.openDeleteUserModal(cell.getRow().getData().name)
         },
         // Edit column (new)
         {
@@ -75,15 +75,14 @@ export class PersonsComponent {
           visible: this.canEdit, // Only visible for admin/superadmin
           cellClick: (e, cell) => this.openEditPersonModal(cell.getRow().getData())
         },
-        { title: "Name", field: "Name", headerFilter: "input" },
-        // Enabled column (new)
-        { 
-          title: "Habilitado", 
-          field: "Enabled", 
-          hozAlign: "center", 
-          formatter: "tickCross", // Tabulator built-in formatter for boolean
-          formatterParams: { allowEmpty: false }, 
-          width: 120 
+        { title: "Nombre", field: "name", headerFilter: "input" },
+        {
+          title: "Habilitado",
+          field: "enabled",
+          hozAlign: "center",
+          formatter: "tickCross",
+          formatterParams: { allowEmpty: false },
+          width: 120
         },
       ],
       rowFormatter: function (row) {
@@ -101,37 +100,34 @@ export class PersonsComponent {
 
         holderEl.appendChild(tableEl);
 
-        let territoriesInUse = row.getData().TerritoriesInUse;
+        let territoriesInUse = row.getData().territoriesInUse;
 
-        if (territoriesInUse.length > 0) {
+        if (territoriesInUse && territoriesInUse.length > 0) {
           row.getElement().appendChild(holderEl);
 
-          var subTableData = row.getData().TerritoriesInUse;
-
-          const processedData = subTableData.map((r: any) => ({
+          const processedData = territoriesInUse.map((r: any) => ({
             ...r,
-            GivenDate: preprocessDate(r.GivenDate)
+            givenDate: preprocessDate(r.givenDate)
           }));
 
-          var subTable = new Tabulator(tableEl, {
+          new Tabulator(tableEl, {
             layout: "fitColumns",
             data: processedData,
             columns: [
-              { 
-                title: "Fecha", 
-                field: "GivenDate", 
-                formatter: "datetime", 
-                sorter: "date", 
-                formatterParams: 
-                { 
-                   inputFormat: "dd/MM/yyyy',' HH:mm:ss",
+              {
+                title: "Fecha",
+                field: "givenDate",
+                formatter: "datetime",
+                sorter: "date",
+                formatterParams: {
+                  inputFormat: "dd/MM/yyyy',' HH:mm:ss",
                   outputFormat: "dd/MM/yyyy HH:mm:ss",
                 },
               },
-              { title: "Territorio", field: "TerritoryName" },
-              { title: "Código", field: "TerritoryCode" },
+              { title: "Territorio", field: "territoryName" },
+              { title: "Código", field: "territoryCode" },
             ]
-          })
+          });
         }
       },
     });
@@ -166,9 +162,9 @@ export class PersonsComponent {
 
   openEditPersonModal(personData: any) {
     this.editingPerson = personData;
-    this.editPersonName = personData.Name;
-    this.editPersonEnabled = personData.Enabled;
-    $('#editPersonModal').modal('show'); // Assumes modal with id 'editPersonModal'
+    this.editPersonName = personData.name;
+    this.editPersonEnabled = personData.enabled;
+    $('#editPersonModal').modal('show');
   }
 
   submitEditPerson() {
@@ -178,7 +174,7 @@ export class PersonsComponent {
     }
 
     this.spinner.show();
-    this.personService.updatePerson(this.editingPerson.Id, this.editPersonName, this.editPersonEnabled)
+    this.personService.updatePerson(this.editingPerson.id, this.editPersonName, this.editPersonEnabled)
       .subscribe({
         next: resp => {
           this.spinner.hide();

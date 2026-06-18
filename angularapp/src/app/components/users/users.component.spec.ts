@@ -1,5 +1,4 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { of, throwError } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
@@ -46,13 +45,12 @@ describe('UsersComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       declarations: [UsersComponent],
-      imports: [ReactiveFormsModule, HttpClientTestingModule],
+      imports: [ReactiveFormsModule],
       providers: [
         FormBuilder,
         { provide: UserService, useClass: MockUserService },
         { provide: ToastrService, useClass: MockToastrService },
-        { provide: NgxSpinnerService, useClass: MockNgxSpinnerService },
-        { provide: 'BASE_URL', useValue: 'http://localhost/' }
+        { provide: NgxSpinnerService, useClass: MockNgxSpinnerService }
       ]
     }).compileComponents();
 

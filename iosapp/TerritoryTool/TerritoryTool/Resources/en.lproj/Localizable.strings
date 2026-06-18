@@ -30,6 +30,8 @@
 "dashboard.days_ago" = "%d days ago";
 "dashboard.recent_transactions" = "Recent Transactions";
 "dashboard.no_recent_transactions" = "No recent transactions";
+"dashboard.given" = "Assigned";
+"dashboard.returned" = "Returned";
 "dashboard.edit_transaction.title_generic" = "Edit Transaction";
 "dashboard.edit_transaction.select_person" = "Select Person";
 "dashboard.edit_transaction.select_territory" = "Select Territory";
@@ -67,6 +69,7 @@
 "territory.detail.error" = "Error";
 "territory.detail.retry" = "Retry";
 "territory.detail.map_unavailable" = "Map not available";
+"territory.detail.map" = "Territory map";
 "territory.detail.assigned_to" = "Assigned to";
 "territory.detail.assign" = "Assign Territory";
 "territory.detail.return" = "Return Territory";
@@ -170,6 +173,9 @@
 "common.no_results" = "No results found";
 "common.delete_confirmation" = "Are you sure you want to delete this?";
 "common.ok" = "OK";
+"common.empty" = "Nothing here yet";
+"common.retry" = "Retry";
+"common.loading" = "Loading…";
 
 
 // QR Scan Errors
@@ -221,3 +227,26 @@
 "common.delete" = "Delete";
 "common.edit" = "Edit";
 "users.permission_error" = "You don't have permission";
+"congregation.switched" = "Congregation switched";
+"congregation.switch_failed" = "Could not switch congregation";
+"settings.administration" = "Administration";
+"congregations.title" = "Congregations";
+"congregations.new" = "New congregation";
+"congregations.name_placeholder" = "Name";
+"congregations.empty" = "No congregations";
+"congregations.active" = "Active";
+"congregations.rename" = "Rename congregation";
+"congregations.error_exists" = "A congregation with that name already exists";
+"congregations.error_not_empty" = "Cannot delete: it has territories or persons";
+"common.save" = "Save";
+"common.cancel" = "Cancel";
+"common.ok" = "OK";
+"common.error" = "Error";
+"change_password.title" = "Change password";
+"change_password.new" = "New password";
+"change_password.new_placeholder" = "New password";
+"change_password.confirm_placeholder" = "Confirm password";
+"change_password.mismatch" = "Passwords do not match";
+"change_password.save" = "Save password";
+"change_password.success" = "Password changed successfully";
+"territory_detail.refresh_image_failed" = "Could not refresh the image";

@@ -65,4 +65,11 @@ class PermissionManager: ObservableObject {
     var canViewActionLogs: Bool {
         currentUserRole == .superAdmin
     }
+
+    // MARK: - Congregation Permissions
+
+    /// Can create/rename/delete congregations (SUPERADMIN only)
+    var canManageCongregations: Bool {
+        currentUserRole == .superAdmin
+    }
 }

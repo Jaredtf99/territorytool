@@ -27,51 +27,66 @@ class TerritoriesViewModel: ObservableObject {
     
     private let apiService: APIService
     private var cancellables = Set<AnyCancellable>()
-    
+    private var didAttemptGeometrySync = false
+    /// Carga en curso; se cancela antes de lanzar otra para evitar respuestas
+    /// solapadas donde "gana la última en terminar" en vez de la última pedida.
+    private var loadTask: Task<Void, Never>?
+
     init(apiService: APIService) {
         self.apiService = apiService
-        
+
         // Debounce search text changes
         $searchText
-            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .debounce(for: .milliseconds(500), scheduler: DispatchQueue.main)
             .removeDuplicates()
             .dropFirst()
             .sink { [weak self] _ in
-                Task { [weak self] in
-                    await self?.loadTerritories()
-                }
+                self?.reload()
             }
             .store(in: &cancellables)
-            
+
         // Reload when filter or sort changes
         Publishers.CombineLatest3($filterStatus, $sortOption, $sortAscending)
             .dropFirst()
-            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
+            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
             .sink { [weak self] _ in
-                Task { [weak self] in
-                    await self?.loadTerritories()
-                }
+                self?.reload()
             }
             .store(in: &cancellables)
-        // Reload when territory is deleted
+        // Reload when a territory is deleted elsewhere (e.g. detail screen)
         NotificationCenter.default.publisher(for: .territoryDeleted)
-            .receive(on: RunLoop.main)
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                Task { [weak self] in
-                    await self?.loadTerritories()
-                }
+                self?.reload()
+            }
+            .store(in: &cancellables)
+        // Reload when the active congregation changes (multi-tenant).
+        NotificationCenter.default.publisher(for: .congregationChanged)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.territories = []
+                self?.didAttemptGeometrySync = false
+                self?.reload()
             }
             .store(in: &cancellables)
     }
-    
+
+    /// Lanza una recarga cancelando la anterior si seguía en vuelo.
+    func reload() {
+        loadTask?.cancel()
+        loadTask = Task { [weak self] in
+            await self?.loadTerritories()
+        }
+    }
+
     func loadTerritories() async {
         isLoading = true
         errorMessage = nil
-        
+
         defer {
             isLoading = false
         }
-        
+
         do {
             let term = searchText.isEmpty ? nil : searchText
             let inUse: Bool? = {
@@ -82,7 +97,7 @@ class TerritoriesViewModel: ObservableObject {
                 }
             }()
             
-            let result: [Territory] = try await apiService.request(endpoint: TerritoryEndpoint.getTerritories(
+            var result: [Territory] = try await apiService.request(endpoint: TerritoryEndpoint.getTerritories(
                 term: term,
                 inUse: inUse,
                 orderBy: sortOption.rawValue,
@@ -90,28 +105,48 @@ class TerritoriesViewModel: ObservableObject {
                 lastGivenDateFrom: nil,
                 lastGivenDateTo: nil
             ))
-            
+
+            if !didAttemptGeometrySync && result.contains(where: { $0.mapGeometry == nil }) {
+                didAttemptGeometrySync = true
+                do {
+                    try await apiService.request(endpoint: TerritoryEndpoint.syncAllTerritoryMaps)
+                    result = try await apiService.request(endpoint: TerritoryEndpoint.getTerritories(
+                        term: term,
+                        inUse: inUse,
+                        orderBy: sortOption.rawValue,
+                        orderByAscending: sortAscending,
+                        lastGivenDateFrom: nil,
+                        lastGivenDateTo: nil
+                    ))
+                } catch {
+                    // Keep displaying the legacy images if synchronization is
+                    // temporarily unavailable.
+                    print("Unable to synchronize territory maps: \(error)")
+                }
+            }
+
+            // Si la tarea fue cancelada (llegó otra recarga), descartamos este
+            // resultado para no pisar el más reciente.
+            guard !Task.isCancelled else { return }
+
             withAnimation {
                 self.territories = result
             }
         } catch {
+            guard !Task.isCancelled, !error.isCancellation else { return }
             self.errorMessage = error.localizedDescription
         }
     }
-    
+
     func deleteTerritory(_ territory: Territory) async {
-        isLoading = true
         errorMessage = nil
-        
+
         do {
             try await apiService.request(endpoint: TerritoryEndpoint.deleteTerritory(id: territory.id))
-            // Refresh list
-            await loadTerritories()
-            // Notify other parts of the app if needed, though loadTerritories updates the list
+            // La recarga la dispara el observer de .territoryDeleted (una sola vez).
             NotificationCenter.default.post(name: .territoryDeleted, object: nil)
         } catch {
             self.errorMessage = "Error deleting territory: \(error.localizedDescription)"
-            isLoading = false
         }
     }
 }

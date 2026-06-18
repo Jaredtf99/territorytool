@@ -10,19 +10,37 @@ class JWTHelper {
     static func getUserRole(from token: String) -> UserRole? {
         guard let claims = decode(jwtToken: token) else { return nil }
         
-        if let roleString = claims["role"] as? String ?? claims[roleClaimKey] as? String {
+        if let roleString = claims["app_role"] as? String ?? claims["role"] as? String ?? claims[roleClaimKey] as? String {
              return UserRole(rawValue: roleString)
+        }
+        if let storedRole = TokenManager.shared.getUserRole() {
+            return UserRole(rawValue: storedRole)
         }
         return nil
     }
     
     static func getUserName(from token: String) -> String? {
         guard let claims = decode(jwtToken: token) else { return nil }
-        
-        return claims[userNameClaimKey] as? String 
-            ?? claims["unique_name"] as? String 
-            ?? claims["name"] as? String 
+
+        return claims[userNameClaimKey] as? String
+            ?? claims["unique_name"] as? String
+            ?? claims["name"] as? String
             ?? claims["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"] as? String
+            ?? TokenManager.shared.getUserName()
+    }
+
+    // Active congregation id carried in the JWT.
+    static func getCongregationId(from token: String) -> String? {
+        guard let claims = decode(jwtToken: token) else { return TokenManager.shared.getActiveCongregationId() }
+        return claims["congregation_id"] as? String ?? TokenManager.shared.getActiveCongregationId()
+    }
+
+    // Global superadmin flag carried in the JWT.
+    static func isSuperadmin(from token: String) -> Bool {
+        guard let claims = decode(jwtToken: token) else { return false }
+        if let flag = claims["is_superadmin"] as? Bool { return flag }
+        if let flag = claims["is_superadmin"] as? NSNumber { return flag.boolValue }
+        return false
     }
     
     private static func decode(jwtToken jwt: String) -> [String: Any]? {

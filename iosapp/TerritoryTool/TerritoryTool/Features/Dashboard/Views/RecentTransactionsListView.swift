@@ -34,7 +34,7 @@ struct RecentTransactionsListView: View {
                                         Label("common.delete", systemImage: "trash")
                                             .labelStyle(.iconOnly)
                                     }
-                                    .tint(.red)
+                                    .tint(.danger)
                                     
                                     Button {
                                         editingEvent = event
@@ -42,7 +42,7 @@ struct RecentTransactionsListView: View {
                                         Label("common.edit", systemImage: "pencil")
                                             .labelStyle(.iconOnly)
                                     }
-                                    .tint(.blue)
+                                    .tint(.accent)
                                 }
                             }
                     }

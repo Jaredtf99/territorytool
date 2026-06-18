@@ -5,7 +5,7 @@ import { ToastrService } from 'ngx-toastr';
 import { TerritoryService } from '../../shared/territory.service';
 import { NgxSpinnerService } from 'ngx-spinner';
 import { Territory } from '../../classes/Territory';
-import { Observable, Subject, catchError, concat, distinctUntilChanged, of, switchMap, tap } from 'rxjs';
+import { Observable, Subject, catchError, concat, debounceTime, distinctUntilChanged, filter, of, switchMap, tap } from 'rxjs';
 import { PersonService } from '../../shared/person.service';
 import { AppService } from '../../shared/app.service';
 import { TerritorySuggestion } from 'src/app/classes/TerritorySuggestion';
@@ -89,6 +89,7 @@ export class ChangeTerritoryComponent implements AfterViewInit {
             this.giveTerritoryForm.patchValue({
               selectedTerritory: territory
             });
+            this.loadTerritories();
             this.spinner.hide();
           },
           error: (err) => {
@@ -188,15 +189,21 @@ export class ChangeTerritoryComponent implements AfterViewInit {
 
 
   private loadTerritories() {
-    this.territories$ =
+    // Seed the items with the currently selected territory so ng-select can
+    // render it (e.g. a clicked suggestion) before any search has run.
+    this.territories$ = concat(
+      of(this.selectedTerritory ? [this.selectedTerritory] : []),
       this.territoriesInput$.pipe(
+        filter((term): term is string => (term?.length ?? 0) >= 2),
+        debounceTime(250),
         distinctUntilChanged(),
         tap(() => this.territoriesLoading = true),
         switchMap(term => this.territoryService.searchFreeTerritories(term, 3).pipe(
           catchError(() => of([])), // empty list on error
           tap(() => this.territoriesLoading = false)
         ))
-      );
+      )
+    );
   }
 
   onTerritorySelect(event: any) {
@@ -207,6 +214,7 @@ export class ChangeTerritoryComponent implements AfterViewInit {
           this.giveTerritoryForm.patchValue({
             selectedTerritory: territory
           });
+          this.loadTerritories();
         }
       });
     }
@@ -215,6 +223,8 @@ export class ChangeTerritoryComponent implements AfterViewInit {
   private loadPersons() {
     this.persons$ =
       this.personsInput$.pipe(
+        filter((term): term is string => (term?.length ?? 0) >= 3),
+        debounceTime(250),
         distinctUntilChanged(),
         tap(() => this.personsLoading = true),
         switchMap(term => this.personService.searchPersons(term, 3).pipe(
@@ -281,6 +291,8 @@ export class ChangeTerritoryComponent implements AfterViewInit {
     this.territoryService.getTerritoryByMapUrl(e[0].value).subscribe({
       next: resp => {
         this.selectedTerritory = resp;
+        this.giveTerritoryForm.patchValue({ selectedTerritory: resp });
+        this.loadTerritories();
       },
       error: err => {
         this.toastr.error('Error inesperado');
@@ -318,10 +330,12 @@ export class ChangeTerritoryComponent implements AfterViewInit {
       lastPickedDateUtc: territory.lastPickedDate,
       imgUrl: territory.imgUrl
     } as Territory;
-    
+
     this.giveTerritoryForm.patchValue({
       selectedTerritory: this.selectedTerritory
     });
+    // Reseed the ng-select items so the chosen suggestion is displayed.
+    this.loadTerritories();
   }
 
 }

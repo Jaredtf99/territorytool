@@ -31,9 +31,9 @@
             </small>
           </div>
         </div>
-        <div class="territory-meta">
+        <div class="territory-meta" *ngIf="territory.givenDateUtc">
           <i class="fa fa-user-clock me-2"></i>
-          <span>{{territory.givenDateUtc! | timeago}}</span>
+          <span>{{territory.givenDateUtc | timeago}}</span>
         </div>
       </div>
     </div>

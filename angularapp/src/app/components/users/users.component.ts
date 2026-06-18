@@ -1,5 +1,4 @@
-import { Component, OnInit, Inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Component, OnInit } from '@angular/core';
 import { UserService } from '../../shared/user.service';
 import { RoleType } from '../../enums/RoleType';
 import { User } from '../../classes/User';
@@ -26,7 +25,7 @@ export class UsersComponent implements OnInit {
   public editForm: FormGroup;
   public canChangePassword = false;
 
-  constructor(public http: HttpClient, @Inject('BASE_URL') public baseUrl: string, public userService: UserService, private toastr: ToastrService, private spinner: NgxSpinnerService, private fb: FormBuilder) {
+  constructor(public userService: UserService, private toastr: ToastrService, private spinner: NgxSpinnerService, private fb: FormBuilder) {
 
     this.role = userService.getRole();
     this.spinner.show();

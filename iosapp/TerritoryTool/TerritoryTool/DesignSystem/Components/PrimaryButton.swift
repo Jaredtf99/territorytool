@@ -1,29 +1,38 @@
 import SwiftUI
 
+/// CTA primario con Liquid Glass prominente nativo. Ver docs/DESIGN_GUIDE.md §5.
 struct PrimaryButton: View {
     let title: LocalizedStringKey
     var isLoading: Bool = false
     var isDisabled: Bool = false
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
-            HStack {
+            HStack(spacing: AppSpacing.xs) {
                 if isLoading {
                     ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .tint(.white)
                 } else {
                     Text(title)
                         .fontWeight(.semibold)
                 }
             }
             .frame(maxWidth: .infinity)
-            .padding()
-            .background(isDisabled ? Color.brandPrimary.opacity(0.5) : Color.brandPrimary)
-            .foregroundColor(.white)
-            .cornerRadius(12)
+            .padding(.vertical, AppSpacing.xs)
         }
-        .buttonStyle(ScaleButtonStyle())
+        .buttonStyle(.glassProminent)
+        .tint(.accent)
+        .controlSize(.large)
         .disabled(isDisabled || isLoading)
     }
+}
+
+#Preview {
+    VStack(spacing: AppSpacing.md) {
+        PrimaryButton(title: "common.save") {}
+        PrimaryButton(title: "common.save", isLoading: true) {}
+        PrimaryButton(title: "common.save", isDisabled: true) {}
+    }
+    .padding()
 }

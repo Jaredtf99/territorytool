@@ -10,8 +10,9 @@ export class AuthGuard implements CanActivateChild {
 
   canActivateChild(
     next: ActivatedRouteSnapshot,
-    state: RouterStateSnapshot): boolean {
-    if (localStorage.getItem('token') != null) {
+    state: RouterStateSnapshot): boolean | Promise<boolean> {
+    return this.userService.syncStoredToken().then(token => {
+    if (token != null) {
       const roles = next.data['permittedRoles'] as Array<string>;
 
       if (roles) {
@@ -30,5 +31,6 @@ export class AuthGuard implements CanActivateChild {
       this.router.navigate(['/login']);
       return false;
     }
+    });
   }
 }

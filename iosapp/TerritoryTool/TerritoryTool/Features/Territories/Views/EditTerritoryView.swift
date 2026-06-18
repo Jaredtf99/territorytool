@@ -48,7 +48,7 @@ struct EditTerritoryView: View {
                     
                     if let error = viewModel.errorMessage {
                         Text(error)
-                            .foregroundColor(.red) // Should use app error color if available, but red is standard.
+                            .foregroundColor(.danger)
                             .font(.caption)
                             .padding(.horizontal)
                             .multilineTextAlignment(.center)

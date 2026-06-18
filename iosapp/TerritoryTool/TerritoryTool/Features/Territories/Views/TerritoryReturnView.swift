@@ -38,12 +38,11 @@ struct TerritoryReturnView: View {
                         }) {
                             Image(systemName: "qrcode.viewfinder")
                                 .font(.system(size: 24))
-                                .foregroundColor(.white)
+                                .foregroundStyle(.white)
                                 .frame(width: 50, height: 50)
-                                .background(Color.green)
-                                .cornerRadius(12)
-                                .shadow(color: .green.opacity(0.3), radius: 5, x: 0, y: 3)
+                                .background(Color.success, in: .rect(cornerRadius: AppRadius.md))
                         }
+                        .accessibilityLabel(Text("return.search_territory"))
                     }
                     .padding(.horizontal)
                 }
@@ -51,25 +50,17 @@ struct TerritoryReturnView: View {
                 // MARK: - Date Selection
                 VStack(alignment: .leading, spacing: 16) {
                     Toggle("return.custom_date", isOn: $viewModel.useCustomDate)
-                        .padding()
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
-                        )
+                        .tint(.accent)
+                        .padding(AppSpacing.md)
+                        .glassEffect(.regular, in: .rect(cornerRadius: AppRadius.md))
                         .padding(.horizontal)
-                    
+
                     if viewModel.useCustomDate {
                         DatePicker("return.date", selection: $viewModel.customDate, displayedComponents: [.date, .hourAndMinute])
                             .datePickerStyle(.graphical)
-                            .padding()
-                            .background(.ultraThinMaterial)
-                            .cornerRadius(12)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
-                            )
+                            .tint(.accent)
+                            .padding(AppSpacing.md)
+                            .glassEffect(.regular, in: .rect(cornerRadius: AppRadius.md))
                             .padding(.horizontal)
                             .transition(.scale.combined(with: .opacity))
                     }
@@ -81,26 +72,24 @@ struct TerritoryReturnView: View {
                         _ = await viewModel.returnTerritory()
                     }
                 }) {
-                    HStack {
+                    HStack(spacing: AppSpacing.xs) {
                         if viewModel.isSubmitting {
                             ProgressView()
                                 .tint(.white)
                         } else {
                             Text("return.button.return")
-                                .fontWeight(.bold)
+                                .fontWeight(.semibold)
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.green) // Green for return/success
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                    .shadow(color: .green.opacity(0.3), radius: 5, x: 0, y: 3)
+                    .padding(.vertical, AppSpacing.xs)
                 }
+                .buttonStyle(.glassProminent)
+                .tint(.success)
+                .controlSize(.large)
                 .disabled(viewModel.selectedTerritory == nil || viewModel.isSubmitting)
-                .opacity((viewModel.selectedTerritory == nil) ? 0.5 : 1)
                 .padding(.horizontal)
-                .padding(.bottom, 32)
+                .padding(.bottom, AppSpacing.xl)
             }
             .padding(.top)
         }

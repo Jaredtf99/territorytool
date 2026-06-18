@@ -3,11 +3,27 @@ import SwiftUI
 struct SettingsView: View {
     @StateObject private var languageManager = LanguageManager.shared
     @StateObject private var themeManager = ThemeManager.shared
-    
+    @ObservedObject private var permissionManager = PermissionManager.shared
+
     @State private var showLogoutAlert = false
-    
+
     var body: some View {
         Form {
+            if permissionManager.canManageUsers || permissionManager.canManageCongregations {
+                Section(header: Text("settings.administration")) {
+                    if permissionManager.canManageUsers {
+                        NavigationLink(destination: UsersView()) {
+                            Label("users.title", systemImage: "person.2.badge.gearshape.fill")
+                        }
+                    }
+                    if permissionManager.canManageCongregations {
+                        NavigationLink(destination: CongregationsManagementView()) {
+                            Label("congregations.title", systemImage: "building.2.fill")
+                        }
+                    }
+                }
+            }
+
             Section(header: Text("settings.appearance")) {
                 Picker("settings.appearance", selection: $themeManager.currentTheme) {
                     ForEach(AppTheme.allCases) { theme in
@@ -27,6 +43,9 @@ struct SettingsView: View {
             }
             
             Section(header: Text("settings.account")) {
+                NavigationLink(destination: ChangePasswordView()) {
+                    Label("change_password.title", systemImage: "key.fill")
+                }
                 Button(role: .destructive) {
                     showLogoutAlert = true
                 } label: {

@@ -2,105 +2,87 @@ import SwiftUI
 
 struct LoginView: View {
     @StateObject private var viewModel: LoginViewModel
-    
+
     init(viewModel: LoginViewModel) {
         self._viewModel = StateObject(wrappedValue: viewModel)
     }
-    
+
     var body: some View {
         ZStack {
             LiquidBackgroundView()
-            
-            VStack(spacing: 30) {
-                // Logo / Title
-                VStack(spacing: 10) {
+
+            VStack(spacing: AppSpacing.xl) {
+                // Logo / Título
+                VStack(spacing: AppSpacing.sm) {
                     Image(systemName: "globe.europe.africa.fill")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 80, height: 80)
-                        .foregroundColor(.brandPrimary)
-                        .shadow(color: .brandPrimary.opacity(0.3), radius: 10)
-                    
-                    Text("Territory Tool")
-                        .font(.largeTitle)
-                        .bold()
-                        .foregroundColor(.textPrimary)
+                        .foregroundStyle(Color.accent)
+
+                    Text(verbatim: "Territory Tool")
+                        .font(.appLargeTitle())
+                        .foregroundStyle(.primary)
                 }
                 .padding(.top, 50)
-                
-                // Login Form
-                VStack(spacing: 20) {
+
+                // Formulario
+                VStack(spacing: AppSpacing.md) {
                     Text("login.welcome")
-                        .font(.headline)
-                        .foregroundColor(.textSecondary)
-                    
-                    // Username Field with Glass Style
-                    HStack {
-                        Image(systemName: "person.fill")
-                            .foregroundColor(.secondary)
-                            .frame(width: 20)
-                        
+                        .font(.appHeadline())
+                        .foregroundStyle(.secondary)
+
+                    field(icon: "person.fill") {
                         TextField(LocalizedStringKey("login.username"), text: $viewModel.userName)
-                            .foregroundColor(.textPrimary)
-                            .autocapitalization(.none)
+                            .textInputAutocapitalization(.never)
                             .disableAutocorrection(true)
                     }
-                    .padding()
-                    .background(.ultraThinMaterial)
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                    )
-                    
-                    // Password Field with Glass Style
-                    HStack {
-                        Image(systemName: "lock.fill")
-                            .foregroundColor(.secondary)
-                            .frame(width: 20)
-                        
+
+                    field(icon: "lock.fill") {
                         SecureField(LocalizedStringKey("login.password"), text: $viewModel.password)
-                            .foregroundColor(.textPrimary)
                     }
-                    .padding()
-                    .background(.ultraThinMaterial)
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                    )
-                    
+
                     if let error = viewModel.errorMessage {
                         Text(error)
-                            .font(.caption)
-                            .foregroundColor(.error)
-                            .padding(.top, 5)
+                            .font(.appCaption())
+                            .foregroundStyle(Color.danger)
                             .multilineTextAlignment(.center)
                     }
-                    
+
                     PrimaryButton(
                         title: LocalizedStringKey("login.button"),
-                        isLoading: viewModel.isLoading,
-                        action: {
-                            Task {
-                                await viewModel.login()
-                                if viewModel.errorMessage != nil {
-                                    HapticManager.shared.notification(type: .error)
-                                } else {
-                                    HapticManager.shared.notification(type: .success)
-                                }
-                            }
+                        isLoading: viewModel.isLoading
+                    ) {
+                        Task {
+                            await viewModel.login()
+                            HapticManager.shared.notification(
+                                type: viewModel.errorMessage != nil ? .error : .success
+                            )
                         }
-                    )
-                    .padding(.top, 10)
+                    }
+                    .padding(.top, AppSpacing.xs)
                 }
-                .padding(30)
-                .glassCardStyle(cornerRadius: 20, padding: 0)
+                .padding(AppSpacing.lg)
+                .glassEffect(.regular, in: .rect(cornerRadius: AppRadius.xl))
                 .padding(.horizontal)
-                
+
                 Spacer()
             }
             .padding()
         }
+    }
+
+    /// Campo de texto con icono y Liquid Glass nativo.
+    @ViewBuilder
+    private func field<Content: View>(icon: String, @ViewBuilder content: () -> Content) -> some View {
+        HStack(spacing: AppSpacing.sm) {
+            Image(systemName: icon)
+                .foregroundStyle(.secondary)
+                .frame(width: 20)
+            content()
+                .foregroundStyle(.primary)
+        }
+        .padding(AppSpacing.md)
+        .glassEffect(.regular, in: .rect(cornerRadius: AppRadius.md))
     }
 }

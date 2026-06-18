@@ -1,5 +1,12 @@
 import SwiftUI
 
+/// Acciones rápidas accesibles desde el botón (+) de Territorios.
+enum TerritoryQuickAction: Int, Identifiable {
+    case assign
+    case returnTerritory
+    var id: Int { rawValue }
+}
+
 struct TerritoriesView: View {
     @StateObject private var viewModel = DIContainer.shared.makeTerritoriesViewModel()
     @ObservedObject private var permissionManager = PermissionManager.shared
@@ -7,7 +14,8 @@ struct TerritoriesView: View {
     @State private var territoryToEdit: Territory?
     @State private var territoryToDelete: Territory?
     @State private var showDeleteConfirmation = false
-    
+    @State private var quickAction: TerritoryQuickAction?
+
     init() {}
     
     var body: some View {
@@ -34,7 +42,7 @@ struct TerritoriesView: View {
                         .multilineTextAlignment(.center)
                         .background(.regularMaterial)
                         .cornerRadius(12)
-                    Button("Retry") {
+                    Button("common.retry") {
                         Task { await viewModel.loadTerritories() }
                     }
                     .buttonStyle(.bordered)
@@ -77,15 +85,15 @@ struct TerritoriesView: View {
                             } label: {
                                 Image(systemName: "trash")
                             }
-                            .tint(.red)
-                            
+                            .tint(.danger)
+
                             Button {
                                 HapticManager.shared.selection()
                                 territoryToEdit = territory
                             } label: {
                                 Image(systemName: "pencil")
                             }
-                            .tint(.brandPrimary)
+                            .tint(.accent)
                         }
                     }
                 }
@@ -95,13 +103,8 @@ struct TerritoriesView: View {
         .scrollContentBackground(.hidden)
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.territories)
         .refreshable {
-            await withCheckedContinuation { continuation in
-                Task {
-                    await viewModel.loadTerritories()
-                    HapticManager.shared.notification(type: .success)
-                    continuation.resume()
-                }
-            }
+            await viewModel.loadTerritories()
+            HapticManager.shared.notification(type: .success)
         }
         .navigationTitle("territories.title")
         .navigationBarTitleDisplayMode(.large)
@@ -133,15 +136,41 @@ struct TerritoriesView: View {
             
             ToolbarSpacer(.flexible)
             
-            // Only show add button for ADMIN+ roles
-            if permissionManager.canManageTerritories {
-                ToolbarItem() {
+            // Acciones rápidas: Asignar/Devolver para todos; Añadir solo ADMIN+.
+            ToolbarItem() {
+                Menu {
                     Button {
-                        showAddSheet = true
+                        HapticManager.shared.selection()
+                        quickAction = .assign
                     } label: {
-                        Image(systemName: "plus")
+                        Label("assignment.title", systemImage: "person.badge.plus")
                     }
+                    Button {
+                        HapticManager.shared.selection()
+                        quickAction = .returnTerritory
+                    } label: {
+                        Label("return.title", systemImage: "tray.and.arrow.down")
+                    }
+                    if permissionManager.canManageTerritories {
+                        Divider()
+                        Button {
+                            HapticManager.shared.selection()
+                            showAddSheet = true
+                        } label: {
+                            Label("territory.add.title", systemImage: "plus")
+                        }
+                    }
+                } label: {
+                    Image(systemName: "plus")
                 }
+            }
+        }
+        .navigationDestination(item: $quickAction) { action in
+            switch action {
+            case .assign:
+                TerritoryAssignmentView()
+            case .returnTerritory:
+                TerritoryReturnView()
             }
         }
         .sheet(isPresented: $showAddSheet) {
@@ -153,7 +182,7 @@ struct TerritoriesView: View {
                 }
         }
         .sheet(item: $territoryToEdit) { territory in
-            EditTerritoryView(territory: territory, apiService: NetworkManager())
+            EditTerritoryView(territory: territory, apiService: DIContainer.shared.apiService)
                 .onDisappear {
                     Task {
                         await viewModel.loadTerritories()
@@ -178,9 +207,7 @@ struct TerritoriesView: View {
             LiquidBackgroundView()
         }
         .task {
-            if viewModel.territories.isEmpty {
-                await viewModel.loadTerritories()
-            }
+            await viewModel.loadTerritories()
         }
     }
 }
@@ -192,6 +219,7 @@ struct FilterScrollView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
                 ForEach(TerritoryFilter.allCases) { filter in
+                    let isSelected = viewModel.filterStatus == filter
                     Button(action: {
                         HapticManager.shared.selection()
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -200,21 +228,14 @@ struct FilterScrollView: View {
                     }) {
                         Text(filter.localizedName)
                             .font(.subheadline.weight(.medium))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(
-                                viewModel.filterStatus == filter ?
-                                Color.brandPrimary :
-                                Color.clear
-                            )
-                            .background(.ultraThinMaterial)
-                            .foregroundColor(viewModel.filterStatus == filter ? .white : .primary)
-                            .cornerRadius(20)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .strokeBorder(Color.primary.opacity(0.1), lineWidth: 1)
-                            )
+                            .foregroundStyle(isSelected ? .white : .primary)
+                            .padding(.horizontal, AppSpacing.md)
+                            .padding(.vertical, AppSpacing.xs)
                     }
+                    .glassEffect(
+                        isSelected ? .regular.tint(.accent).interactive() : .regular.interactive(),
+                        in: .capsule
+                    )
                 }
             }
             

@@ -21,6 +21,14 @@ class ActionLogsViewModel: ObservableObject {
     
     init(apiService: APIService = NetworkManager.shared) {
         self.apiService = apiService
+
+        // Reload when the active congregation changes (multi-tenant).
+        NotificationCenter.default.publisher(for: .congregationChanged)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                Task { [weak self] in await self?.loadLogs(reset: true) }
+            }
+            .store(in: &cancellables)
     }
     
     func loadLogs(reset: Bool = false) async {
@@ -73,9 +81,11 @@ class ActionLogsViewModel: ObservableObject {
             }
             
         } catch {
-            self.errorMessage = error.localizedDescription
+            if !error.isCancellation {
+                self.errorMessage = error.localizedDescription
+            }
         }
-        
+
         if reset {
             isLoading = false
         } else {

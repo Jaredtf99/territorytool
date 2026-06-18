@@ -16,7 +16,7 @@ struct SessionExpiredAlertView: View {
             VStack(spacing: 20) {
                 Image(systemName: "clock.badge.exclamationmark")
                     .font(.system(size: 50))
-                    .foregroundStyle(.orange, .primary)
+                    .foregroundStyle(Color.warning, Color.primary)
                     .symbolEffect(.bounce, value: isVisible)
                 
                 Text(String(localized: "session.expired.title"))

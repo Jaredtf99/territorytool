@@ -1,9 +1,6 @@
 import Foundation
 
 struct AppConfig {
-    //DES
-    //static let apiBaseURL = "https://desterritorytool-c3dje9gcbza3ebam.francecentral-01.azurewebsites.net"
-    
-    //PRO
-    static let apiBaseURL = "https://territorytoolapi.azurewebsites.net"
+    static let supabaseURL = "https://oedcfdvywibzjtoggcgh.supabase.co"
+    static let supabasePublishableKey = "sb_publishable_ce7dSBmgyydxEoqekFZ-Ww_RMe-2MCb"
 }

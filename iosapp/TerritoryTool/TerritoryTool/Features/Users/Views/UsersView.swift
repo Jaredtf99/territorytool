@@ -2,12 +2,9 @@ import SwiftUI
 
 struct UsersView: View {
     @StateObject private var viewModel = DIContainer.shared.makeUsersViewModel()
-    @State private var showingAddSheet = false
-    @State private var isSearching = false
     @State private var showingDeleteConfirmation = false
     @State private var userToDelete: User?
-    @Environment(\.isSearching) private var envIsSearching
-    
+
     var body: some View {
         List {
             if viewModel.isLoading && viewModel.users.isEmpty {
@@ -15,6 +12,20 @@ struct UsersView: View {
                     .frame(maxWidth: .infinity, minHeight: 200)
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
+            } else if let error = viewModel.errorMessage, viewModel.users.isEmpty {
+                ContentUnavailableView {
+                    Label("common.error", systemImage: "exclamationmark.triangle.fill")
+                } description: {
+                    Text(error)
+                } actions: {
+                    Button("common.retry") {
+                        Task { await viewModel.fetchUsers() }
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .frame(maxWidth: .infinity, minHeight: 200)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
             } else if viewModel.filteredUsers.isEmpty {
                 VStack(spacing: 16) {
                     Image(systemName: "person.slash")
@@ -36,22 +47,15 @@ struct UsersView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .refreshable {
-            viewModel.fetchUsers()
+            await viewModel.fetchUsers()
+            HapticManager.shared.notification(type: .success)
         }
         .navigationTitle("users.title")
-        .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $viewModel.searchText, isPresented: $isSearching, prompt: "users.search_placeholder")
+        .navigationBarTitleDisplayMode(.large)
+        // Título .large: la barra de búsqueda queda fija bajo el título y no
+        // compite con el gesto de pull-to-refresh (igual que en Territorios).
+        .searchable(text: $viewModel.searchText, placement: .automatic, prompt: "users.search_placeholder")
         .toolbar {
-            ToolbarItem() {
-                Button {
-                    isSearching.toggle()
-                } label: {
-                    Image(systemName: "magnifyingglass")
-                }
-            }
-            
-            ToolbarSpacer(.flexible)
-            
             ToolbarItem() {
                 Button {
                     viewModel.showAddSheet = true
@@ -65,13 +69,13 @@ struct UsersView: View {
         }
         .sheet(isPresented: $viewModel.showAddSheet, onDismiss: {
             // Refresh when add sheet is dismissed (saved or cancelled)
-            viewModel.fetchUsers()
+            Task { await viewModel.fetchUsers() }
         }) {
             AddEditUserView(viewModel: viewModel, mode: .add)
         }
         .sheet(isPresented: $viewModel.showEditSheet, onDismiss: {
             // Refresh when edit sheet is dismissed
-            viewModel.fetchUsers()
+            Task { await viewModel.fetchUsers() }
         }) {
             if let user = viewModel.selectedUser {
                 AddEditUserView(viewModel: viewModel, mode: .edit(user))
@@ -82,16 +86,13 @@ struct UsersView: View {
                 if let user = userToDelete {
                     Task {
                         await viewModel.deleteUser(user: user)
-                        await viewModel.fetchUsers() 
                     }
                 }
             }
             Button("common.cancel", role: .cancel) {}
         }
         .task {
-            if viewModel.users.isEmpty {
-                viewModel.fetchUsers()
-            }
+            await viewModel.fetchUsers()
         }
     }
     
@@ -117,9 +118,9 @@ struct UsersView: View {
                     } label: {
                         Image(systemName: "trash")
                     }
-                    .tint(.red)
+                    .tint(.danger)
                 }
-                
+
                 if viewModel.canEdit(user: user) {
                     Button {
                         HapticManager.shared.selection()
@@ -128,7 +129,7 @@ struct UsersView: View {
                     } label: {
                         Image(systemName: "pencil")
                     }
-                    .tint(.brandPrimary)
+                    .tint(.accent)
                 }
             }
     }

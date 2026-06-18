@@ -10,9 +10,11 @@ class LoginViewModel: ObservableObject {
     @Published var isAuthenticated = false
     
     private let apiService: APIService
+    private let authService: SupabaseAuthService
     
-    init(apiService: APIService) {
+    init(apiService: APIService, authService: SupabaseAuthService = .shared) {
         self.apiService = apiService
+        self.authService = authService
         self.isAuthenticated = TokenManager.shared.isAuthenticated
     }
     
@@ -26,10 +28,14 @@ class LoginViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            let credentials = LoginCredentials(userName: userName, password: password)
-            let response: LoginResponse = try await apiService.request(endpoint: TerritoryEndpoint.login(credentials: credentials))
-            
+            let response = try await authService.login(username: userName, password: password)
             TokenManager.shared.saveToken(response.token)
+            TokenManager.shared.saveRefreshToken(response.session.refreshToken)
+            TokenManager.shared.saveProfile(userName: response.profile?.username, role: response.profile?.role)
+            TokenManager.shared.saveActiveCongregationId(response.profile?.activeCongregationId)
+            if let congregations = response.congregations {
+                TokenManager.shared.saveCongregations(try? JSONEncoder().encode(congregations))
+            }
             isAuthenticated = true
         } catch {
             errorMessage = "Login failed: \(error.localizedDescription)"

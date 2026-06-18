@@ -4,7 +4,7 @@ import { ToastrService } from 'ngx-toastr';
 import { TerritoryService } from '../../shared/territory.service';
 import { NgxSpinnerService } from 'ngx-spinner';
 import { Territory } from '../../classes/Territory';
-import { Observable, Subject, catchError, concat, distinctUntilChanged, of, switchMap, tap } from 'rxjs';
+import { Observable, Subject, catchError, concat, debounceTime, distinctUntilChanged, filter, of, switchMap, tap } from 'rxjs';
 import { NgxScannerQrcodeComponent, ScannerQRCodeConfig, ScannerQRCodeResult } from 'ngx-scanner-qrcode';
 import { AppService } from '../../shared/app.service';
 import { ActivatedRoute } from '@angular/router';
@@ -57,6 +57,7 @@ export class PickTerritoryComponent implements AfterViewInit {
             this.pickTerritoryForm.patchValue({
               selectedTerritory: territory
             });
+            this.loadTerritories();
             this.spinner.hide();
           },
           error: (err) => {
@@ -77,6 +78,7 @@ export class PickTerritoryComponent implements AfterViewInit {
           this.pickTerritoryForm.patchValue({
             selectedTerritory: territory
           });
+          this.loadTerritories();
         }
       });
     }
@@ -165,16 +167,21 @@ export class PickTerritoryComponent implements AfterViewInit {
 
 
   private loadTerritories() {
-    this.territories$ =
+    // Seed the items with the currently selected territory so ng-select can
+    // render it (e.g. preselected via route/QR) before any search has run.
+    this.territories$ = concat(
+      of(this.selectedTerritory ? [this.selectedTerritory] : []),
       this.territoriesInput$.pipe(
+        filter((term): term is string => (term?.length ?? 0) >= 2),
+        debounceTime(250),
         distinctUntilChanged(),
         tap(() => this.territoriesLoading = true),
         switchMap(term => this.territoryService.searchGivenTerritories(term, 3).pipe(
           catchError(() => of([])), // empty list on error
           tap(() => this.territoriesLoading = false)
         ))
-
-      );
+      )
+    );
   }
 
   pickTerritory() {
@@ -210,6 +217,8 @@ export class PickTerritoryComponent implements AfterViewInit {
     this.territoryService.getTerritoryByMapUrl(e[0].value).subscribe({
       next: resp => {
         this.selectedTerritory = resp;
+        this.pickTerritoryForm.patchValue({ selectedTerritory: resp });
+        this.loadTerritories();
       },
       error: err => {
         this.toastr.error('Error inesperado');

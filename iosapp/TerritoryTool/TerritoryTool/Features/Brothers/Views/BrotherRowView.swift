@@ -64,10 +64,9 @@ struct BrotherRowView: View {
                                     .font(.caption)
                                     .rotationEffect(.degrees(isExpanded ? -180 : 0))
                             }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.brandPrimary.opacity(0.1))
-                            .cornerRadius(8)
+                            .padding(.horizontal, AppSpacing.xs)
+                            .padding(.vertical, AppSpacing.xxs)
+                            .background(Color.accent.opacity(0.12), in: .rect(cornerRadius: AppRadius.sm))
                             .foregroundColor(.primary) // Reset color to avoid picking up accentColor(.clear)
                         }
                     }

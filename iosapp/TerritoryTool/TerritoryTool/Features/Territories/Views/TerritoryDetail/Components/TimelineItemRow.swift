@@ -10,15 +10,15 @@ struct TimelineItemRow: View {
             // Timeline line and dot
             VStack(spacing: 0) {
                 Circle()
-                    .fill(transaction.pickedDateUtc == nil ? Color.green : Color.blue)
+                    .fill(transaction.pickedDateUtc == nil ? Color.accent : Color.accentSecondary)
                     .frame(width: 12, height: 12)
                     .background(
                         Circle()
-                            .stroke(Color.primary.opacity(0.1), lineWidth: 4)
+                            .stroke(Color.hairline, lineWidth: 4)
                     )
-                
+
                 Rectangle()
-                    .fill(Color.primary.opacity(0.1))
+                    .fill(Color.hairline)
                     .frame(width: 2)
                     .frame(maxHeight: .infinity)
             }
@@ -67,12 +67,11 @@ struct TimelineItemRow: View {
                         .foregroundColor(.secondary)
                 } else {
                     Text("territory.history.currently_assigned")
-                        .font(.subheadline)
-                        .foregroundColor(.green)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(Color.green.opacity(0.1))
-                        .cornerRadius(4)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.accent)
+                        .padding(.horizontal, AppSpacing.xs)
+                        .padding(.vertical, 3)
+                        .background(Color.accent.opacity(0.12), in: .rect(cornerRadius: AppRadius.sm))
                 }
             }
             .padding(.bottom, 24)

@@ -25,6 +25,7 @@
     "@angular/platform-browser-dynamic": "^16.2.0",
     "@angular/router": "^16.2.0",
     "@ng-select/ng-select": "^11.2.0",
+    "@supabase/supabase-js": "^2.108.2",
     "@types/tabulator-tables": "^5.5.4",
     "bootstrap": "^5.3.2",
     "jest-editor-support": "*",
@@ -43,6 +44,7 @@
   },
   "devDependencies": {
     "@types/jasmine": "~4.3.0",
+    "@types/node": "^20.19.43",
     "eslint": "^8.51.0",
     "jasmine-core": "~4.6.0",
     "karma": "~6.4.0",

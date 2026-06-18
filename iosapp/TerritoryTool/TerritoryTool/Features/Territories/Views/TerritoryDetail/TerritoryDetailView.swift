@@ -19,7 +19,7 @@ struct TerritoryDetailView: View {
     
     init(territoryId: Int, territoryName: String) {
         self.territoryName = territoryName
-        _viewModel = StateObject(wrappedValue: TerritoryDetailViewModel(territoryId: territoryId, apiService: NetworkManager()))
+        _viewModel = StateObject(wrappedValue: TerritoryDetailViewModel(territoryId: territoryId, apiService: NetworkManager.shared))
     }
     
     var body: some View {
@@ -30,12 +30,12 @@ struct TerritoryDetailView: View {
             if viewModel.isLoading {
                 ProgressView()
                     .scaleEffect(1.5)
-                    .tint(.white)
+                    .tint(.accent)
             } else if let errorMessage = viewModel.errorMessage {
                 VStack(spacing: 16) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 50))
-                        .foregroundColor(.yellow)
+                        .foregroundColor(.warning)
                     Text("territory.detail.error")
                         .font(.title2)
                         .fontWeight(.bold)
@@ -124,7 +124,7 @@ struct TerritoryDetailView: View {
                         showDeleteAlert = true
                     } label: {
                         Image(systemName: "trash")
-                            .foregroundColor(.red)
+                            .foregroundColor(.danger)
                     }
                 }
             }
@@ -171,7 +171,7 @@ struct TerritoryDetailView: View {
         }
         .sheet(isPresented: $showEditSheet) {
             if let territory = viewModel.territory {
-                EditTerritoryView(territory: territory, apiService: NetworkManager()) {
+                EditTerritoryView(territory: territory, apiService: NetworkManager.shared) {
                     Task {
                         await viewModel.loadData()
                     }
@@ -199,32 +199,11 @@ struct TerritoryDetailView: View {
     
     private func headerSection(territory: TerritoryDetail) -> some View {
         VStack(spacing: 20) {
-            // Map Image
+            // Interactive territory map, with the legacy image as a fallback
             Color.clear
                 .frame(height: 250)
                 .overlay(
-                    CachedAsyncImage(
-                        url: URL(string: territory.imgUrl ?? ""),
-                        content: { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        },
-                        placeholder: {
-                            ProgressView()
-                                .tint(.white)
-                        },
-                        errorView: {
-                            VStack {
-                                Image(systemName: "map.fill")
-                                    .font(.largeTitle)
-                                    .foregroundColor(.secondary)
-                                Text("territory.detail.map_unavailable")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    )
+                    territoryMap(territory: territory)
                 )
                 .clipped()
                 .cornerRadius(12)
@@ -247,6 +226,36 @@ struct TerritoryDetailView: View {
             
         }
     }
+
+    @ViewBuilder
+    private func territoryMap(territory: TerritoryDetail) -> some View {
+        if let geometry = territory.mapGeometry {
+            TerritoryMapView(geometry: geometry)
+        } else {
+            CachedAsyncImage(
+                url: URL(string: territory.imgUrl ?? ""),
+                content: { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                },
+                placeholder: {
+                    ProgressView()
+                        .tint(.accent)
+                },
+                errorView: {
+                    VStack {
+                        Image(systemName: "map.fill")
+                            .font(.largeTitle)
+                            .foregroundColor(.secondary)
+                        Text("territory.detail.map_unavailable")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            )
+        }
+    }
     
     private func actionButtons(territory: TerritoryDetail) -> some View {
         HStack(spacing: 16) {
@@ -255,12 +264,12 @@ struct TerritoryDetailView: View {
                     TerritoryAssignmentView(territory: territory.toTerritory())
                 } label: {
                     Label("territory.detail.assign", systemImage: "person.badge.plus")
+                        .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.blue)
+                        .background(Color.accent, in: .rect(cornerRadius: AppRadius.md, style: .continuous))
                         .foregroundColor(.white)
-                        .cornerRadius(12)
-                        .shadow(color: .blue.opacity(0.3), radius: 5, x: 0, y: 3)
+                        .shadow(color: .accent.opacity(0.3), radius: 8, x: 0, y: 4)
                 }
                 .simultaneousGesture(TapGesture().onEnded {
                     HapticManager.shared.selection()
@@ -270,12 +279,12 @@ struct TerritoryDetailView: View {
                     TerritoryReturnView(territory: territory.toTerritory())
                 } label: {
                     Label("territory.detail.return", systemImage: "arrow.uturn.backward")
+                        .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.green)
+                        .background(Color.success, in: .rect(cornerRadius: AppRadius.md, style: .continuous))
                         .foregroundColor(.white)
-                        .cornerRadius(12)
-                        .shadow(color: .green.opacity(0.3), radius: 5, x: 0, y: 3)
+                        .shadow(color: .success.opacity(0.3), radius: 8, x: 0, y: 4)
                 }
                 .simultaneousGesture(TapGesture().onEnded {
                     HapticManager.shared.selection()
@@ -292,7 +301,7 @@ struct TerritoryDetailView: View {
                 value: String(format: String.localized("territory.stats.rank_value"), stats.usageRank, stats.totalTerritories),
                 description: "territory.stats.rank_desc",
                 icon: "trophy.fill",
-                color: .yellow
+                color: .accentSecondary
             )
             
             // Active Time
@@ -302,9 +311,9 @@ struct TerritoryDetailView: View {
                 comparisonValue: String(format: String.localized("territory.stats.global_avg"), String(format: String.localized("territory.stats.percentage"), stats.globalAverageAssignedTimePercentage)),
                 description: "territory.stats.active_time_desc",
                 trend: stats.assignedTimePercentage > stats.globalAverageAssignedTimePercentage ? .up : (stats.assignedTimePercentage < stats.globalAverageAssignedTimePercentage ? .down : .neutral),
-                trendColor: stats.assignedTimePercentage > stats.globalAverageAssignedTimePercentage ? .green : (stats.assignedTimePercentage < stats.globalAverageAssignedTimePercentage ? .red : .secondary),
+                trendColor: stats.assignedTimePercentage > stats.globalAverageAssignedTimePercentage ? .success : (stats.assignedTimePercentage < stats.globalAverageAssignedTimePercentage ? .danger : .secondary),
                 icon: "chart.pie.fill",
-                color: .blue
+                color: .accent
             )
             
             // Idle Time
@@ -314,9 +323,9 @@ struct TerritoryDetailView: View {
                 comparisonValue: String(format: String.localized("territory.stats.global_avg"), String(format: String.localized("territory.stats.days"), stats.globalAverageReassignmentTime)),
                 description: "territory.stats.idle_time_desc",
                 trend: stats.averageReassignmentTime > stats.globalAverageReassignmentTime ? .up : (stats.averageReassignmentTime < stats.globalAverageReassignmentTime ? .down : .neutral),
-                trendColor: stats.averageReassignmentTime > stats.globalAverageReassignmentTime ? .green : (stats.averageReassignmentTime < stats.globalAverageReassignmentTime ? .red : .secondary),
+                trendColor: stats.averageReassignmentTime > stats.globalAverageReassignmentTime ? .success : (stats.averageReassignmentTime < stats.globalAverageReassignmentTime ? .danger : .secondary),
                 icon: "hourglass",
-                color: .gray
+                color: .info
             )
             
             // Avg Duration
@@ -326,9 +335,9 @@ struct TerritoryDetailView: View {
                 comparisonValue: String(format: String.localized("territory.stats.global_avg"), String(format: String.localized("territory.stats.days"), stats.globalAverageHoldingTime)),
                 description: "territory.stats.avg_duration_desc",
                 trend: stats.averageHoldingTime > stats.globalAverageHoldingTime ? .up : (stats.averageHoldingTime < stats.globalAverageHoldingTime ? .down : .neutral),
-                trendColor: stats.averageHoldingTime > stats.globalAverageHoldingTime ? .green : (stats.averageHoldingTime < stats.globalAverageHoldingTime ? .red : .secondary),
+                trendColor: stats.averageHoldingTime > stats.globalAverageHoldingTime ? .success : (stats.averageHoldingTime < stats.globalAverageHoldingTime ? .danger : .secondary),
                 icon: "clock.fill",
-                color: .orange
+                color: .accentSecondary
             )
             
             // Unique Users
@@ -338,9 +347,9 @@ struct TerritoryDetailView: View {
                 comparisonValue: String(format: String.localized("territory.stats.global_avg"), String(format: "%.1f", stats.globalAverageUniqueUsersCount)),
                 description: "territory.stats.unique_users_desc",
                 trend: Double(stats.uniqueUsersCount) > stats.globalAverageUniqueUsersCount ? .up : (Double(stats.uniqueUsersCount) < stats.globalAverageUniqueUsersCount ? .down : .neutral),
-                trendColor: Double(stats.uniqueUsersCount) > stats.globalAverageUniqueUsersCount ? .green : (Double(stats.uniqueUsersCount) < stats.globalAverageUniqueUsersCount ? .red : .secondary),
+                trendColor: Double(stats.uniqueUsersCount) > stats.globalAverageUniqueUsersCount ? .success : (Double(stats.uniqueUsersCount) < stats.globalAverageUniqueUsersCount ? .danger : .secondary),
                 icon: "person.2.fill",
-                color: .purple
+                color: .info
             )
         }
     }
@@ -385,9 +394,8 @@ extension TerritoryDetail {
             imgUrl: self.imgUrl,
             personName: self.personName,
             givenDateUtc: self.givenDateUtc,
-            lastPickedDateUtc: self.lastPickedDateUtc
+            lastPickedDateUtc: self.lastPickedDateUtc,
+            mapGeometry: self.mapGeometry
         )
     }
 }
-
-

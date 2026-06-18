@@ -49,7 +49,7 @@
                 {
                   "type": "initial",
                   "maximumWarning": "1mb",
-                  "maximumError": "2mb"
+                  "maximumError": "2.25mb"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -74,18 +74,13 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "angularapp:build:production",
-              "proxyConfig": "src/proxy.conf.js"
+              "browserTarget": "angularapp:build:production"
             },
             "development": {
-              "browserTarget": "angularapp:build:development",
-              "proxyConfig": "src/proxy.conf.js"
+              "browserTarget": "angularapp:build:development"
             }
           },
-          "defaultConfiguration": "development",
-          "options": {
-            "proxyConfig": "src/proxy.conf.js"
-          }
+          "defaultConfiguration": "development"
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",

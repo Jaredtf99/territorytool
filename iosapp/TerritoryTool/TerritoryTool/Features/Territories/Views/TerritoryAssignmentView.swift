@@ -39,12 +39,11 @@ struct TerritoryAssignmentView: View {
                         }) {
                             Image(systemName: "qrcode.viewfinder")
                                 .font(.system(size: 24))
-                                .foregroundColor(.white)
+                                .foregroundStyle(.white)
                                 .frame(width: 50, height: 50)
-                                .background(Color.blue)
-                                .cornerRadius(12)
-                                .shadow(color: .blue.opacity(0.3), radius: 5, x: 0, y: 3)
+                                .background(Color.accent, in: .rect(cornerRadius: AppRadius.md))
                         }
+                        .accessibilityLabel(Text("assignment.search_territory"))
                     }
                     .padding(.horizontal)
                     
@@ -97,25 +96,17 @@ struct TerritoryAssignmentView: View {
                 // MARK: - Date Selection
                 VStack(alignment: .leading, spacing: 16) {
                     Toggle("assignment.custom_date", isOn: $viewModel.useCustomDate)
-                        .padding()
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
-                        )
+                        .tint(.accent)
+                        .padding(AppSpacing.md)
+                        .glassEffect(.regular, in: .rect(cornerRadius: AppRadius.md))
                         .padding(.horizontal)
-                    
+
                     if viewModel.useCustomDate {
                         DatePicker("assignment.date", selection: $viewModel.customDate, displayedComponents: [.date, .hourAndMinute])
                             .datePickerStyle(.graphical)
-                            .padding()
-                            .background(.ultraThinMaterial)
-                            .cornerRadius(12)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
-                            )
+                            .tint(.accent)
+                            .padding(AppSpacing.md)
+                            .glassEffect(.regular, in: .rect(cornerRadius: AppRadius.md))
                             .padding(.horizontal)
                             .transition(.scale.combined(with: .opacity))
                     }
@@ -127,26 +118,24 @@ struct TerritoryAssignmentView: View {
                         _ = await viewModel.assignTerritory()
                     }
                 }) {
-                    HStack {
+                    HStack(spacing: AppSpacing.xs) {
                         if viewModel.isSubmitting {
                             ProgressView()
                                 .tint(.white)
                         } else {
                             Text("assignment.button.assign")
-                                .fontWeight(.bold)
+                                .fontWeight(.semibold)
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                    .shadow(color: .blue.opacity(0.3), radius: 5, x: 0, y: 3)
+                    .padding(.vertical, AppSpacing.xs)
                 }
+                .buttonStyle(.glassProminent)
+                .tint(.accent)
+                .controlSize(.large)
                 .disabled(viewModel.selectedTerritory == nil || viewModel.selectedPerson == nil || viewModel.isSubmitting)
-                .opacity((viewModel.selectedTerritory == nil || viewModel.selectedPerson == nil) ? 0.5 : 1)
                 .padding(.horizontal)
-                .padding(.bottom, 32)
+                .padding(.bottom, AppSpacing.xl)
             }
             .padding(.top)
         }

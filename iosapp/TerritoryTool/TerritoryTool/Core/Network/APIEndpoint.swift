@@ -51,6 +51,8 @@ enum TerritoryEndpoint: APIEndpoint {
     case login(credentials: LoginCredentials)
     case getTerritories(term: String?, inUse: Bool?, orderBy: Int?, orderByAscending: Bool?, lastGivenDateFrom: Date?, lastGivenDateTo: Date?)
     case refreshTerritoryImage(id: Int)
+    case syncTerritoryMap(id: Int)
+    case syncAllTerritoryMaps
     case deleteTerritory(id: Int)
     case addPerson(name: String)
     case addTerritory(code: String, name: String, mapUrl: String)
@@ -68,67 +70,14 @@ enum TerritoryEndpoint: APIEndpoint {
     case updateTransaction(id: Int, territoryId: Int, personId: Int?, date: Date, pickedDate: Date?)
     
     var path: String {
-        switch self {
-        case .getTerritory(let id):
-            return "/api/v1/territories/\(id)"
-        case .getTerritoryDetail(let id):
-            return "/api/v1/territories/\(id)/detail"
-        case .getTerritoryStats(let id):
-            return "/api/v1/territories/\(id)/statistics"
-        case .getTerritoryTransactions(let id):
-            return "/api/v1/territories/\(id)/transactions"
-        case .giveTerritory:
-            return "/api/v1/territories/give-territory"
-        case .pickTerritory:
-            return "/api/v1/territories/pick-territory"
-        case .getPersons(let search):
-            if let search = search, !search.isEmpty, let encoded = search.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) {
-                return "/api/v1/persons/\(encoded)"
-            }
-            return "/api/v1/persons"
-        case .addPerson:
-            return "/api/v1/persons"
-        case .updatePerson(let id, _, _):
-            return "/api/v1/persons/\(id)"
-        case .deletePerson(let name):
-            if let encoded = name.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) {
-                return "/api/v1/persons/\(encoded)"
-            }
-            return "/api/v1/persons/\(name)"
-        case .login:
-            return "/api/v1/users/login"
-        case .getTerritories:
-            return "/api/v1/territories/all"
-        case .refreshTerritoryImage(let id):
-            return "/api/v1/territories/\(id)/refresh-image"
-        case .deleteTerritory(let id), .updateTerritory(let id, _, _, _):
-            return "/api/v1/territories/\(id)"
-        case .addTerritory:
-            return "/api/v1/territories"
-        case .getUsers:
-            return "/api/v1/users"
-        case .addUser:
-            return "/api/v1/users/register"
-        case .updateUser(let id, _, _):
-            return "/api/v1/users/\(id)"
-        case .deleteUser(let id):
-            return "/api/v1/users/\(id)"
-        case .changeUserPassword(let id, _):
-            return "/api/v1/users/\(id)/change-password"
-        case .getRecentTransactions:
-            return "/api/v1/transactions/recent"
-        case .getActionLogs:
-            return "/api/v1/actionlogs"
-        case .deleteTransaction(let id), .updateTransaction(let id, _, _, _, _):
-            return "/api/v1/transactions/\(id)"
-        }
+        return ""
     }
     
     var method: HTTPMethod {
         switch self {
         case .getTerritory, .getTerritoryDetail, .getTerritoryStats, .getTerritoryTransactions, .getPersons, .getTerritories:
             return .GET
-        case .giveTerritory, .pickTerritory, .login, .refreshTerritoryImage, .addPerson, .updateTerritory, .addTerritory:
+        case .giveTerritory, .pickTerritory, .login, .refreshTerritoryImage, .syncTerritoryMap, .syncAllTerritoryMaps, .addPerson, .updateTerritory, .addTerritory:
             return .POST
         case .updatePerson:
             return .PUT

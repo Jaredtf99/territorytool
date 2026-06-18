@@ -1,21 +1,26 @@
 import SwiftUI
 
+/// Badge del código de territorio con gradiente de acento. Ver docs/DESIGN_GUIDE.md §5.
 struct TerritoryCodeBadge: View {
     let code: String
     var fontSize: Font = .system(.title3, design: .rounded)
-    var paddingHorizontal: CGFloat = 12
-    var paddingVertical: CGFloat = 6
-    
+    var paddingHorizontal: CGFloat = AppSpacing.sm
+    var paddingVertical: CGFloat = AppSpacing.xs
+
     var body: some View {
         Text(code)
             .font(fontSize.weight(.bold))
-            .foregroundColor(.white)
+            .foregroundStyle(.white)
             .padding(.horizontal, paddingHorizontal)
             .padding(.vertical, paddingVertical)
             .background(
-                LinearGradient(colors: [.brandPrimary, .brandSecondary], startPoint: .topLeading, endPoint: .bottomTrailing)
+                LinearGradient(
+                    colors: [.accent, .accentSecondary],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
             )
             .clipShape(Capsule())
-            .shadow(color: .brandPrimary.opacity(0.3), radius: 4, x: 0, y: 2)
+            .accessibilityLabel(Text(verbatim: code))
     }
 }

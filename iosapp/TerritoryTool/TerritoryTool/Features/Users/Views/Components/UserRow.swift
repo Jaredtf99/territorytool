@@ -36,9 +36,9 @@ struct RoleBadge: View {
     
     var backgroundColor: Color {
         switch role {
-        case .superAdmin: return .red
-        case .admin: return .orange
-        case .user: return .blue
+        case .superAdmin: return .danger
+        case .admin: return .warning
+        case .user: return .accent
         }
     }
 }

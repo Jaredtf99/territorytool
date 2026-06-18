@@ -32,11 +32,31 @@ class TerritoryDetailViewModel: ObservableObject {
             self.territory = detail
             self.stats = statistics
             self.transactions = txs
+
+            if detail.mapGeometry == nil {
+                await syncMapGeometry()
+            }
         } catch {
-            self.errorMessage = "Error loading data: \(error.localizedDescription)"
+            if !error.isCancellation {
+                self.errorMessage = "Error loading data: \(error.localizedDescription)"
+            }
         }
-        
+
         isLoading = false
+    }
+
+    private func syncMapGeometry() async {
+        do {
+            try await apiService.request(endpoint: TerritoryEndpoint.syncTerritoryMap(id: territoryId))
+            let updatedDetail: TerritoryDetail = try await apiService.request(
+                endpoint: TerritoryEndpoint.getTerritoryDetail(id: territoryId)
+            )
+            self.territory = updatedDetail
+        } catch {
+            // Keep the legacy image fallback. Geometry can be retried on the
+            // next detail load or through the administrator refresh action.
+            print("Unable to synchronize territory map geometry: \(error)")
+        }
     }
     
     func refreshImage() async -> Bool {
@@ -49,7 +69,8 @@ class TerritoryDetailViewModel: ObservableObject {
             isRefreshingImage = false
             return true
         } catch {
-            self.errorMessage = "Error refreshing image: \(error.localizedDescription)"
+            // Don't replace the whole detail view with an error; surface it as a toast.
+            ToastManager.shared.show("territory_detail.refresh_image_failed", style: .error)
             isRefreshingImage = false
             return false
         }

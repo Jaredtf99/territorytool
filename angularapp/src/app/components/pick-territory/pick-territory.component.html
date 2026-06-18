@@ -51,7 +51,7 @@
                 <span class="preview-person">{{selectedTerritory.personName}}</span>
               </div>
   
-              <div class="info-line">
+              <div class="info-line" *ngIf="selectedTerritory.givenDateUtc">
                 <i class="fas fa-calendar"></i>
                 <span class="preview-date">{{selectedTerritory.givenDateUtc | timeago}}</span>
               </div>

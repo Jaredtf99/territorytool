@@ -13,6 +13,7 @@ webapi/Resources
 /webapi/appsettings.Development.json
 /TerritoryTool.slnLaunch.user
 /webapi/TerritoryTool.db
+TerritoryTool.db-*
 
 # Xcode build & user data
 iosapp/TerritoryTool/build/

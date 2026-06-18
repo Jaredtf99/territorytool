@@ -5,7 +5,6 @@ import SwiftUI
 @MainActor
 class BrothersViewModel: ObservableObject {
     @Published var brothers: [Person] = []
-    @Published var filteredBrothers: [Person] = []
     @Published var searchText: String = ""
     @Published var isLoading: Bool = true
     @Published var errorMessage: String?
@@ -13,11 +12,18 @@ class BrothersViewModel: ObservableObject {
     @Published var showEditSheet: Bool = false
     @Published var selectedBrother: Person?
     @Published var expandedBrotherIds: Set<Int> = []
-    
+
+    /// Lista filtrada derivada de `brothers` + `searchText`. Al ser una propiedad
+    /// computada sobre @Published, SwiftUI la reevalúa sola sin estado duplicado.
+    var filteredBrothers: [Person] {
+        guard !searchText.isEmpty else { return brothers }
+        return brothers.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    }
+
     func isExpanded(_ brotherId: Int) -> Bool {
         expandedBrotherIds.contains(brotherId)
     }
-    
+
     func toggleExpanded(_ brotherId: Int) {
         if expandedBrotherIds.contains(brotherId) {
             expandedBrotherIds.remove(brotherId)
@@ -25,62 +31,40 @@ class BrothersViewModel: ObservableObject {
             expandedBrotherIds.insert(brotherId)
         }
     }
-    
+
     private let networkManager: APIService
     private var cancellables = Set<AnyCancellable>()
-    
+
     init(networkManager: APIService = NetworkManager.shared) {
         self.networkManager = networkManager
-        
-        // Debounce search text
-        $searchText
-            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
-            .removeDuplicates()
+
+        // Reload when the active congregation changes (multi-tenant).
+        NotificationCenter.default.publisher(for: .congregationChanged)
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.filterBrothers()
-            }
-            .store(in: &cancellables)
-            
-        // Also refilter when brothers list changes
-        $brothers
-            .sink { [weak self] _ in
-                self?.filterBrothers()
+                self?.brothers = []
+                Task { [weak self] in await self?.fetchBrothers() }
             }
             .store(in: &cancellables)
     }
-    
-    private func filterBrothers() {
-        let text = searchText
-        let currentBrothers = brothers
-        
-        let filtered: [Person]
-        if text.isEmpty {
-            filtered = currentBrothers
-        } else {
-            filtered = currentBrothers.filter { $0.name.localizedCaseInsensitiveContains(text) }
-        }
-        
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-            self.filteredBrothers = filtered
-        }
-    }
-    
-    func fetchBrothers() {
+
+    func fetchBrothers() async {
         isLoading = true
         errorMessage = nil
-        
-        Task {
-            do {
-                let brothers: [Person] = try await networkManager.request(endpoint: TerritoryEndpoint.getPersons(search: nil))
-                self.brothers = brothers.sorted { $0.name < $1.name }
-                self.isLoading = false
-            } catch {
+
+        do {
+            let fetched: [Person] = try await networkManager.request(endpoint: TerritoryEndpoint.getPersons(search: nil))
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                self.brothers = fetched.sorted { $0.name < $1.name }
+            }
+        } catch {
+            if !error.isCancellation {
                 self.errorMessage = error.localizedDescription
-                self.isLoading = false
             }
         }
+        self.isLoading = false
     }
-    
+
     func addBrother(name: String) async -> Bool {
         isLoading = true
         errorMessage = nil
@@ -88,7 +72,7 @@ class BrothersViewModel: ObservableObject {
         do {
             try await networkManager.request(endpoint: TerritoryEndpoint.addPerson(name: name))
             ToastManager.shared.show("brothers.add_success", style: .success)
-            fetchBrothers()
+            await fetchBrothers()
             return true
         } catch {
             var message = error.localizedDescription
@@ -109,7 +93,7 @@ class BrothersViewModel: ObservableObject {
         do {
             try await networkManager.request(endpoint: TerritoryEndpoint.updatePerson(id: person.id, name: newName, enabled: enabled))
             ToastManager.shared.show("brothers.update_success", style: .success)
-            fetchBrothers()
+            await fetchBrothers()
             return true
         } catch {
             var message = error.localizedDescription
@@ -132,7 +116,7 @@ class BrothersViewModel: ObservableObject {
         do {
             try await networkManager.request(endpoint: TerritoryEndpoint.deletePerson(name: person.name))
             ToastManager.shared.show("brothers.delete_success", style: .success)
-            fetchBrothers()
+            await fetchBrothers()
         } catch {
             self.errorMessage = error.localizedDescription
             ToastManager.shared.show(error.localizedDescription, style: .error)

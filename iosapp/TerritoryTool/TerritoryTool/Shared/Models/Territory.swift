@@ -9,6 +9,7 @@ struct Territory: Codable, Identifiable, Equatable {
     let personName: String?
     let givenDateUtc: Date?
     let lastPickedDateUtc: Date?
+    let mapGeometry: TerritoryMapGeometry?
 }
 
 struct TerritoryDetail: Codable, Identifiable {
@@ -23,6 +24,42 @@ struct TerritoryDetail: Codable, Identifiable {
     let pickedCount: Int
     let lastUser: String?
     let timelineItems: [TimelineItem]
+    let mapGeometry: TerritoryMapGeometry?
+}
+
+struct TerritoryMapGeometry: Codable, Equatable {
+    let version: Int
+    let bounds: TerritoryMapBounds
+    let polygons: [TerritoryMapFeature]
+    let polylines: [TerritoryMapFeature]
+    let markers: [TerritoryMapMarker]
+}
+
+struct TerritoryMapBounds: Codable, Equatable {
+    let south: Double
+    let west: Double
+    let north: Double
+    let east: Double
+}
+
+struct TerritoryMapCoordinate: Codable, Equatable {
+    let latitude: Double
+    let longitude: Double
+}
+
+struct TerritoryMapFeature: Codable, Identifiable, Equatable {
+    let id: String
+    let name: String?
+    let description: String?
+    let coordinates: [TerritoryMapCoordinate]
+}
+
+struct TerritoryMapMarker: Codable, Identifiable, Equatable {
+    let id: String
+    let title: String?
+    let description: String?
+    let latitude: Double
+    let longitude: Double
 }
 
 struct TerritoryStatistics: Codable {

@@ -1,27 +1,69 @@
 import SwiftUI
+import UIKit
 
+// MARK: - Design tokens (fuente única de color). Tema "Cartográfico cálido".
+// Paleta de mapa/expedición: papel cálido, verde bosque, ámbar y terracota.
+// Todos los colores son dinámicos claro/oscuro.
 extension Color {
-    // Brand Colors
-    static let brandPrimary = Color.blue
-    static let brandSecondary = Color.indigo
-    
-    // Semantic Colors
-    static let background = Color(uiColor: .systemBackground)
-    static let secondaryBackground = Color(uiColor: .secondarySystemBackground)
-    static let textPrimary = Color.primary
-    static let textSecondary = Color.secondary
-    
-    // Status Colors
-    static let success = Color.green
-    static let warning = Color.orange
-    static let error = Color.red
-    
-    // Legacy support (to be removed after refactor, mapped to new system)
-    static let appBackground = Color(uiColor: .systemGroupedBackground)
-    static let glassBorder = Color.clear
-    static let glassShadow = Color.black.opacity(0.1)
-    static let gradientStart = brandPrimary
-    static let gradientEnd = brandSecondary
+
+    /// Color dinámico claro/oscuro a partir de enteros 0xRRGGBB.
+    init(light: UInt, dark: UInt) {
+        self.init(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark ? UIColor(rgb: dark) : UIColor(rgb: light)
+        })
+    }
+
+    // MARK: Acento / marca
+    /// Verde bosque — acción principal, selección, rutas.
+    static let accent          = Color(light: 0x2F6B4F, dark: 0x5FB389)
+    /// Ámbar — acento cálido secundario, énfasis.
+    static let accentSecondary = Color(light: 0xD98A2B, dark: 0xE8A857)
+    /// Terracota — tercer acento, marcadores.
+    static let accentTertiary  = Color(light: 0xC4633B, dark: 0xD98A63)
+
+    // MARK: Estados semánticos
+    static let success = Color(light: 0x2F6B4F, dark: 0x5FB389)
+    static let warning = Color(light: 0xC8821F, dark: 0xE8A857)
+    static let danger  = Color(light: 0xBC4B2E, dark: 0xE07A52)
+    static let info    = Color(light: 0x3E6B8C, dark: 0x7FAAC9)
+
+    // MARK: Superficies y texto — papel cálido
+    /// Fondo base de pantalla.
+    static let appBackground     = Color(light: 0xF4EFE6, dark: 0x1A1714)
+    /// Veladura/borde del fondo (viñeta cálida).
+    static let appBackgroundDeep = Color(light: 0xE7DECB, dark: 0x12100D)
+    /// Superficie de tarjetas y filas.
+    static let surface           = Color(light: 0xFBF8F1, dark: 0x252019)
+    /// Superficie elevada (chips/iconos sobre tarjeta).
+    static let surfaceRaised     = Color(light: 0xFFFFFF, dark: 0x2E2820)
+    /// Línea de contorno topográfico del fondo.
+    static let cartoLine         = Color(light: 0x9C8A6E, dark: 0x6E6354)
+    /// Borde fino cálido de tarjetas.
+    static let hairline          = Color(light: 0xDED3BE, dark: 0x3A3329)
+    static let textPrimary       = Color(light: 0x2C271F, dark: 0xEFE9DD)
+    static let textSecondary     = Color(light: 0x756A56, dark: 0xACA290)
+
+    // MARK: Alias legacy (mapeados a tokens; retirar tras completar la migración)
+    static let brandPrimary    = Color.accent
+    static let brandSecondary  = Color.accentSecondary
+    static let error           = Color.danger
+    static let background      = Color.appBackground
+    static let secondaryBackground = Color.surface
+    static let glassBorder     = Color.hairline
+    static let glassShadow     = Color(light: 0x4A3F2A, dark: 0x000000).opacity(0.10)
+    static let gradientStart   = Color.accent
+    static let gradientEnd     = Color.accentSecondary
+}
+
+extension UIColor {
+    convenience init(rgb: UInt) {
+        self.init(
+            red: CGFloat((rgb >> 16) & 0xFF) / 255.0,
+            green: CGFloat((rgb >> 8) & 0xFF) / 255.0,
+            blue: CGFloat(rgb & 0xFF) / 255.0,
+            alpha: 1.0
+        )
+    }
 }
 
 extension Color {
@@ -40,12 +82,11 @@ extension Color {
         default:
             (a, r, g, b) = (1, 1, 1, 0)
         }
-
         self.init(
             .sRGB,
             red: Double(r) / 255,
             green: Double(g) / 255,
-            blue:  Double(b) / 255,
+            blue: Double(b) / 255,
             opacity: Double(a) / 255
         )
     }
