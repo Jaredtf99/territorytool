@@ -1,6 +1,11 @@
 import CoreLocation
 import SwiftUI
 
+private struct TerritoryDetailRoute: Hashable {
+    let id: Int
+    let name: String
+}
+
 struct TerritoryExplorerControls: View {
     @ObservedObject var viewModel: TerritoriesViewModel
     let locationService: TerritoryLocationService
@@ -10,11 +15,12 @@ struct TerritoryExplorerControls: View {
         VStack(spacing: AppSpacing.sm) {
             HStack(spacing: AppSpacing.xs) {
                 searchField
-                sortMenu
+                PresentationToggle(viewModel: viewModel)
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AppSpacing.xs) {
+                    sortMenu
                     ForEach(TerritoryFilter.allCases) { filter in
                         filterChip(filter)
                     }
@@ -40,13 +46,18 @@ struct TerritoryExplorerControls: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(Color.textSecondary)
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
                 .accessibilityLabel(Text("common.clear"))
             }
         }
         .padding(.horizontal, AppSpacing.md)
-        .frame(minHeight: 50)
-        .glassEffect(.regular.interactive(), in: .capsule)
+        .frame(maxWidth: .infinity)
+        .frame(height: 44)
+        // Sin `.interactive()`: el cristal interactivo capturaba el toque del botón de limpiar.
+        .glassEffect(.regular, in: .capsule)
     }
 
     private var sortMenu: some View {
@@ -72,11 +83,13 @@ struct TerritoryExplorerControls: View {
             }
         } label: {
             Image(systemName: "arrow.up.arrow.down")
-                .font(.appHeadline())
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(Color.accentDeep)
-                .frame(width: 50, height: 50)
+                .frame(width: 34, height: 34)
                 .glassEffect(.regular.interactive(), in: .circle)
         }
+        .frame(minWidth: 44, minHeight: 44)
+        .contentShape(Rectangle())
         .accessibilityLabel(Text("territories.sort.title"))
     }
 
@@ -93,16 +106,18 @@ struct TerritoryExplorerControls: View {
             HStack(spacing: 6) {
                 filterIndicator(filter, selected: selected)
                 Text(filter.localizedName)
-                    .font(.appSubheadline())
+                    .font(.appCaption().weight(.medium))
                     .foregroundStyle(selected ? .white : Color.textPrimary)
             }
-            .padding(.horizontal, AppSpacing.md)
-            .frame(minHeight: 44)
+            .padding(.horizontal, AppSpacing.sm)
+            .frame(height: 34)
         }
         .glassEffect(
             selected ? .regular.tint(.accent).interactive() : .regular.interactive(),
             in: .capsule
         )
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
@@ -140,19 +155,18 @@ struct TerritoryExplorerList: View {
     let onEdit: (Territory) -> Void
     let onDelete: (Territory) -> Void
     @ObservedObject private var permissionManager = PermissionManager.shared
+    @State private var selectedTerritoryRoute: TerritoryDetailRoute?
 
     var body: some View {
         List {
             resultsHeader
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: AppSpacing.md, bottom: AppSpacing.xxs, trailing: AppSpacing.md))
 
-            if !viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                section("territories.section.results", icon: "magnifyingglass", tint: .accent, territories: ordered(viewModel.displayedTerritories))
-            } else {
-                section("territories.section.attention", icon: "exclamationmark.triangle.fill", tint: .accentTertiary, territories: ordered(viewModel.attentionTerritories))
-                section("territories.section.available", icon: "checkmark.circle.fill", tint: .accent, territories: ordered(viewModel.availableTerritories))
-                section("territories.section.assigned", icon: "person.crop.circle.fill", tint: .accentSecondary, territories: ordered(viewModel.assignedTerritories))
+            // Lista plana ordenada (por defecto, código ascendente). Sin agrupar por estado.
+            ForEach(ordered(viewModel.displayedTerritories)) { territory in
+                row(territory)
             }
         }
         .listStyle(.plain)
@@ -164,86 +178,87 @@ struct TerritoryExplorerList: View {
             await viewModel.loadTerritories()
             HapticManager.shared.notification(type: .success)
         }
+        .navigationDestination(item: $selectedTerritoryRoute) { route in
+            TerritoryDetailView(territoryId: route.id, territoryName: route.name)
+        }
     }
 
     private var resultsHeader: some View {
         HStack {
-            Text(String(format: String.localized("territories.summary"), viewModel.displayedTerritories.count, viewModel.attentionTerritories.count))
+            Text(summaryText)
                 .font(.appSubheadline())
                 .foregroundStyle(Color.textSecondary)
                 .contentTransition(.numericText())
             Spacer()
         }
         .padding(.horizontal, AppSpacing.xs)
-        .padding(.vertical, AppSpacing.xs)
+    }
+
+    /// Resumen del listado. Con el filtro de Libres se omite la parte de "requieren
+    /// atención" (un territorio libre nunca la requeriría).
+    private var summaryText: String {
+        let total = viewModel.displayedTerritories.count
+        if viewModel.filterStatus == .free {
+            return String(format: String.localized("territories.summary_short"), total)
+        }
+        return String(format: String.localized("territories.summary"), total, viewModel.attentionTerritories.count)
     }
 
     @ViewBuilder
-    private func section(
-        _ title: LocalizedStringKey,
-        icon: String,
-        tint: Color,
-        territories: [Territory]
-    ) -> some View {
-        if !territories.isEmpty {
-            Section {
-                ForEach(territories) { territory in
-                    NavigationLink {
-                        TerritoryDetailView(territoryId: territory.id, territoryName: territory.name)
-                    } label: {
-                        TerritoryExplorerRow(territory: territory, attentionDays: viewModel.attentionDays)
-                    }
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: AppSpacing.xxs, leading: AppSpacing.md, bottom: AppSpacing.xxs, trailing: AppSpacing.md))
-                    .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                        if territory.personName == nil {
-                            Button { onAssign(territory) } label: {
-                                Label("assignment.title", systemImage: "person.badge.plus")
-                            }
-                            .tint(.accent)
-                        } else {
-                            Button { onReturn(territory) } label: {
-                                Label("return.title", systemImage: "tray.and.arrow.down")
-                            }
-                            .tint(.accentSecondary)
-                        }
-                    }
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        if permissionManager.canManageTerritories {
-                            Button(role: .destructive) { onDelete(territory) } label: {
-                                Label("territory.detail.delete", systemImage: "trash")
-                            }
-                            Button { onEdit(territory) } label: {
-                                Label("territory.detail.edit", systemImage: "pencil")
-                            }
-                            .tint(.accent)
-                        }
-                    }
-                    .contextMenu {
-                        Button { territory.personName == nil ? onAssign(territory) : onReturn(territory) } label: {
-                            Label(
-                                territory.personName == nil ? "assignment.title" : "return.title",
-                                systemImage: territory.personName == nil ? "person.badge.plus" : "tray.and.arrow.down"
-                            )
-                        }
-                        if permissionManager.canManageTerritories {
-                            Button { onEdit(territory) } label: {
-                                Label("territory.detail.edit", systemImage: "pencil")
-                            }
-                        }
-                    } preview: {
-                        TerritoryExplorerRow(territory: territory, attentionDays: viewModel.attentionDays)
-                            .frame(width: 340)
-                            .padding()
-                            .background(Color.appBackground)
-                    }
+    private func row(_ territory: Territory) -> some View {
+        Button {
+            selectedTerritoryRoute = TerritoryDetailRoute(
+                id: territory.id,
+                name: territory.name
+            )
+        } label: {
+            TerritoryExplorerRow(territory: territory, operationalStatus: viewModel.status(for: territory))
+        }
+        .buttonStyle(.plain)
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+        .listRowInsets(EdgeInsets(top: AppSpacing.xxs, leading: AppSpacing.md, bottom: AppSpacing.xxs, trailing: AppSpacing.md))
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            if territory.personName == nil {
+                Button { onAssign(territory) } label: {
+                    Label("assignment.title", systemImage: "person.badge.plus")
                 }
-            } header: {
-                CartoSectionHeader(title: title, systemImage: icon, count: territories.count, tint: tint)
-                    .textCase(nil)
-                    .padding(.horizontal, AppSpacing.xxs)
+                .tint(.accent)
+            } else {
+                Button { onReturn(territory) } label: {
+                    Label("return.title", systemImage: "tray.and.arrow.down")
+                }
+                .tint(.accentSecondary)
             }
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            if permissionManager.canManageTerritories {
+                Button(role: .destructive) { onDelete(territory) } label: {
+                    Label("territory.detail.delete", systemImage: "trash")
+                }
+                Button { onEdit(territory) } label: {
+                    Label("territory.detail.edit", systemImage: "pencil")
+                }
+                .tint(.accent)
+            }
+        }
+        .contextMenu {
+            Button { territory.personName == nil ? onAssign(territory) : onReturn(territory) } label: {
+                Label(
+                    territory.personName == nil ? "assignment.title" : "return.title",
+                    systemImage: territory.personName == nil ? "person.badge.plus" : "tray.and.arrow.down"
+                )
+            }
+            if permissionManager.canManageTerritories {
+                Button { onEdit(territory) } label: {
+                    Label("territory.detail.edit", systemImage: "pencil")
+                }
+            }
+        } preview: {
+            TerritoryExplorerRow(territory: territory, operationalStatus: viewModel.status(for: territory))
+                .frame(width: 340)
+                .padding()
+                .background(Color.appBackground)
         }
     }
 
@@ -262,45 +277,194 @@ struct TerritoryExplorerList: View {
 
 struct TerritoryExplorerRow: View {
     let territory: Territory
-    let attentionDays: Int
+    let operationalStatus: TerritoryOperationalStatus
 
     var body: some View {
-        HStack(spacing: AppSpacing.sm) {
-            TerritoryPolygonThumbnail(geometry: territory.mapGeometry, tint: status.color)
-                            .frame(width: 54, height: 54)
-            
-            VStack(alignment: .leading, spacing: AppSpacing.xxs) {
-                HStack(spacing: AppSpacing.xs) {
-                    Text(territory.code)
-                        .font(.appCaption().weight(.bold))
-                        .foregroundStyle(status.color)
-                        .padding(.horizontal, AppSpacing.xs)
-                        .padding(.vertical, 3)
-                        .background(status.color.opacity(0.12), in: .capsule)
-                    Text(territory.name)
-                        .font(.appHeadline())
-                        .foregroundStyle(Color.textPrimary)
-                        .lineLimit(1)
-                }
-                if let personName = territory.personName {
-                    Text(personName)
-                        .font(.appSubheadline())
-                        .foregroundStyle(Color.textPrimary)
-                        .lineLimit(1)
-                }
-                Label(status.detail, systemImage: status.icon)
-                    .font(.appCaption())
-                    .foregroundStyle(status.color)
+        VStack(alignment: .leading, spacing: AppSpacing.sm) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(territory.code)
+                    .font(.appTitle().weight(.bold))
+                    .foregroundStyle(Color.accentDeep)
+
+                Text(territory.name)
+                    .font(.appHeadline())
+                    .foregroundStyle(Color.textPrimary)
+                    .lineLimit(1)
             }
-            Spacer(minLength: AppSpacing.xxs)
+
+            assignmentDetail
         }
-        .padding(AppSpacing.sm)
-        .paperCard(cornerRadius: AppRadius.lg)
+        .padding(AppSpacing.md)
+        .padding(.trailing, 104)
+        .frame(maxWidth: .infinity, minHeight: 128, alignment: .leading)
+        .background(alignment: .trailing) {
+            mapBackdrop
+        }
+        .background {
+            RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
+                .fill(Color.surface)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [status.color.opacity(0.72), status.color.opacity(0.22)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        }
+        .compositingGroup()
+        .shadow(color: Color.glassShadow, radius: 14, x: 0, y: 8)
         .accessibilityElement(children: .combine)
     }
 
+    private var statusLabel: some View {
+        HStack(spacing: AppSpacing.xs) {
+            Image(systemName: status.icon)
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(
+                    LinearGradient(
+                        colors: [status.color, status.color.opacity(0.78)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    in: Circle()
+                )
+                .shadow(color: status.color.opacity(0.35), radius: 5, x: 0, y: 2)
+
+            Text(status.title)
+                .font(.appSubheadline().weight(.bold))
+                .foregroundStyle(status.color)
+                .lineLimit(1)
+        }
+    }
+
+    @ViewBuilder
+    private var assignmentDetail: some View {
+        if let personName = territory.personName {
+            HStack(spacing: AppSpacing.xs) {
+                TerritoryListAvatar(name: personName, tint: status.color)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    // Mismo diseño que el nombre en "Prioridad de hoy".
+                    Text(personName)
+                        .font(.appHeadline())
+                        .foregroundStyle(Color.textPrimary)
+                        .lineLimit(1)
+
+                    Label(status.detail, systemImage: "calendar")
+                        .font(.appCaption())
+                        .foregroundStyle(status.color)
+                        .lineLimit(1)
+                }
+            }
+        } else {
+            // Disponibles: el indicador con icono en círculo + "Disponible" (antes arriba).
+            statusLabel
+        }
+    }
+
+    @ViewBuilder
+    private var mapBackdrop: some View {
+        if let geometry = territory.mapGeometry {
+            TerritorySnapshotBackdrop(
+                geometry: geometry,
+                stroke: status.color,
+                fill: status.color,
+                verticalBias: 0.12
+            )
+            .mask(mapFade)
+            .mask(cardShape)
+        } else if let imageURL = territory.imgUrl.flatMap(URL.init(string:)) {
+            CachedAsyncImage(
+                url: imageURL,
+                content: { image in
+                    image
+                        .resizable()
+                        .scaledToFill()
+                },
+                placeholder: {
+                    mapPlaceholder
+                },
+                errorView: {
+                    mapPlaceholder
+                }
+            )
+            .mask(mapFade)
+            .mask(cardShape)
+        } else {
+            mapPlaceholder
+                .mask(mapFade)
+                .mask(cardShape)
+        }
+    }
+
+    private var mapFade: some View {
+        LinearGradient(
+            stops: [
+                .init(color: .black.opacity(0), location: 0),
+                .init(color: .black.opacity(0.08), location: 0.18),
+                .init(color: .black.opacity(0.38), location: 0.34),
+                .init(color: .black.opacity(0.76), location: 0.52),
+                .init(color: .black, location: 0.68),
+                .init(color: .black, location: 1)
+            ],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+
+    private var cardShape: some View {
+        RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
+    }
+
+    private var mapPlaceholder: some View {
+        Rectangle()
+            .fill(
+                LinearGradient(
+                    colors: [status.color.opacity(0.03), status.color.opacity(0.18)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .overlay(alignment: .trailing) {
+                TerritoryPolygonThumbnail(geometry: territory.mapGeometry, tint: status.color)
+                    .frame(width: 112, height: 112)
+                    .padding(.trailing, AppSpacing.md)
+            }
+    }
+
     private var status: TerritoryStatusPresentation {
-        TerritoryStatusPresentation(territory.operationalStatus(attentionDays: attentionDays))
+        TerritoryStatusPresentation(operationalStatus)
+    }
+}
+
+private struct TerritoryListAvatar: View {
+    let name: String
+    let tint: Color
+
+    private var initials: String {
+        name
+            .split(separator: " ")
+            .prefix(2)
+            .compactMap(\.first)
+            .map(String.init)
+            .joined()
+            .uppercased()
+    }
+
+    var body: some View {
+        Text(initials.isEmpty ? "?" : initials)
+            .font(.appCaption().weight(.bold))
+            .foregroundStyle(Color.textPrimary)
+            .frame(width: 32, height: 32)
+            .background(tint.opacity(0.13), in: Circle())
+            .overlay(Circle().strokeBorder(tint.opacity(0.28), lineWidth: 1))
+            .accessibilityHidden(true)
     }
 }
 
@@ -369,7 +533,9 @@ struct PresentationToggle: View {
             Text(title)
                 .font(.appSubheadline().weight(.semibold))
                 .foregroundStyle(selected ? .white : Color.textPrimary)
-                .frame(minWidth: 72, minHeight: 40)
+                .fixedSize()
+                .frame(minWidth: 44, minHeight: 36)
+                .padding(.horizontal, AppSpacing.xs)
                 .contentShape(Rectangle())
                 .background {
                     if selected {

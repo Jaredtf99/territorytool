@@ -75,6 +75,9 @@ struct TerritorySnapshotBackdrop: View {
     var fill: Color = .accent
     var centersTerritory = false
     var strokeLineWidth: CGFloat = 3
+    /// Sube (>0) o baja (<0) el territorio dentro del encuadre, en fracción del
+    /// alto del bounding box. 0 = centrado verticalmente.
+    var verticalBias: Double = 0
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.displayScale) private var displayScale
@@ -129,7 +132,8 @@ struct TerritorySnapshotBackdrop: View {
                 width: proxy.size.width,
                 height: proxy.size.height,
                 dark: colorScheme == .dark,
-                centered: centersTerritory
+                centered: centersTerritory,
+                bias: verticalBias
             )) {
                 await loadSnapshot(size: proxy.size, dark: colorScheme == .dark)
             }
@@ -142,6 +146,7 @@ struct TerritorySnapshotBackdrop: View {
         let height: CGFloat
         let dark: Bool
         let centered: Bool
+        let bias: Double
     }
 
     private func loadSnapshot(size: CGSize, dark: Bool) async {
@@ -184,7 +189,9 @@ struct TerritorySnapshotBackdrop: View {
     /// box quede en la mitad derecha del fotograma.
     private func territoryCamera() -> MKMapCamera {
         let bounds = geometry.bounds
-        let centerLat = (bounds.north + bounds.south) / 2
+        let latSpan = bounds.north - bounds.south
+        // Bias positivo => centro de cámara más al sur => territorio sube en el encuadre.
+        let centerLat = (bounds.north + bounds.south) / 2 - latSpan * verticalBias
         let lonSpan = bounds.east - bounds.west
 
         let northwest = MKMapPoint(CLLocationCoordinate2D(latitude: bounds.north, longitude: bounds.west))
@@ -219,6 +226,7 @@ struct TerritorySnapshotBackdrop: View {
             "\(Int(size.width.rounded()))x\(Int(size.height.rounded()))",
             dark ? "dark" : "light",
             centersTerritory ? "center" : "trailing",
+            String(format: "%.2f", verticalBias),
             String(format: "%.1f", strokeLineWidth)
         ].joined(separator: "|")
     }

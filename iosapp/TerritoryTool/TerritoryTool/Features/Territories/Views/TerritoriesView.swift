@@ -33,18 +33,26 @@ struct TerritoriesView: View {
     @State private var showDeleteConfirmation = false
     @State private var flow: TerritoryExplorerFlow?
     @State private var controlsHeight: CGFloat = 0
+    @State private var isMapFullscreen = false
 
     var body: some View {
         ZStack(alignment: .top) {
             content
                 .transition(.opacity.combined(with: .scale(scale: reduceMotion ? 1 : 0.985)))
 
-            controlsLayer
+            if !isMapFullscreen {
+                controlsLayer
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
         }
         .background { LiquidBackgroundView() }
         .navigationTitle("territories.title")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
+        // Toolbar nativa siempre visible, salvo en pantalla completa del mapa, donde la
+        // ocultamos junto con la tab bar y la barra de estado para una vista inmersiva.
+        .toolbar(isMapFullscreen ? .hidden : .visible, for: .navigationBar)
+        .toolbar(isMapFullscreen ? .hidden : .visible, for: .tabBar)
+        .statusBarHidden(isMapFullscreen)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 CongregationSwitcher()
@@ -132,21 +140,6 @@ struct TerritoriesView: View {
                     Color.clear.preference(key: ControlsHeightKey.self, value: proxy.size.height)
                 }
             )
-            .background(alignment: .top) {
-                LinearGradient(
-                    stops: [
-                        .init(color: Color.appBackground.opacity(0.55), location: 0.0),
-                        .init(color: Color.appBackground.opacity(0.85), location: 0.28),
-                        .init(color: Color.appBackground.opacity(0.85), location: 0.6),
-                        .init(color: Color.appBackground.opacity(0.0), location: 1.0)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .padding(.bottom, -36)
-                .ignoresSafeArea(edges: .top)
-                .allowsHitTesting(false)
-            }
             .onPreferenceChange(ControlsHeightKey.self) { controlsHeight = $0 }
     }
 
@@ -195,7 +188,8 @@ struct TerritoriesView: View {
                     TerritoriesExplorerMap(
                         viewModel: viewModel,
                         locationService: locationService,
-                        topInset: controlsHeight,
+                        topInset: isMapFullscreen ? 0 : controlsHeight,
+                        isFullscreen: $isMapFullscreen,
                         onAssign: { flow = .assign($0) },
                         onReturn: { flow = .returnTerritory($0) },
                         onEdit: { territoryToEdit = $0 },
@@ -205,7 +199,7 @@ struct TerritoriesView: View {
                     TerritoryExplorerList(
                         viewModel: viewModel,
                         locationService: locationService,
-                        topInset: controlsHeight + 48,
+                        topInset: controlsHeight,
                         onAssign: { flow = .assign($0) },
                         onReturn: { flow = .returnTerritory($0) },
                         onEdit: { territoryToEdit = $0 },
@@ -214,12 +208,6 @@ struct TerritoriesView: View {
                 }
             }
             .animation(reduceMotion ? .easeInOut(duration: 0.15) : .easeInOut(duration: 0.28), value: viewModel.presentation)
-            .overlay(alignment: .topTrailing) {
-                PresentationToggle(viewModel: viewModel)
-                    .padding(.horizontal, AppSpacing.md)
-                    .padding(.top, controlsHeight + AppSpacing.xs)
-                    .zIndex(10)
-            }
             .overlay(alignment: .top) {
                 if viewModel.isLoading {
                     ProgressView()

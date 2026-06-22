@@ -57,6 +57,26 @@ extension Color {
     static let gradientEnd     = Color.accentSecondary
 }
 
+extension Color {
+    /// Mezcla lineal de dos colores en sRGB (`amount` 0 = self, 1 = other).
+    func blended(with other: Color, amount: Double) -> Color {
+        let t = CGFloat(max(0, min(1, amount)))
+        let c1 = UIColor(self)
+        let c2 = UIColor(other)
+        var r1: CGFloat = 0, g1: CGFloat = 0, b1: CGFloat = 0, a1: CGFloat = 0
+        var r2: CGFloat = 0, g2: CGFloat = 0, b2: CGFloat = 0, a2: CGFloat = 0
+        c1.getRed(&r1, green: &g1, blue: &b1, alpha: &a1)
+        c2.getRed(&r2, green: &g2, blue: &b2, alpha: &a2)
+        return Color(
+            .sRGB,
+            red: Double(r1 + (r2 - r1) * t),
+            green: Double(g1 + (g2 - g1) * t),
+            blue: Double(b1 + (b2 - b1) * t),
+            opacity: Double(a1 + (a2 - a1) * t)
+        )
+    }
+}
+
 extension UIColor {
     convenience init(rgb: UInt) {
         self.init(

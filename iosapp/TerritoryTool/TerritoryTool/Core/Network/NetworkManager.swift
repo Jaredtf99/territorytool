@@ -135,6 +135,15 @@ final class NetworkManager: APIService {
                 "p_attention_days": attentionDays
             ])
 
+        case .getMovementHistory(let page, let pageSize, let search, let filter, let sort):
+            return try await rpcObject("get_movement_history", body: [
+                "p_page": page,
+                "p_page_size": pageSize,
+                "p_search": search ?? NSNull(),
+                "p_event_type": filter.rawValue,
+                "p_sort_ascending": sort.ascending
+            ])
+
         case .giveTerritory(let code, let personName, let date):
             return try await rpcObject("give_territory", body: [
                 "territory_code": code,

@@ -2,7 +2,7 @@ import Foundation
 
 /// Generic wrapper for paginated API responses
 /// Used for endpoints that return paginated data with metadata
-struct PaginatedResponse<T: Codable>: Codable {
+struct PaginatedResponse<T: Decodable>: Decodable {
     let data: [T]
     let current_page: Int?
     let last_page: Int?

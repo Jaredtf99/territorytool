@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(20);
+SELECT plan(21);
 
 SELECT has_type('public', 'app_role', 'app_role enum exists');
 SELECT has_table('public', 'profiles', 'profiles exists');
@@ -46,6 +46,13 @@ SELECT has_function(
   'get_dashboard_snapshot',
   ARRAY['timestamp with time zone', 'text', 'integer'],
   'dashboard snapshot RPC exists'
+);
+
+SELECT has_function(
+  'public',
+  'get_movement_history',
+  ARRAY['integer', 'integer', 'text', 'text', 'boolean'],
+  'movement history RPC exists'
 );
 
 SELECT has_function(

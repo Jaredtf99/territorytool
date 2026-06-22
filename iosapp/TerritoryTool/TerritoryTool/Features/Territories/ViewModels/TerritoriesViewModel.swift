@@ -51,14 +51,29 @@ final class TerritoriesViewModel: ObservableObject {
     @Published private(set) var territories: [Territory] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
-    @Published var searchText = ""
+    @Published var searchText = "" { didSet { recompute() } }
     @Published var filterStatus: TerritoryFilter = .all
-    @Published var sortOption: TerritorySortOption = .relevance
-    @Published var sortAscending = true
-    @Published var attentionDays = 120
+    @Published var sortOption: TerritorySortOption = .code { didSet { recompute() } }
+    @Published var sortAscending = true { didSet { recompute() } }
+    @Published var attentionDays = 90 { didSet { recompute() } }
     @Published var presentation: TerritoriesPresentation
     @Published var selectedTerritoryID: Int?
     @Published var drawerDetent: TerritoryDrawerDetent = .medium
+
+    // Listas derivadas materializadas: se recalculan SOLO cuando cambian sus entradas
+    // (`territories`, búsqueda, orden, `attentionDays`), no en cada redibujado de la vista.
+    @Published private(set) var sortedTerritories: [Territory] = []
+    @Published private(set) var territoriesWithGeometry: [Territory] = []
+    @Published private(set) var territoriesWithoutGeometry: [Territory] = []
+    @Published private(set) var attentionTerritories: [Territory] = []
+    /// Contador que cambia en cada recálculo. Las vistas lo usan como clave de
+    /// animación/`onChange` en lugar de comparar arrays de `Territory` (que incluyen
+    /// toda la geometría) en profundidad.
+    @Published private(set) var revision = 0
+
+    /// Estado operacional precalculado una vez por territorio. Evita llamar a
+    /// `Calendar.dateComponents` (caro) en cada render y en cada comparación de orden.
+    private var statusByID: [Int: TerritoryOperationalStatus] = [:]
 
     private let apiService: APIService
     private var cancellables = Set<AnyCancellable>()
@@ -87,6 +102,7 @@ final class TerritoriesViewModel: ObservableObject {
             .sink { [weak self] _ in
                 self?.territories = []
                 self?.selectedTerritoryID = nil
+                self?.recompute()
                 self?.reload()
             }
             .store(in: &cancellables)
@@ -96,28 +112,15 @@ final class TerritoriesViewModel: ObservableObject {
         territories.first { $0.id == selectedTerritoryID }
     }
 
-    var attentionTerritories: [Territory] {
-        sorted(filteredTerritories.filter {
-            if case .attention = $0.operationalStatus(attentionDays: attentionDays) { return true }
-            return false
-        })
+    var displayedTerritories: [Territory] { sortedTerritories }
+
+    /// Estado operacional cacheado del territorio. Usar esto en las vistas en lugar de
+    /// `territory.operationalStatus(...)` evita recalcular fechas con `Calendar` en cada render.
+    func status(for territory: Territory) -> TerritoryOperationalStatus {
+        statusByID[territory.id] ?? territory.operationalStatus(attentionDays: attentionDays)
     }
 
-    var availableTerritories: [Territory] {
-        sorted(filteredTerritories.filter {
-            if case .available = $0.operationalStatus(attentionDays: attentionDays) { return true }
-            return false
-        })
-    }
-
-    var assignedTerritories: [Territory] {
-        sorted(filteredTerritories.filter {
-            if case .assigned = $0.operationalStatus(attentionDays: attentionDays) { return true }
-            return false
-        })
-    }
-
-    private var filteredTerritories: [Territory] {
+    private func filtered() -> [Territory] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard isCodeQuery(query) else { return territories }
         return territories.filter {
@@ -125,10 +128,31 @@ final class TerritoriesViewModel: ObservableObject {
         }
     }
 
-    var sortedTerritories: [Territory] { sorted(filteredTerritories) }
-    var displayedTerritories: [Territory] { sortedTerritories }
-    var territoriesWithGeometry: [Territory] { sortedTerritories.filter { $0.mapGeometry != nil } }
-    var territoriesWithoutGeometry: [Territory] { sortedTerritories.filter { $0.mapGeometry == nil } }
+    /// Recalcula el estado cacheado y todas las listas derivadas en una sola pasada.
+    private func recompute() {
+        let now = Date()
+        let calendar = Calendar.current
+        var statuses: [Int: TerritoryOperationalStatus] = [:]
+        statuses.reserveCapacity(territories.count)
+        for territory in territories {
+            statuses[territory.id] = territory.operationalStatus(
+                attentionDays: attentionDays,
+                now: now,
+                calendar: calendar
+            )
+        }
+        statusByID = statuses
+
+        let sortedValues = sorted(filtered())
+        sortedTerritories = sortedValues
+        territoriesWithGeometry = sortedValues.filter { $0.mapGeometry != nil }
+        territoriesWithoutGeometry = sortedValues.filter { $0.mapGeometry == nil }
+        attentionTerritories = sortedValues.filter {
+            if case .attention = statuses[$0.id] { return true }
+            return false
+        }
+        revision &+= 1
+    }
 
     func setPresentation(_ value: TerritoriesPresentation, persist: Bool = true) {
         presentation = value
@@ -139,7 +163,8 @@ final class TerritoriesViewModel: ObservableObject {
 
     func select(_ territory: Territory?) {
         selectedTerritoryID = territory?.id
-        if territory != nil { drawerDetent = .medium }
+        // Al seleccionar, el drawer se compacta para mostrar SOLO ese territorio.
+        if territory != nil { drawerDetent = .collapsed }
     }
 
     func reload() {
@@ -167,6 +192,7 @@ final class TerritoriesViewModel: ObservableObject {
                 if let selectedTerritoryID, !result.contains(where: { $0.id == selectedTerritoryID }) {
                     self.selectedTerritoryID = nil
                 }
+                recompute()
             }
         } catch {
             guard !Task.isCancelled, !error.isCancellation else { return }
@@ -178,8 +204,8 @@ final class TerritoriesViewModel: ObservableObject {
         attentionDays = context.attentionDays
         filterStatus = context.filter
         setPresentation(context.presentation, persist: false)
-        sortOption = context.filter == .attention ? .givenDate : .relevance
-        sortAscending = context.filter == .attention
+        sortOption = context.filter == .attention ? .givenDate : .code
+        sortAscending = true
         selectedTerritoryID = nil
     }
 
@@ -239,7 +265,7 @@ final class TerritoriesViewModel: ObservableObject {
     }
 
     private func relevanceRank(_ territory: Territory) -> Int {
-        switch territory.operationalStatus(attentionDays: attentionDays) {
+        switch status(for: territory) {
         case .attention: 0
         case .available: 1
         case .assigned: 2

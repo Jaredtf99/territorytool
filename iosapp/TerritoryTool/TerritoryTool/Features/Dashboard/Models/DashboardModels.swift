@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 struct DashboardSnapshot: Decodable {
     let generatedAt: Date
@@ -6,7 +7,8 @@ struct DashboardSnapshot: Decodable {
     let priority: DashboardPriority?
     let activity: [DashboardDailyActivity]
     let weeklyEvents: [DashboardMovement]
-    let latestEvent: DashboardMovement?
+    let recentEvents: [DashboardMovement]
+    let hasMoreRecentEvents: Bool
     let attentionTerritories: [DashboardAttentionTerritory]
 }
 
@@ -90,6 +92,7 @@ struct DashboardMovement: Decodable, Identifiable, Hashable {
     let personName: String
     let givenAt: Date
     let pickedAt: Date?
+    let actorName: String
 
     var id: String { "\(transactionId)-\(eventType.rawValue)" }
 
@@ -99,13 +102,45 @@ struct DashboardMovement: Decodable, Identifiable, Hashable {
             personId: personId,
             givenDateUtc: givenAt,
             pickedDateUtc: pickedAt,
-            givenBy: nil,
-            pickedBy: nil,
+            givenBy: eventType == .given ? actorName : nil,
+            pickedBy: eventType == .returned ? actorName : nil,
             territoryId: territoryId,
             territoryName: territoryName,
             personName: personName
         )
     }
+}
+
+enum MovementHistoryFilter: String, CaseIterable, Identifiable {
+    case all
+    case given
+    case returned
+
+    var id: String { rawValue }
+
+    var title: LocalizedStringKey {
+        switch self {
+        case .all: "movements.filter.all"
+        case .given: "movements.filter.given"
+        case .returned: "movements.filter.returned"
+        }
+    }
+}
+
+enum MovementHistorySort: String, CaseIterable, Identifiable {
+    case newest
+    case oldest
+
+    var id: String { rawValue }
+
+    var title: LocalizedStringKey {
+        switch self {
+        case .newest: "movements.sort.newest"
+        case .oldest: "movements.sort.oldest"
+        }
+    }
+
+    var ascending: Bool { self == .oldest }
 }
 
 struct DashboardMapBounds: Decodable, Hashable {
@@ -127,13 +162,4 @@ struct DashboardAttentionTerritory: Decodable, Identifiable, Hashable {
     let mapBounds: DashboardMapBounds?
 
     var id: Int { territoryId }
-}
-
-struct DashboardGeographicCluster: Identifiable, Hashable {
-    let id: String
-    let latitude: Double
-    let longitude: Double
-    let territoryIds: [Int]
-
-    var count: Int { territoryIds.count }
 }

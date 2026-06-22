@@ -35,7 +35,9 @@ class ActionLogsViewModel: ObservableObject {
         if reset {
             currentPage = 1
             canLoadMore = true
-            logs = []
+            // Keep the existing rows on screen until the new page arrives.
+            // Clearing here makes the list flash empty during pull-to-refresh,
+            // and if the refresh task is cancelled the rows would never come back.
             isLoading = true
         } else {
             // Check if we are already loading info

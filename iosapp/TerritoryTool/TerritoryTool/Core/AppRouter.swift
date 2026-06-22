@@ -21,9 +21,9 @@ struct TerritoriesLaunchContext: Equatable {
     let presentation: TerritoriesPresentation
     let attentionDays: Int
 
-    static let free = TerritoriesLaunchContext(filter: .free, presentation: .list, attentionDays: 120)
-    static let inUse = TerritoriesLaunchContext(filter: .inUse, presentation: .list, attentionDays: 120)
-    static let attentionMap = TerritoriesLaunchContext(filter: .attention, presentation: .map, attentionDays: 120)
+    static let free = TerritoriesLaunchContext(filter: .free, presentation: .list, attentionDays: 90)
+    static let inUse = TerritoriesLaunchContext(filter: .inUse, presentation: .list, attentionDays: 90)
+    static let attention = TerritoriesLaunchContext(filter: .attention, presentation: .list, attentionDays: 90)
 }
 
 @MainActor

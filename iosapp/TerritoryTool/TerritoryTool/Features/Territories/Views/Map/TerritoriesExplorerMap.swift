@@ -7,6 +7,7 @@ struct TerritoriesExplorerMap: View {
     @ObservedObject var viewModel: TerritoriesViewModel
     @ObservedObject var locationService: TerritoryLocationService
     var topInset: CGFloat = 0
+    @Binding var isFullscreen: Bool
     let onAssign: (Territory) -> Void
     let onReturn: (Territory) -> Void
     let onEdit: (Territory) -> Void
@@ -19,6 +20,10 @@ struct TerritoriesExplorerMap: View {
     @State private var labelPlacements: [Int: TerritoryLabelPlacement] = [:]
     @State private var visibleLabelIDs = Set<Int>()
     @State private var preparedGeometries: [Int: TerritoryPreparedMapGeometry] = [:]
+    /// Verdadero mientras se ejecuta un movimiento de cámara hecho por código, para
+    /// no confundirlo con un desplazamiento manual del usuario (que compacta el drawer).
+    @State private var isProgrammaticMove = false
+    @State private var programmaticMoveToken = 0
 
     var body: some View {
         GeometryReader { proxy in
@@ -42,9 +47,9 @@ struct TerritoriesExplorerMap: View {
                         focus(
                             on: territory,
                             animated: true,
-                            viewportHeight: proxy.size.height,
-                            topSafeInset: topSafe,
-                            drawerHeight: drawerHeight(
+                            fullHeight: proxy.size.height + topSafe + bottomInset,
+                            topOcclusion: topSafe + topInset,
+                            bottomOcclusion: drawerHeight(
                                 availableHeight: proxy.size.height + bottomInset,
                                 bottomInset: bottomInset
                             )
@@ -66,16 +71,19 @@ struct TerritoriesExplorerMap: View {
                 updateVisibleLabels()
             }
         }
+        // El buscador está arriba; sin esto, el teclado encoge el GeometryReader y
+        // empuja el drawer (anclado abajo) hacia arriba.
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .onAppear {
             updateMapCaches()
             focusOnPrimary(animated: false)
         }
         .onChange(of: viewModel.territoriesWithGeometry) { _, _ in
             updateMapCaches()
+            // Solo encuadramos en la primera carga. Las búsquedas no mueven la cámara;
+            // el mapa solo se desplaza al seleccionar un territorio en el drawer.
             if !didFitInitialResults {
                 focusOnPrimary(animated: true)
-            } else if !viewModel.searchText.isEmpty {
-                fitResults(animated: true)
             }
         }
         .onChange(of: viewModel.selectedTerritoryID) { _, _ in
@@ -83,6 +91,7 @@ struct TerritoriesExplorerMap: View {
         }
         .onChange(of: locationService.location?.coordinate.latitude) { _, _ in
             guard let location = locationService.location else { return }
+            beginProgrammaticMove()
             withAnimation(.easeInOut(duration: 0.3)) {
                 cameraPosition = .camera(
                     MapCamera(
@@ -131,7 +140,7 @@ struct TerritoriesExplorerMap: View {
                         Annotation("", coordinate: placement.coordinate) {
                             TerritoryMapNameLabel(
                                 territory: territory,
-                                attentionDays: viewModel.attentionDays,
+                                status: viewModel.status(for: territory),
                                 isSelected: viewModel.selectedTerritoryID == territory.id
                             )
                         }
@@ -156,26 +165,70 @@ struct TerritoriesExplorerMap: View {
                 let rect = mapRect(for: context.region)
                 visibleMapRect = rect
                 updateVisibleLabels(in: rect)
+                // Si este evento es el final de un encuadre programático, lo consumimos
+                // y no tocamos el drawer. Si fue gesto del usuario, cerramos teclado y compactamos.
+                if isProgrammaticMove {
+                    isProgrammaticMove = false
+                } else {
+                    dismissKeyboard()
+                    if viewModel.drawerDetent != .collapsed {
+                        viewModel.drawerDetent = .collapsed
+                    }
+                }
             }
             .onTapGesture { point in
                 handleMapTap(point, proxy: proxy)
             }
+            // Compacta el drawer EN CUANTO el usuario empieza a arrastrar el mapa (no al
+            // soltar). Solo se dispara con gestos reales, así que no necesita el guard
+            // de movimientos programáticos. El pinch/zoom lo cubre `onMapCameraChange`.
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 8)
+                    .onChanged { _ in collapseDrawerForUserInteraction() }
+            )
             .accessibilityLabel(Text("territories.map.accessibility"))
+        }
+    }
+
+    private func collapseDrawerForUserInteraction() {
+        dismissKeyboard()
+        guard viewModel.drawerDetent != .collapsed else { return }
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+            viewModel.drawerDetent = .collapsed
         }
     }
 
     /// Selecciona el territorio cuyo polígono contiene el punto tocado.
     private func handleMapTap(_ point: CGPoint, proxy: MapProxy) {
+        dismissKeyboard()
         guard let coordinate = proxy.convert(point, from: .local) else { return }
         if let territory = territory(containing: coordinate) {
             HapticManager.shared.impact(style: .light)
             withAnimation(.spring(response: 0.3, dampingFraction: 0.78)) {
                 viewModel.select(territory)
             }
-        } else if viewModel.selectedTerritoryID != nil {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                viewModel.select(nil)
+        } else {
+            // Toque en zona vacía: deselecciona y compacta el drawer.
+            withAnimation(.easeInOut(duration: 0.25)) {
+                if viewModel.selectedTerritoryID != nil { viewModel.select(nil) }
+                viewModel.drawerDetent = .collapsed
             }
+        }
+    }
+
+    private func dismissKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+
+    /// Marca un movimiento de cámara como programático. El flag lo consume el siguiente
+    /// `onMapCameraChange` (el final de ese movimiento), así que no depende de tiempos.
+    /// El temporizador es solo una red de seguridad por si el movimiento no genera evento.
+    private func beginProgrammaticMove() {
+        programmaticMoveToken += 1
+        let token = programmaticMoveToken
+        isProgrammaticMove = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            if programmaticMoveToken == token { isProgrammaticMove = false }
         }
     }
 
@@ -204,6 +257,14 @@ struct TerritoriesExplorerMap: View {
     }
 
     private var mapControls: some View {
+        VStack(spacing: AppSpacing.xs) {
+            locationButton
+            fullscreenButton
+        }
+        .foregroundStyle(Color.accentDeep)
+    }
+
+    private var locationButton: some View {
         Button {
             if locationService.isDenied {
                 if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -213,6 +274,7 @@ struct TerritoriesExplorerMap: View {
                 locationService.requestLocation()
             }
             if let location = locationService.location {
+                beginProgrammaticMove()
                 withAnimation {
                     cameraPosition = .camera(
                         MapCamera(
@@ -226,15 +288,35 @@ struct TerritoriesExplorerMap: View {
             }
         } label: {
             Image(systemName: locationService.isDenied ? "location.slash" : locationService.location == nil ? "location" : "location.fill")
-                .frame(width: 44, height: 44)
+                .font(.appSubheadline().weight(.semibold))
+                .frame(width: 40, height: 40)
         }
         .glassEffect(.regular.interactive(), in: .circle)
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
         .accessibilityLabel(Text(locationService.isDenied ? "territories.location.settings" : "territories.location.button"))
-        .foregroundStyle(Color.accentDeep)
+    }
+
+    private var fullscreenButton: some View {
+        Button {
+            HapticManager.shared.impact(style: .light)
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
+                isFullscreen.toggle()
+                viewModel.drawerDetent = isFullscreen ? .collapsed : .medium
+            }
+        } label: {
+            Image(systemName: isFullscreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                .font(.appSubheadline().weight(.semibold))
+                .frame(width: 40, height: 40)
+        }
+        .glassEffect(.regular.interactive(), in: .circle)
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
+        .accessibilityLabel(Text(isFullscreen ? "territories.map.exit_fullscreen" : "territories.map.fullscreen"))
     }
 
     private func style(for territory: Territory) -> (color: Color, lineWidth: CGFloat) {
-        switch territory.operationalStatus(attentionDays: viewModel.attentionDays) {
+        switch viewModel.status(for: territory) {
         case .available: (.accent, 2)
         case .assigned: (.accentSecondary, 2)
         case .attention: (.accentTertiary, 3)
@@ -251,9 +333,9 @@ struct TerritoriesExplorerMap: View {
     private func focus(
         on territory: Territory,
         animated: Bool,
-        viewportHeight: CGFloat? = nil,
-        topSafeInset: CGFloat = 0,
-        drawerHeight: CGFloat = 0
+        fullHeight: CGFloat = 0,
+        topOcclusion: CGFloat = 0,
+        bottomOcclusion: CGFloat = 0
     ) {
         guard let geometry = territory.mapGeometry else { return }
         let bounds = geometry.bounds
@@ -265,17 +347,19 @@ struct TerritoriesExplorerMap: View {
             width: abs(southEast.x - northWest.x),
             height: abs(southEast.y - northWest.y)
         )
-        var padded = rect.insetBy(dx: -max(rect.width * 1.0, 600), dy: -max(rect.height * 1.0, 600))
+        // Margen alrededor del territorio (controla el zoom). Más margen => más alejado.
+        var padded = rect.insetBy(dx: -max(rect.width * 1.5, 800), dy: -max(rect.height * 1.5, 800))
 
-        if let viewportHeight, viewportHeight > 0, drawerHeight > 0 {
-            let visibleTop = topSafeInset + topInset
-            let visibleBottom = max(viewportHeight - drawerHeight, visibleTop)
-            let desiredScreenY = (visibleTop + visibleBottom) / 2
-            let screenOffset = viewportHeight / 2 - desiredScreenY
-            let mapOffset = padded.height * Double(screenOffset / viewportHeight)
-            padded = padded.offsetBy(dx: 0, dy: mapOffset)
+        // Centrar el territorio en la franja visible, excluyendo toolbar/filtros (arriba)
+        // y el drawer (abajo), usando la altura completa de pantalla.
+        if fullHeight > 0, topOcclusion + bottomOcclusion < fullHeight {
+            let visibleCenter = topOcclusion + (fullHeight - topOcclusion - bottomOcclusion) / 2
+            let screenShift = visibleCenter - fullHeight / 2
+            let dy = -screenShift * (padded.height / fullHeight)
+            padded = padded.offsetBy(dx: 0, dy: dy)
         }
 
+        beginProgrammaticMove()
         let update = { cameraPosition = .camera(camera(for: padded)) }
         if animated { withAnimation(.easeInOut(duration: 0.4), update) } else { update() }
     }
@@ -298,6 +382,7 @@ struct TerritoriesExplorerMap: View {
             rect = rect.union(MKMapRect(x: point.x, y: point.y, width: 1, height: 1))
         }
         let padded = rect.insetBy(dx: -max(rect.width * 0.14, 500), dy: -max(rect.height * 0.22, 500))
+        beginProgrammaticMove()
         let update = { cameraPosition = .camera(camera(for: padded)) }
         if animated { withAnimation(.easeInOut(duration: 0.35), update) } else { update() }
         didFitInitialResults = true
@@ -443,7 +528,7 @@ struct TerritoriesExplorerMap: View {
 /// La selección se hace tocando cualquier punto del polígono.
 private struct TerritoryMapNameLabel: View {
     let territory: Territory
-    let attentionDays: Int
+    let status: TerritoryOperationalStatus
     let isSelected: Bool
 
     var body: some View {
@@ -464,7 +549,7 @@ private struct TerritoryMapNameLabel: View {
     }
 
     private var presentation: TerritoryStatusPresentation {
-        TerritoryStatusPresentation(territory.operationalStatus(attentionDays: attentionDays))
+        TerritoryStatusPresentation(status)
     }
 }
 

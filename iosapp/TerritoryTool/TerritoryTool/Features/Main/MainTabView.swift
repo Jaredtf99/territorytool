@@ -54,6 +54,9 @@ struct MainTabView: View {
         }
         .tint(.accentDeep)
         .tabBarMinimizeBehavior(.never)
+        // iOS 27 dejó de aplicar el desenfoque progresivo por defecto en la navigation bar;
+        // lo forzamos con el estilo "soft" del scroll edge effect en el borde superior.
+        .scrollEdgeEffectStyle(.soft, for: .top)
         .onChange(of: router.selectedTab) { oldValue, newValue in
             guard newValue == .quickAction else { return }
             // No navegamos a la pestaña; volvemos a la anterior y presentamos la hoja.

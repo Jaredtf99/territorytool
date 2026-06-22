@@ -1,5 +1,4 @@
 import Charts
-import MapKit
 import SwiftUI
 
 struct DashboardView: View {
@@ -102,66 +101,110 @@ struct DashboardView: View {
 
             TerritoryFlowView(
                 totals: snapshot.totals,
+                attentionCount: snapshot.attentionTerritories.count,
                 onFree: { router.openTerritories(.free) },
                 onGiven: { showGivenActivity = true },
-                onInUse: { router.openTerritories(.inUse) }
+                onInUse: { router.openTerritories(.inUse) },
+                onAttention: { router.openTerritories(.attention) }
             )
             .appear(index: 2)
 
-            HStack(alignment: .top, spacing: AppSpacing.sm) {
-                NavigationLink {
-                    WeeklyActivityView(events: snapshot.weeklyEvents, viewModel: viewModel)
-                } label: {
-                    WeeklyActivityChart(
-                        activity: snapshot.activity,
-                        givenTotal: viewModel.totalGivenThisWeek,
-                        returnedTotal: viewModel.totalReturnedThisWeek
-                    )
-                }
-                .buttonStyle(.plain)
-
-                Button {
-                    router.openTerritories(.attentionMap)
-                } label: {
-                    GeographicAttentionCard(
-                        territories: snapshot.attentionTerritories,
-                        clusters: viewModel.geographicClusters
-                    )
-                }
-                .buttonStyle(.plain)
+            NavigationLink {
+                WeeklyActivityView(events: snapshot.weeklyEvents, viewModel: viewModel)
+            } label: {
+                WeeklyActivityChart(
+                    activity: snapshot.activity,
+                    givenTotal: viewModel.totalGivenThisWeek,
+                    returnedTotal: viewModel.totalReturnedThisWeek
+                )
             }
+            .buttonStyle(.plain)
             .appear(index: 3)
 
-            if let latest = snapshot.latestEvent {
-                NavigationLink {
-                    WeeklyActivityView(events: snapshot.weeklyEvents, viewModel: viewModel)
-                } label: {
-                    LatestMovementTicker(movement: latest)
+            RecentMovementsSection(
+                movements: snapshot.recentEvents,
+                showsSeeAll: snapshot.hasMoreRecentEvents,
+                actionViewModel: viewModel,
+                onEdit: { editingEvent = $0.transactionEvent },
+                onDelete: {
+                    eventToDelete = $0.transactionEvent
+                    showDeleteConfirmation = true
                 }
-                .buttonStyle(.plain)
-                .contextMenu {
-                    if viewModel.canEditTransactions {
-                        Button {
-                            editingEvent = latest.transactionEvent
-                        } label: {
-                            Label("common.edit", systemImage: "pencil")
-                        }
-                        Button(role: .destructive) {
-                            eventToDelete = latest.transactionEvent
-                            showDeleteConfirmation = true
-                        } label: {
-                            Label("common.delete", systemImage: "trash")
-                        }
+            )
+            .appear(index: 4)
+        }
+    }
+}
+
+private struct RecentMovementsSection: View {
+    let movements: [DashboardMovement]
+    let showsSeeAll: Bool
+    @ObservedObject var actionViewModel: DashboardViewModel
+    let onEdit: (DashboardMovement) -> Void
+    let onDelete: (DashboardMovement) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.sm) {
+            HStack {
+                Label("dashboard.recent_movements", systemImage: "clock.arrow.trianglehead.counterclockwise.rotate.90")
+                    .font(.system(.headline, design: .rounded).weight(.bold))
+                    .foregroundStyle(Color.textPrimary)
+
+                Spacer()
+
+                if showsSeeAll {
+                    NavigationLink {
+                        MovementHistoryView(actionViewModel: actionViewModel)
+                    } label: {
+                        Text("dashboard.see_all")
+                            .font(.subheadline.weight(.semibold))
                     }
                 }
-                .appear(index: 4)
-            } else {
+            }
+
+            if movements.isEmpty {
                 CartoEmptyState(
                     systemImage: "checkmark.seal.fill",
-                    message: "dashboard.no_weekly_activity",
+                    message: "dashboard.no_movements",
                     tint: .accent
                 )
-                .appear(index: 4)
+            } else {
+                List {
+                    ForEach(movements) { movement in
+                        MovementRow(movement: movement)
+                            .listRowInsets(
+                                EdgeInsets(
+                                    top: 2,
+                                    leading: 0,
+                                    bottom: 2,
+                                    trailing: 0
+                                )
+                            )
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .swipeActions(allowsFullSwipe: false) {
+                                if actionViewModel.canEditTransactions {
+                                    Button(role: .destructive) {
+                                        onDelete(movement)
+                                    } label: {
+                                        Label("common.delete", systemImage: "trash")
+                                    }
+
+                                    Button {
+                                        onEdit(movement)
+                                    } label: {
+                                        Label("common.edit", systemImage: "pencil")
+                                    }
+                                    .tint(.accent)
+                                }
+                            }
+                    }
+                }
+                .listStyle(.plain)
+                .listRowSpacing(0)
+                .scrollContentBackground(.hidden)
+                .scrollDisabled(true)
+                .frame(height: CGFloat(movements.count) * 80)
             }
         }
     }
@@ -238,16 +281,8 @@ private struct DailyPriorityCard: View {
             VStack(alignment: .leading, spacing: AppSpacing.sm) {
                 priorityLabel
 
-                Text(
-                    String(
-                        format: String(localized: "dashboard.priority.headline"),
-                        priority.code,
-                        days
-                    )
-                )
-                .font(.system(.title2, design: .rounded).weight(.bold))
-                .foregroundStyle(Color.accentDeep)
-                .fixedSize(horizontal: false, vertical: true)
+                Text(headline(code: priority.code))
+                    .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: AppSpacing.xs) {
                     InitialsAvatar(name: priority.personName, size: 36)
@@ -293,12 +328,40 @@ private struct DailyPriorityCard: View {
                 .fill(Color.surface)
         }
         .overlay { glassBorder }
-        .overlay(alignment: .topTrailing) { detailChevron(priority) }
         .compositingGroup()
         .shadow(color: Color.glassShadow, radius: 14, x: 0, y: 8)
     }
 
     // MARK: Piezas
+
+    /// Titular "AVxxx lleva N días asignado" con el tramo "N días" resaltado
+    /// (color ámbar + peso fuerte) para que la vista vaya directa a la antigüedad.
+    private func headline(code: String) -> AttributedString {
+        let full = String(
+            format: String(localized: "dashboard.priority.headline"),
+            code,
+            days
+        )
+        var attributed = AttributedString(full)
+        attributed.foregroundColor = .accentDeep
+        attributed.font = .system(.title2, design: .rounded).weight(.bold)
+
+        if let numberRange = attributed.range(of: "\(days)") {
+            let characters = attributed.characters
+            var end = numberRange.upperBound
+            // Salta el espacio y abarca la palabra de unidad ("días"/"days").
+            while end < attributed.endIndex, characters[end] == " " {
+                end = characters.index(after: end)
+            }
+            while end < attributed.endIndex, characters[end] != " " {
+                end = characters.index(after: end)
+            }
+            let highlightRange = numberRange.lowerBound..<end
+            attributed[highlightRange].foregroundColor = highlight
+            attributed[highlightRange].font = .system(.title2, design: .rounded).weight(.heavy)
+        }
+        return attributed
+    }
 
     private var priorityLabel: some View {
         HStack(spacing: AppSpacing.xs) {
@@ -335,32 +398,13 @@ private struct DailyPriorityCard: View {
             )
     }
 
-    private func detailChevron(_ priority: DashboardPriority) -> some View {
-        NavigationLink {
-            TerritoryDetailView(
-                territoryId: priority.territoryId,
-                territoryName: priority.name
-            )
-        } label: {
-            Image(systemName: "chevron.right")
-                .font(.footnote.weight(.bold))
-                .foregroundStyle(Color.textPrimary)
-                .frame(width: 30, height: 30)
-                .background(.regularMaterial, in: Circle())
-                .overlay(Circle().strokeBorder(Color.hairline, lineWidth: 0.5))
-                .shadow(color: .black.opacity(0.08), radius: 3, x: 0, y: 1)
-        }
-        .buttonStyle(.plain)
-        .padding(AppSpacing.sm)
-    }
-
     /// Mapa real (rasterizado) como fondo de la tarjeta: el bounding box queda
     /// hacia la derecha (zona nítida) y se desvanece hacia la izquierda. Al ser
     /// imagen + vector, las esquinas se enmascaran con antialias (sin pixelado).
     @ViewBuilder
     private func mapBleed(_ priority: DashboardPriority) -> some View {
         if let geometry = priority.mapGeometry {
-            TerritorySnapshotBackdrop(geometry: geometry)
+            TerritorySnapshotBackdrop(geometry: geometry, verticalBias: 0.22)
                 .mask(
                     LinearGradient(
                         stops: [
@@ -382,9 +426,11 @@ private struct DailyPriorityCard: View {
 
 private struct TerritoryFlowView: View {
     let totals: DashboardTotals
+    let attentionCount: Int
     let onFree: () -> Void
     let onGiven: () -> Void
     let onInUse: () -> Void
+    let onAttention: () -> Void
 
     var body: some View {
         VStack(spacing: AppSpacing.md) {
@@ -392,6 +438,7 @@ private struct TerritoryFlowView: View {
                 FlowMetric(value: totals.free, label: "dashboard.flow.free", tint: .accentDeep, action: onFree)
                 FlowMetric(value: totals.givenThisWeek, label: "dashboard.flow.given", tint: .accentSecondary, action: onGiven)
                 FlowMetric(value: totals.inUse, label: "dashboard.flow.in_use", tint: .accentTertiary, action: onInUse)
+                FlowMetric(value: attentionCount, label: "dashboard.flow.attention", tint: .danger, action: onAttention)
             }
 
             FlowTrack()
@@ -419,6 +466,8 @@ private struct FlowMetric: View {
                     .font(.caption.weight(.semibold))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(tint)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.75)
             }
             .frame(maxWidth: .infinity)
         }
@@ -426,41 +475,83 @@ private struct FlowMetric: View {
     }
 }
 
-/// Vía continua con tres iconos conectados por una línea: arranca antes del
-/// primer icono y continúa tras el último, con tres puntos entre cada par.
+/// Vía continua con cuatro iconos conectados por una línea, alineados con las
+/// cuatro métricas mostradas encima.
 private struct FlowTrack: View {
-    private let tints: [Color] = [.accentDeep, .accentSecondary, .accentTertiary]
-    private let icons = ["leaf.fill", "gift.fill", "person.3.fill"]
+    private let tints: [Color] = [.accentDeep, .accentSecondary, .accentTertiary, .danger]
+    private let icons = ["leaf.fill", "gift.fill", "person.3.fill", "exclamationmark.triangle.fill"]
 
     var body: some View {
-        HStack(spacing: 0) {
-            FlowLine(colors: [tints[0], tints[0]])
-            FlowGlowIcon(systemImage: icons[0], tint: tints[0])
-            FlowConnector(from: tints[0], to: tints[1])
-            FlowGlowIcon(systemImage: icons[1], tint: tints[1])
-            FlowConnector(from: tints[1], to: tints[2])
-            FlowGlowIcon(systemImage: icons[2], tint: tints[2])
-            FlowLine(colors: [tints[2], tints[2]])
+        GeometryReader { geo in
+            let w = geo.size.width
+            let y = geo.size.height / 2
+            let centers = (0..<tints.count).map { index in
+                w * (CGFloat(index) + 0.5) / CGFloat(tints.count)
+            }
+            ZStack {
+                FlowSegment(x0: 0, x1: centers[0], y: y, from: tints[0], to: tints[0], dots: false)
+                ForEach(0..<(tints.count - 1), id: \.self) { index in
+                    FlowSegment(
+                        x0: centers[index],
+                        x1: centers[index + 1],
+                        y: y,
+                        from: tints[index],
+                        to: tints[index + 1],
+                        dots: true
+                    )
+                }
+                FlowSegment(
+                    x0: centers[centers.count - 1],
+                    x1: w,
+                    y: y,
+                    from: tints[tints.count - 1],
+                    to: tints[tints.count - 1],
+                    dots: false
+                )
+
+                ForEach(0..<tints.count, id: \.self) { index in
+                    FlowGlowIcon(systemImage: icons[index], tint: tints[index])
+                        .position(x: centers[index], y: y)
+                }
+            }
         }
+        .frame(height: 54)
         .accessibilityHidden(true)
     }
 }
 
-/// Tramo de línea (sin puntos) para los extremos de la vía.
-private struct FlowLine: View {
-    let colors: [Color]
+/// Un tramo de la vía: línea con degradado de color origen→destino y, opcional,
+/// tres puntos opacos que transicionan entre ambos colores.
+private struct FlowSegment: View {
+    let x0: CGFloat
+    let x1: CGFloat
+    let y: CGFloat
+    let from: Color
+    let to: Color
+    var dots: Bool
 
     var body: some View {
-        Capsule()
-            .fill(
-                LinearGradient(
-                    colors: colors.map { $0.opacity(0.5) },
-                    startPoint: .leading,
-                    endPoint: .trailing
+        let width = max(x1 - x0, 0)
+        let midX = (x0 + x1) / 2
+
+        ZStack {
+            Capsule()
+                .fill(
+                    LinearGradient(colors: [from, to], startPoint: .leading, endPoint: .trailing)
                 )
-            )
-            .frame(height: 3)
-            .frame(maxWidth: .infinity)
+                .frame(width: width, height: 3)
+                .position(x: midX, y: y)
+
+            if dots {
+                HStack(spacing: 7) {
+                    Circle().fill(from.blended(with: to, amount: 0.25)).frame(width: 6, height: 6)
+                    Circle().fill(from.blended(with: to, amount: 0.5)).frame(width: 6, height: 6)
+                    Circle().fill(from.blended(with: to, amount: 0.75)).frame(width: 6, height: 6)
+                }
+                .fixedSize()
+                .position(x: midX, y: y)
+            }
+        }
     }
 }
 
@@ -476,42 +567,16 @@ private struct FlowGlowIcon: View {
             .background(
                 Circle()
                     .fill(
+                        // Degradado opaco (oscurece en vez de bajar alpha) para que
+                        // la línea de la vía no se transparente a través del círculo.
                         LinearGradient(
-                            colors: [tint, tint.opacity(0.82)],
+                            colors: [tint, tint.blended(with: .black, amount: 0.14)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
             )
             .shadow(color: tint.opacity(0.28), radius: 4, x: 0, y: 2)
-    }
-}
-
-private struct FlowConnector: View {
-    let from: Color
-    let to: Color
-
-    var body: some View {
-        ZStack {
-            Capsule()
-                .fill(
-                    LinearGradient(
-                        colors: [from.opacity(0.5), to.opacity(0.5)],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .frame(height: 3)
-
-            HStack(spacing: 6) {
-                ForEach(0..<3, id: \.self) { _ in
-                    Circle()
-                        .fill(Color.textSecondary.opacity(0.45))
-                        .frame(width: 6, height: 6)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity)
     }
 }
 
@@ -538,7 +603,7 @@ private struct WeeklyActivityChart: View {
                     .lineLimit(2)
             }
 
-            VStack(alignment: .leading, spacing: AppSpacing.xxs) {
+            HStack(spacing: AppSpacing.md) {
                 ActivityLegend(value: givenTotal, label: "dashboard.week.given", color: Self.givenColor)
                 ActivityLegend(value: returnedTotal, label: "dashboard.week.returned", color: Self.returnedColor)
             }
@@ -582,10 +647,10 @@ private struct WeeklyActivityChart: View {
                 }
             }
             .chartYAxis(.hidden)
-            .frame(minHeight: 96, maxHeight: .infinity)
+            .frame(height: 104)
             .accessibilityLabel(Text("dashboard.week.accessibility"))
         }
-        .frame(maxWidth: .infinity, minHeight: 232, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
         .padding(AppSpacing.md)
         .paperCard(cornerRadius: AppRadius.xl)
         .onAppear {
@@ -614,166 +679,80 @@ private struct ActivityLegend: View {
     }
 }
 
-private struct GeographicAttentionCard: View {
-    let territories: [DashboardAttentionTerritory]
-    let clusters: [DashboardGeographicCluster]
-
-    private var headline: String {
-        if clusters.isEmpty {
-            return String(
-                format: String(localized: "dashboard.geography.no_geometry"),
-                territories.count
-            )
-        }
-        return String(
-            format: String(localized: "dashboard.geography.summary"),
-            clusters.count,
-            territories.count
-        )
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.sm) {
-            if territories.isEmpty {
-                HStack(spacing: AppSpacing.xs) {
-                    Image(systemName: "mappin.circle.fill")
-                        .font(.title3)
-                        .foregroundStyle(Color.accentTertiary)
-                    Text("dashboard.geography.title")
-                        .font(.system(.subheadline, design: .rounded).weight(.bold))
-                        .foregroundStyle(Color.textPrimary)
-                }
-                Spacer(minLength: 0)
-                Label("dashboard.geography.empty", systemImage: "checkmark.seal.fill")
-                    .font(.appSubheadline())
-                    .foregroundStyle(Color.accent)
-                Spacer(minLength: 0)
-            } else {
-                HStack(alignment: .top, spacing: AppSpacing.xs) {
-                    Image(systemName: "mappin.circle.fill")
-                        .font(.title3)
-                        .foregroundStyle(Color.accentTertiary)
-                    Text(headline)
-                        .font(.system(.subheadline, design: .rounded).weight(.bold))
-                        .foregroundStyle(Color.textPrimary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                if clusters.isEmpty {
-                    Spacer(minLength: 0)
-                } else {
-                    attentionMap
-                }
-
-                HStack(spacing: AppSpacing.xxs) {
-                    Text("dashboard.geography.cta")
-                        .font(.caption.weight(.semibold))
-                    Image(systemName: "arrow.right")
-                        .font(.caption.weight(.bold))
-                }
-                .foregroundStyle(Color.accentTertiary)
-                .padding(.horizontal, AppSpacing.sm)
-                .padding(.vertical, AppSpacing.xs)
-                .frame(maxWidth: .infinity)
-                .background(Color.accentTertiary.opacity(0.12), in: Capsule())
-            }
-        }
-        .frame(maxWidth: .infinity, minHeight: 232, alignment: .topLeading)
-        .padding(AppSpacing.md)
-        .paperCard(cornerRadius: AppRadius.xl)
-    }
-
-    private var attentionMap: some View {
-        Map(initialPosition: .automatic, interactionModes: []) {
-            ForEach(clusters) { cluster in
-                Annotation(
-                    "",
-                    coordinate: CLLocationCoordinate2D(
-                        latitude: cluster.latitude,
-                        longitude: cluster.longitude
-                    )
-                ) {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                RadialGradient(
-                                    colors: [Color.accentTertiary.opacity(0.5), .clear],
-                                    center: .center,
-                                    startRadius: 1,
-                                    endRadius: 20
-                                )
-                            )
-                            .frame(width: 40, height: 40)
-                        Image(systemName: "mappin.circle.fill")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(Color.accentTertiary)
-                            .background(Circle().fill(.white).padding(2))
-                    }
-                }
-                .annotationTitles(.hidden)
-            }
-        }
-        .mapStyle(.standard(elevation: .flat))
-        .frame(maxWidth: .infinity)
-        .frame(height: 104)
-        .clipShape(.rect(cornerRadius: AppRadius.lg))
-        .allowsHitTesting(false)
-    }
-}
-
-private struct LatestMovementTicker: View {
+struct MovementRow: View {
     let movement: DashboardMovement
-    var showsChevron = true
 
     private var isReturn: Bool { movement.eventType == .returned }
-    private var eventTint: Color { isReturn ? .accentTertiary : .accentSecondary }
-    private var eventIcon: String { isReturn ? "tray.and.arrow.down.fill" : "gift.fill" }
+    private var eventTint: Color { isReturn ? .accent : .accentSecondary }
+    private var eventIcon: String { isReturn ? "arrow.down.left" : "arrow.up.right" }
 
-    private var summary: String {
+    private var personSummary: String {
         String(
-            format: String(localized: isReturn ? "dashboard.latest.returned_by" : "dashboard.latest.given_to"),
-            movement.territoryCode,
+            format: String(localized: isReturn ? "movements.returned_by" : "movements.given_to"),
             movement.personName
         )
     }
 
     var body: some View {
         HStack(spacing: AppSpacing.sm) {
-            Image(systemName: "checkmark")
-                .font(.footnote.weight(.heavy))
-                .foregroundStyle(.white)
-                .frame(width: 30, height: 30)
-                .background(Color.accent, in: Circle())
-
-            InitialsAvatar(name: movement.personName, size: 34)
-
             Image(systemName: eventIcon)
                 .font(.subheadline.weight(.bold))
                 .foregroundStyle(eventTint)
-                .frame(width: 30, height: 30)
+                .frame(width: 42, height: 42)
                 .background(eventTint.opacity(0.14), in: Circle())
+                .overlay(Circle().strokeBorder(eventTint.opacity(0.24), lineWidth: 1))
 
-            Text(summary)
-                .font(.appSubheadline())
-                .foregroundStyle(Color.textPrimary)
-                .lineLimit(2)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: AppSpacing.xs) {
+                    Text(movement.territoryCode)
+                        .font(.subheadline.weight(.bold).monospaced())
+                        .foregroundStyle(eventTint)
+                    Text(movement.territoryName)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.textPrimary)
+                        .lineLimit(1)
+                }
+
+                Text(personSummary)
+                    .font(.caption)
+                    .foregroundStyle(Color.textSecondary)
+                    .lineLimit(1)
+
+                Label(
+                    String(
+                        format: String(localized: "movements.recorded_by"),
+                        movement.actorName
+                    ),
+                    systemImage: "person.crop.circle.badge.checkmark"
+                )
+                    .font(.caption2)
+                    .foregroundStyle(Color.textSecondary)
+                    .lineLimit(1)
+            }
 
             Spacer(minLength: AppSpacing.xs)
 
-            Text(movement.eventDate, style: .relative)
-                .font(.caption)
-                .foregroundStyle(Color.textSecondary)
-                .lineLimit(1)
-                .layoutPriority(1)
-
-            if showsChevron {
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.bold))
+            VStack(alignment: .trailing, spacing: 3) {
+                Text(isReturn ? "movements.returned" : "movements.given")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(eventTint)
+                    .textCase(.uppercase)
+                Text(movement.eventDate, style: .relative)
+                    .font(.caption)
                     .foregroundStyle(Color.textSecondary)
+                    .lineLimit(1)
             }
         }
-        .padding(AppSpacing.sm)
-        .paperCard(cornerRadius: AppRadius.xl)
+        .padding(.horizontal, AppSpacing.sm)
+        .padding(.vertical, AppSpacing.xs)
+        .background(
+            RoundedRectangle(cornerRadius: AppRadius.lg, style: .continuous)
+                .fill(Color.surface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: AppRadius.lg, style: .continuous)
+                .strokeBorder(Color.hairline, lineWidth: 1)
+        )
     }
 }
 
@@ -852,7 +831,7 @@ struct WeeklyActivityView: View {
                 .listRowBackground(Color.clear)
             } else {
                 ForEach(filteredEvents) { movement in
-                    LatestMovementTicker(movement: movement, showsChevron: false)
+                    MovementRow(movement: movement)
                         .listRowInsets(
                             EdgeInsets(
                                 top: AppSpacing.xs,
@@ -909,16 +888,5 @@ struct WeeklyActivityView: View {
         } message: { _ in
             Text("dashboard.delete_transaction_message")
         }
-    }
-}
-
-private extension DashboardMovement {
-    var transactionEvent: TransactionEvent {
-        TransactionEvent(
-            txnId: transactionId,
-            type: eventType == .given ? .given : .returned,
-            date: eventDate,
-            transaction: transaction
-        )
     }
 }

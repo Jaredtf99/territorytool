@@ -3,7 +3,7 @@ import Combine
 
 @MainActor
 class DashboardViewModel: ObservableObject {
-    static let attentionDays = 120
+    static let attentionDays = 90
 
     @Published var snapshot: DashboardSnapshot?
     @Published var oldTerritories: [Territory] = []
@@ -125,63 +125,10 @@ class DashboardViewModel: ObservableObject {
         snapshot?.activity.reduce(0) { $0 + $1.returnedCount } ?? 0
     }
 
-    var geographicClusters: [DashboardGeographicCluster] {
-        Self.cluster(snapshot?.attentionTerritories ?? [])
-    }
-
     private static func startOfCurrentWeek() -> Date {
         let calendar = Calendar.autoupdatingCurrent
         let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
         return calendar.date(from: components) ?? calendar.startOfDay(for: Date())
-    }
-
-    private static func cluster(
-        _ territories: [DashboardAttentionTerritory],
-        maximumDistanceKilometers: Double = 1
-    ) -> [DashboardGeographicCluster] {
-        var groups: [[DashboardAttentionTerritory]] = []
-
-        for territory in territories where territory.mapBounds != nil {
-            if let index = groups.firstIndex(where: { group in
-                guard let first = group.first?.mapBounds,
-                      let bounds = territory.mapBounds else { return false }
-                return haversine(
-                    first.latitude,
-                    first.longitude,
-                    bounds.latitude,
-                    bounds.longitude
-                ) <= maximumDistanceKilometers
-            }) {
-                groups[index].append(territory)
-            } else {
-                groups.append([territory])
-            }
-        }
-
-        return groups.enumerated().map { index, group in
-            let bounds = group.compactMap(\.mapBounds)
-            return DashboardGeographicCluster(
-                id: "cluster-\(index)",
-                latitude: bounds.map(\.latitude).reduce(0, +) / Double(max(bounds.count, 1)),
-                longitude: bounds.map(\.longitude).reduce(0, +) / Double(max(bounds.count, 1)),
-                territoryIds: group.map(\.territoryId)
-            )
-        }
-    }
-
-    private static func haversine(
-        _ latitude1: Double,
-        _ longitude1: Double,
-        _ latitude2: Double,
-        _ longitude2: Double
-    ) -> Double {
-        let radius = 6_371.0
-        let dLat = (latitude2 - latitude1) * .pi / 180
-        let dLon = (longitude2 - longitude1) * .pi / 180
-        let a = sin(dLat / 2) * sin(dLat / 2)
-            + cos(latitude1 * .pi / 180) * cos(latitude2 * .pi / 180)
-            * sin(dLon / 2) * sin(dLon / 2)
-        return radius * 2 * atan2(sqrt(a), sqrt(1 - a))
     }
     
     // MARK: - Permissions

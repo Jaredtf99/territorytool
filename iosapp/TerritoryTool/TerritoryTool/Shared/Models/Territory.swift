@@ -33,10 +33,14 @@ enum TerritoryOperationalStatus: Equatable {
 }
 
 extension Territory {
-    func operationalStatus(attentionDays: Int = 120, now: Date = Date()) -> TerritoryOperationalStatus {
+    func operationalStatus(
+        attentionDays: Int = 90,
+        now: Date = Date(),
+        calendar: Calendar = .current
+    ) -> TerritoryOperationalStatus {
         guard personName != nil else { return .available }
         guard let givenDateUtc else { return .assigned(days: 0) }
-        let days = max(Calendar.current.dateComponents([.day], from: givenDateUtc, to: now).day ?? 0, 0)
+        let days = max(calendar.dateComponents([.day], from: givenDateUtc, to: now).day ?? 0, 0)
         return days >= attentionDays ? .attention(days: days) : .assigned(days: days)
     }
 }

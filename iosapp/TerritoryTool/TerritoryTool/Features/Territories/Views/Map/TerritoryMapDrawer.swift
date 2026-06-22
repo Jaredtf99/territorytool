@@ -20,8 +20,8 @@ struct TerritoryMapDrawer: View {
     @State private var dragTranslation: CGFloat = 0
     @State private var reachedBoundary: DrawerBoundary?
     @State private var boundaryPulse = false
-    @State private var settlingHeight: CGFloat?
-    @State private var settlingGeneration = 0
+    @State private var isDragging = false
+    @Namespace private var rowTransition
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -33,11 +33,13 @@ struct TerritoryMapDrawer: View {
                     relevantContent
                 }
                 .scrollIndicators(.hidden)
+                // El scroll funciona siempre (también en compacto). Al seleccionar, el drawer
+                // cae a compacto y hacemos scroll para dejar la tarjeta seleccionada arriba del todo.
                 .onChange(of: viewModel.selectedTerritoryID) { _, id in
                     guard let id else { return }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                         withAnimation(reduceMotion ? nil : .spring(response: 0.42, dampingFraction: 0.9)) {
-                            proxy.scrollTo(id, anchor: .center)
+                            proxy.scrollTo(id, anchor: .top)
                         }
                     }
                 }
@@ -45,13 +47,20 @@ struct TerritoryMapDrawer: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: visibleHeight, alignment: .top)
-        .background(Color.surface, in: UnevenRoundedRectangle(topLeadingRadius: AppRadius.xl, topTrailingRadius: AppRadius.xl))
+        .animation(
+            isDragging ? nil : (reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.4, dampingFraction: 0.82)),
+            value: visibleHeight
+        )
+        .glassEffect(
+            .regular,
+            in: UnevenRoundedRectangle(topLeadingRadius: AppRadius.xl, topTrailingRadius: AppRadius.xl)
+        )
         .overlay(alignment: .top) {
             UnevenRoundedRectangle(topLeadingRadius: AppRadius.xl, topTrailingRadius: AppRadius.xl)
-                .stroke(Color.hairline, lineWidth: 1)
+                .stroke(Color.hairline.opacity(0.6), lineWidth: 1)
                 .allowsHitTesting(false)
         }
-        .shadow(color: .black.opacity(0.13), radius: 18, y: -4)
+        .shadow(color: .black.opacity(0.12), radius: 18, y: -4)
     }
 
     /// Asa de arrastre sin cabecera para dejar el contenido centrado en los territorios.
@@ -73,21 +82,20 @@ struct TerritoryMapDrawer: View {
     private var dragGesture: some Gesture {
         DragGesture(minimumDistance: 4, coordinateSpace: .global)
             .onChanged { value in
-                settlingGeneration += 1
-                settlingHeight = nil
+                if !isDragging { isDragging = true }
                 dragTranslation = value.translation.height
 
                 let proposedHeight = baseHeight - value.translation.height
                 let boundary: DrawerBoundary? =
-                    proposedHeight > mediumHeight + 10 ? .upper :
-                    proposedHeight < collapsedHeight - 10 ? .lower :
+                    proposedHeight > mediumHeight + 6 ? .upper :
+                    proposedHeight < collapsedHeight - 6 ? .lower :
                     nil
 
                 if let boundary, boundary != reachedBoundary {
                     reachedBoundary = boundary
                     boundaryPulse = true
                     HapticManager.shared.impact(style: .soft)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                         boundaryPulse = false
                     }
                 } else if boundary == nil {
@@ -95,34 +103,12 @@ struct TerritoryMapDrawer: View {
                 }
             }
             .onEnded { value in
-                settlingGeneration += 1
-                let generation = settlingGeneration
-                let currentHeight = visibleHeight
                 let projectedHeight = baseHeight - value.predictedEndTranslation.height
                 let destination = nearestDetent(to: projectedHeight)
-
-                var transaction = SwiftUI.Transaction(animation: nil)
-                transaction.disablesAnimations = true
-                withTransaction(transaction) {
-                    settlingHeight = currentHeight
-                    dragTranslation = 0
-                    viewModel.drawerDetent = destination
-                }
-
-                withAnimation(
-                    reduceMotion
-                        ? .easeOut(duration: 0.18)
-                        : .interactiveSpring(response: 0.42, dampingFraction: 0.82, blendDuration: 0.12)
-                ) {
-                    settlingHeight = height(for: destination)
-                }
-
-                DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0.2 : 0.52)) {
-                    guard settlingGeneration == generation else { return }
-                    settlingHeight = nil
-                }
+                isDragging = false
+                dragTranslation = 0
+                viewModel.drawerDetent = destination
                 reachedBoundary = nil
-                boundaryPulse = false
             }
     }
 
@@ -157,125 +143,261 @@ struct TerritoryMapDrawer: View {
         relevantTerritories
     }
 
-    /// Fila de territorio. Al estar seleccionada cambia el fondo y muestra las
-    /// acciones (Ver + Recoger/Devolver/Asignar) en la misma línea, como en el mockup.
+    /// Tarjeta compacta que se expande en su misma posición al seleccionarse.
+    /// El mapa queda a sangre por arriba, abajo e izquierda; su borde derecho
+    /// conserva el radio para separarlo visualmente del contenido.
     @ViewBuilder
     private func drawerRow(_ territory: Territory) -> some View {
-        let presentation = TerritoryStatusPresentation(territory.operationalStatus(attentionDays: viewModel.attentionDays))
+        let presentation = TerritoryStatusPresentation(viewModel.status(for: territory))
         let selected = viewModel.selectedTerritoryID == territory.id
+        let cardShape = RoundedRectangle(cornerRadius: AppRadius.lg, style: .continuous)
 
-        HStack(spacing: AppSpacing.sm) {
+        HStack(spacing: 0) {
             territoryThumbnail(territory, tint: presentation.color)
-                            .frame(width: 54, height: 54)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(territory.code)
-                    .font(.appHeadline())
-                    .foregroundStyle(Color.textPrimary)
+                .frame(width: selected ? 116 : 96)
+                .frame(maxHeight: .infinity)
+                .matchedGeometryEffect(
+                    id: "drawer-map-\(territory.id)",
+                    in: rowTransition,
+                    properties: .frame
+                )
+
+            VStack(alignment: .leading, spacing: selected ? 5 : 3) {
+                HStack(spacing: 6) {
+                    Text(territory.code)
+                        .font(.appHeadline())
+                        .foregroundStyle(Color.textPrimary)
+                        .lineLimit(1)
+
+                    statusCapsule(territory, presentation: presentation, includesDays: selected)
+                        .layoutPriority(1)
+                }
+
+                Text(personOrAvailability(territory))
+                    .font(selected ? .appSubheadline() : .appCaption().weight(.medium))
+                    .foregroundStyle(territory.personName == nil ? presentation.color : Color.textPrimary)
                     .lineLimit(1)
-                Text(rowSubtitle(territory))
+
+                Text(selected ? selectedDateDetail(territory) : temporalDetail(territory))
                     .font(.appCaption())
                     .foregroundStyle(Color.textSecondary)
-                    .lineLimit(1)
-            }
+                    .lineLimit(selected ? 2 : 1)
+                    .contentTransition(.opacity)
 
-            Spacer(minLength: AppSpacing.xs)
+                if selected {
+                    HStack(spacing: AppSpacing.xs) {
+                        NavigationLink {
+                            TerritoryDetailView(territoryId: territory.id, territoryName: territory.name)
+                        } label: {
+                            Label("territories.action.view_short", systemImage: "eye")
+                                .font(.caption.weight(.semibold))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                                .frame(maxWidth: .infinity, minHeight: 34)
+                        }
+                        .buttonStyle(.glass)
 
-            if selected {
-                NavigationLink {
-                    TerritoryDetailView(territoryId: territory.id, territoryName: territory.name)
-                } label: {
-                    Label("territories.action.view_short", systemImage: "eye")
-                        .labelStyle(.titleAndIcon)
-                        .font(.appSubheadline().weight(.semibold))
-                        .frame(minHeight: 42)
-                }
-                .buttonStyle(.glass)
-                .controlSize(.regular)
-
-                Button {
-                    territory.personName == nil ? onAssign(territory) : onReturn(territory)
-                } label: {
-                    Label(
-                        territory.personName == nil ? "assignment.title" : "return.title",
-                        systemImage: territory.personName == nil ? "person.badge.plus" : "tray.and.arrow.down"
+                        Button {
+                            territory.personName == nil ? onAssign(territory) : onReturn(territory)
+                        } label: {
+                            Label(
+                                territory.personName == nil ? "assignment.title" : "return.title",
+                                systemImage: territory.personName == nil ? "person.badge.plus" : "tray.and.arrow.down"
+                            )
+                            .font(.caption.weight(.semibold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                            .frame(maxWidth: .infinity, minHeight: 34)
+                        }
+                        .buttonStyle(.glassProminent)
+                        .tint(territory.personName == nil ? .accent : .accentSecondary)
+                    }
+                    .padding(.top, 3)
+                    .transition(
+                        .asymmetric(
+                            insertion: .move(edge: .bottom)
+                                .combined(with: .opacity)
+                                .combined(with: .scale(scale: 0.96, anchor: .top)),
+                            removal: .opacity.combined(with: .scale(scale: 0.97, anchor: .top))
+                        )
                     )
-                    .font(.appCaption().weight(.semibold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.72)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(minHeight: 42)
+                    .animation(
+                        reduceMotion
+                            ? .easeOut(duration: 0.16)
+                            : .spring(response: 0.32, dampingFraction: 0.84).delay(0.08),
+                        value: selected
+                    )
                 }
-                .buttonStyle(.glassProminent)
-                .controlSize(.regular)
-                .tint(territory.personName == nil ? .accent : .accentSecondary)
-            } else {
+            }
+            .padding(.horizontal, AppSpacing.sm)
+            .padding(.vertical, AppSpacing.xs)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .matchedGeometryEffect(
+                id: "drawer-content-\(territory.id)",
+                in: rowTransition,
+                properties: .position,
+                anchor: .leading
+            )
+
+            if !selected {
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.bold))
                     .foregroundStyle(Color.textSecondary.opacity(0.6))
+                    .padding(.trailing, AppSpacing.sm)
+                    .transition(.opacity)
             }
         }
-        .padding(.horizontal, AppSpacing.sm)
-        .padding(.vertical, AppSpacing.sm)
-        .frame(minHeight: selected ? 76 : 68)
+        .frame(height: selected ? selectedRowHeight : 84)
         .background(
-            RoundedRectangle(cornerRadius: AppRadius.lg, style: .continuous)
-                            .fill(selected ? presentation.color.opacity(0.10) : Color.surfaceRaised.opacity(0.72))
+            cardShape
+                .fill(selected ? presentation.color.opacity(0.10) : Color.surfaceRaised.opacity(0.82))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: AppRadius.lg, style: .continuous)
+            cardShape
                 .stroke(selected ? presentation.color.opacity(0.30) : Color.clear, lineWidth: 1)
+        )
+        .clipShape(cardShape)
+        .shadow(
+            color: selected ? presentation.color.opacity(0.12) : .clear,
+            radius: 10,
+            y: 4
         )
         .contentShape(Rectangle())
         .onTapGesture {
             guard !selected else { return }
             HapticManager.shared.selection()
-            withAnimation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.85)) {
+            withAnimation(
+                reduceMotion
+                    ? .easeOut(duration: 0.16)
+                    : .spring(response: 0.32, dampingFraction: 0.84)
+            ) {
                 onSelect(territory)
             }
         }
+        .animation(
+            reduceMotion
+                ? .easeOut(duration: 0.16)
+                : .spring(response: selected ? 0.32 : 0.24, dampingFraction: 0.86),
+            value: selected
+        )
+        .accessibilityElement(children: .contain)
     }
-    
-    @ViewBuilder
-       private func territoryThumbnail(_ territory: Territory, tint: Color) -> some View {
-           if let geometry = territory.mapGeometry {
-               TerritorySnapshotBackdrop(
-                   geometry: geometry,
-                   stroke: tint,
-                   fill: tint,
-                   centersTerritory: true
-               )
-               .clipShape(RoundedRectangle(cornerRadius: AppRadius.md, style: .continuous))
-               .overlay(
-                   RoundedRectangle(cornerRadius: AppRadius.md, style: .continuous)
-                       .stroke(tint.opacity(0.45), lineWidth: 1)
-               )
-           } else {
-               TerritoryPolygonThumbnail(geometry: nil, tint: tint)
-           }
-       }
 
-    private func rowSubtitle(_ territory: Territory) -> String {
-        switch territory.operationalStatus(attentionDays: viewModel.attentionDays) {
-        case .available:
-            if let distance = distance(to: territory) {
-                return String(format: String.localized("territories.status.available_distance"), distance)
+    @ViewBuilder
+    private func territoryThumbnail(_ territory: Territory, tint: Color) -> some View {
+        let mapShape = UnevenRoundedRectangle(
+            topLeadingRadius: 0,
+            bottomLeadingRadius: 0,
+            bottomTrailingRadius: AppRadius.md,
+            topTrailingRadius: AppRadius.md,
+            style: .continuous
+        )
+
+        if let geometry = territory.mapGeometry {
+            TerritorySnapshotBackdrop(
+                geometry: geometry,
+                stroke: tint,
+                fill: tint,
+                centersTerritory: true
+            )
+            .clipShape(mapShape)
+            .overlay(
+                mapShape
+                    .stroke(tint.opacity(0.32), lineWidth: 1)
+            )
+            .overlay(alignment: .trailing) {
+                LinearGradient(
+                    colors: [.clear, Color.surface.opacity(0.16)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .frame(width: 18)
             }
-            return String(localized: "territories.status.available_now")
-        case .assigned(let days), .attention(let days):
-            if let person = territory.personName {
-                return String(format: String.localized("territories.drawer.days_person"), days, person)
-            }
-            return String(format: String.localized("territories.status.days_assigned"), days)
+        } else {
+            TerritoryPolygonThumbnail(geometry: nil, tint: tint)
+                .clipShape(mapShape)
+                .background(tint.opacity(0.08))
         }
+    }
+
+    @ViewBuilder
+    private func statusCapsule(
+        _ territory: Territory,
+        presentation: TerritoryStatusPresentation,
+        includesDays: Bool
+    ) -> some View {
+        Text(statusText(territory, includesDays: includesDays))
+            .font(.caption2.weight(.bold))
+            .foregroundStyle(presentation.color)
+            .lineLimit(1)
+            .minimumScaleFactor(0.78)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(presentation.color.opacity(0.13), in: .capsule)
+            .accessibilityLabel(presentation.title)
+    }
+
+    private func statusText(_ territory: Territory, includesDays: Bool) -> String {
+        switch viewModel.status(for: territory) {
+        case .available:
+            return String(localized: "territories.drawer.status.free")
+        case .assigned(let days):
+            return includesDays
+                ? String(format: String.localized("territories.drawer.status.in_use_days"), days)
+                : String(localized: "territories.drawer.status.in_use")
+        case .attention(let days):
+            return includesDays
+                ? String(format: String.localized("territories.drawer.status.attention_days"), days)
+                : String(localized: "territories.drawer.status.attention")
+        }
+    }
+
+    private func personOrAvailability(_ territory: Territory) -> String {
+        territory.personName ?? String(localized: "territories.status.available_now")
+    }
+
+    private func temporalDetail(_ territory: Territory, now: Date = Date()) -> String {
+        switch viewModel.status(for: territory) {
+        case .available:
+            guard let lastPickedDate = territory.lastPickedDateUtc else {
+                return String(localized: "territories.drawer.never_picked")
+            }
+            let elapsedDays = days(from: lastPickedDate, to: now)
+            if elapsedDays <= 7 {
+                return String(format: String.localized("territories.drawer.returned_days_ago"), elapsedDays)
+            }
+            return String(format: String.localized("territories.drawer.free_for_days"), elapsedDays)
+        case .assigned(let assignedDays), .attention(let assignedDays):
+            return String(format: String.localized("territories.drawer.assigned_for_days"), assignedDays)
+        }
+    }
+
+    private func selectedDateDetail(_ territory: Territory) -> String {
+        if let givenDate = territory.givenDateUtc {
+            return String(
+                format: String.localized("territories.drawer.assigned_on"),
+                givenDate.formatted(date: .abbreviated, time: .omitted)
+            )
+        }
+        if let lastPickedDate = territory.lastPickedDateUtc {
+            return String(
+                format: String.localized("territories.drawer.returned_on"),
+                lastPickedDate.formatted(date: .abbreviated, time: .omitted)
+            )
+        }
+        return temporalDetail(territory)
+    }
+
+    private func days(from start: Date, to end: Date) -> Int {
+        max(Calendar.current.dateComponents([.day], from: start, to: end).day ?? 0, 0)
     }
 
     private var relevantTerritories: [Territory] {
-        guard let location = locationService.location else { return viewModel.territoriesWithGeometry }
-        let attention = viewModel.attentionTerritories.filter { $0.mapGeometry != nil }
-        let available = viewModel.availableTerritories.filter { $0.mapGeometry != nil }.sorted {
-            distance(from: location, to: $0) < distance(from: location, to: $1)
-        }
-        return attention + available + viewModel.assignedTerritories.filter { $0.mapGeometry != nil }
+        // Sin agrupar por estado: respeta la ordenación elegida (código ascendente por
+        // defecto). Solo cuando se ordena por cercanía y hay ubicación, ordena por distancia.
+        let base = viewModel.territoriesWithGeometry
+        guard viewModel.sortOption == .nearest, let location = locationService.location else { return base }
+        return base.sorted { distance(from: location, to: $0) < distance(from: location, to: $1) }
     }
 
     private func distance(to territory: Territory) -> String? {
@@ -291,7 +413,17 @@ struct TerritoryMapDrawer: View {
         return location.distance(from: CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude))
     }
 
-    private var collapsedHeight: CGFloat { 168 + bottomInset }
+    /// Altura de la tarjeta de territorio según su estado (debe coincidir con el `.frame` de la fila).
+    private var selectedRowHeight: CGFloat { 132 }
+    private var handleZoneHeight: CGFloat { 30 }
+
+    private var collapsedHeight: CGFloat {
+        // Con un territorio seleccionado, el compacto se ajusta justo a su tarjeta expandida.
+        if viewModel.selectedTerritoryID != nil {
+            return handleZoneHeight + selectedRowHeight + bottomInset + 6
+        }
+        return 168 + bottomInset
+    }
     private var mediumHeight: CGFloat { min(max(availableHeight * 0.50, 360 + bottomInset), 440 + bottomInset) }
 
     private var baseHeight: CGFloat {
@@ -302,9 +434,8 @@ struct TerritoryMapDrawer: View {
     }
 
     /// Altura visible del drawer siguiendo el arrastre en tiempo real (sin recolocar el contenido).
+    /// Más allá de los límites aplica una resistencia elástica (rubber band) suave.
     private var visibleHeight: CGFloat {
-        if let settlingHeight { return settlingHeight }
-
         let proposedHeight = baseHeight - dragTranslation
         if proposedHeight > mediumHeight {
             return mediumHeight + rubberBand(proposedHeight - mediumHeight)
@@ -315,18 +446,12 @@ struct TerritoryMapDrawer: View {
         return proposedHeight
     }
 
+    /// Resistencia elástica estilo iOS: avanza con retornos decrecientes y asíntota suave,
+    /// sin tope brusco (eso era lo que daba la sensación de "pillada").
     private func rubberBand(_ distance: CGFloat) -> CGFloat {
-        let dimension: CGFloat = 60
-        let resistance: CGFloat = 0.42
-        let stretched = (1 - 1 / (distance * resistance / dimension + 1)) * dimension
-        return min(stretched, 18)
-    }
-
-    private func height(for detent: TerritoryDrawerDetent) -> CGFloat {
-        switch detent {
-        case .collapsed: collapsedHeight
-        case .medium: mediumHeight
-        }
+        let dimension: CGFloat = 110
+        let constant: CGFloat = 0.55
+        return (1 - 1 / (distance * constant / dimension + 1)) * dimension
     }
 
     private func nearestDetent(to height: CGFloat) -> TerritoryDrawerDetent {

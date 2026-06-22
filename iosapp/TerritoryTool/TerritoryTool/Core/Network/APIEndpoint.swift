@@ -51,6 +51,7 @@ enum TerritoryEndpoint: APIEndpoint {
     case getPersonsWithAssignments(search: String?)
     case resolveTerritorySelector(value: String)
     case getDashboardSnapshot(weekStart: Date, timeZone: String, attentionDays: Int)
+    case getMovementHistory(page: Int, pageSize: Int, search: String?, filter: MovementHistoryFilter, sort: MovementHistorySort)
     case login(credentials: LoginCredentials)
     case getTerritories(term: String?, inUse: Bool?, orderBy: Int?, orderByAscending: Bool?, lastGivenDateFrom: Date?, lastGivenDateTo: Date?)
     case getTerritoryExplorer(term: String?, filter: TerritoryFilter, attentionDays: Int)
@@ -81,7 +82,7 @@ enum TerritoryEndpoint: APIEndpoint {
         switch self {
         case .getTerritory, .getTerritoryDetail, .getTerritoryStats, .getTerritoryTransactions,
              .getPersons, .getPersonsWithAssignments, .resolveTerritorySelector,
-             .getDashboardSnapshot, .getTerritories, .getTerritoryExplorer:
+             .getDashboardSnapshot, .getMovementHistory, .getTerritories, .getTerritoryExplorer:
             return .GET
         case .giveTerritory, .pickTerritory, .login, .refreshTerritoryImage, .syncTerritoryMap, .syncAllTerritoryMaps, .addPerson, .updateTerritory, .addTerritory:
             return .POST
@@ -165,7 +166,8 @@ enum TerritoryEndpoint: APIEndpoint {
             ]
             return try? JSONSerialization.data(withJSONObject: params)
         case .getUsers, .deleteUser, .deleteTransaction,
-             .getPersonsWithAssignments, .resolveTerritorySelector, .getDashboardSnapshot:
+             .getPersonsWithAssignments, .resolveTerritorySelector, .getDashboardSnapshot,
+             .getMovementHistory:
             return nil
         case .updateTransaction(_, let territoryId, let personId, let date, let pickedDate):
             // Use a properly configured date formatter
