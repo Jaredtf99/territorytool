@@ -84,14 +84,17 @@ class TerritoryReturnViewModel: ObservableObject {
         
         do {
             let date = useCustomDate ? customDate : nil
-            try await apiService.request(endpoint: TerritoryEndpoint.pickTerritory(
+            let undoResponse: UndoableMutationResponse = try await apiService.request(endpoint: TerritoryEndpoint.pickTerritoryUndoable(
                 code: territory.code,
                 date: date
             ))
+            let undoHandle = undoResponse.handle(kind: .domain)
             
             ToastManager.shared.show(
                 NSLocalizedString("return.success", comment: ""),
-                style: .success
+                style: .success,
+                undoHandle: undoHandle,
+                duration: undoHandle.toastDuration
             )
             NotificationCenter.default.post(name: .territoryDataChanged, object: nil)
             

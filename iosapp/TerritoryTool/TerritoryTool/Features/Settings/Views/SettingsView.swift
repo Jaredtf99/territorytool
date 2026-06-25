@@ -6,6 +6,8 @@ struct SettingsView: View {
     @ObservedObject private var permissionManager = PermissionManager.shared
 
     @State private var showLogoutAlert = false
+    @State private var showClearMapCacheAlert = false
+    @State private var mapSnapshotCacheSizeBytes: Int64 = 0
 
     var body: some View {
         Form {
@@ -41,6 +43,26 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.menu)
             }
+
+            Section(
+                header: Text("settings.storage"),
+                footer: Text("settings.map_cache.description")
+            ) {
+                HStack {
+                    Label("settings.map_cache.title", systemImage: "map.fill")
+                    Spacer()
+                    Text(formattedMapSnapshotCacheSize)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+
+                Button(role: .destructive) {
+                    showClearMapCacheAlert = true
+                } label: {
+                    Text("settings.map_cache.clear")
+                }
+                .disabled(mapSnapshotCacheSizeBytes == 0)
+            }
             
             Section(header: Text("settings.account")) {
                 NavigationLink(destination: ChangePasswordView()) {
@@ -62,10 +84,33 @@ struct SettingsView: View {
         } message: {
             Text("settings.logout.confirmation")
         }
+        .alert("settings.map_cache.clear", isPresented: $showClearMapCacheAlert) {
+            Button("cancel", role: .cancel) { }
+            Button("settings.map_cache.clear", role: .destructive) {
+                TerritorySnapshotCache.shared.clear()
+                refreshMapSnapshotCacheSize()
+            }
+        } message: {
+            Text("settings.map_cache.clear_confirmation")
+        }
+        .task {
+            refreshMapSnapshotCacheSize()
+        }
         .scrollContentBackground(.hidden)
         .background {
             LiquidBackgroundView()
         }
+    }
+
+    private var formattedMapSnapshotCacheSize: String {
+        ByteCountFormatter.string(
+            fromByteCount: mapSnapshotCacheSizeBytes,
+            countStyle: .file
+        )
+    }
+
+    private func refreshMapSnapshotCacheSize() {
+        mapSnapshotCacheSizeBytes = TerritorySnapshotCache.shared.diskSizeBytes()
     }
 }
 

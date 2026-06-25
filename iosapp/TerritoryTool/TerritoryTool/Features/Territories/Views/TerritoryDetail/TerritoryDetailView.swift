@@ -146,7 +146,12 @@ struct TerritoryDetailView: View {
             Button("territory.detail.delete", role: .destructive) {
                 Task {
                     if await viewModel.deleteTerritory() {
-                        ToastManager.shared.show(NSLocalizedString("territory.delete.success", value: "Territory deleted", comment: ""), style: .success)
+                        ToastManager.shared.show(
+                            NSLocalizedString("territory.delete.success", value: "Territory deleted", comment: ""),
+                            style: .success,
+                            undoHandle: viewModel.lastUndoHandle,
+                            duration: viewModel.lastUndoHandle?.toastDuration ?? 3
+                        )
                         NotificationCenter.default.post(name: .territoryDeleted, object: nil)
                         dismiss()
                     } else {
@@ -161,7 +166,12 @@ struct TerritoryDetailView: View {
             Button("common.delete", role: .destructive) {
                 Task {
                     if await viewModel.deleteTransaction(id: transaction.id) {
-                        ToastManager.shared.show(NSLocalizedString("dashboard.delete_transaction_success", value: "Transaction deleted", comment: ""), style: .success)
+                        ToastManager.shared.show(
+                            NSLocalizedString("dashboard.delete_transaction_success", value: "Transaction deleted", comment: ""),
+                            style: .success,
+                            undoHandle: viewModel.lastUndoHandle,
+                            duration: viewModel.lastUndoHandle?.toastDuration ?? 3
+                        )
                     }
                 }
             }

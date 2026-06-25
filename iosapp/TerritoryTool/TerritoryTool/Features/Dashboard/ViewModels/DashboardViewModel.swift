@@ -153,7 +153,14 @@ class DashboardViewModel: ObservableObject {
         self.recentEvents.removeAll { $0.transaction.id == event.transaction.id }
         
         do {
-            try await apiService.request(endpoint: TerritoryEndpoint.deleteTransaction(id: event.transaction.id))
+            let undoResponse: UndoableMutationResponse = try await apiService.request(endpoint: TerritoryEndpoint.deleteTransactionUndoable(id: event.transaction.id))
+            let undoHandle = undoResponse.handle(kind: .domain)
+            ToastManager.shared.show(
+                "dashboard.delete_transaction_success",
+                style: .success,
+                undoHandle: undoHandle,
+                duration: undoHandle.toastDuration
+            )
             NotificationCenter.default.post(name: .territoryDataChanged, object: nil)
         } catch {
             self.errorMessage = "Error deleting transaction: \(error.localizedDescription)"
@@ -178,13 +185,20 @@ class DashboardViewModel: ObservableObject {
         }
            
         do {
-            try await apiService.request(endpoint: TerritoryEndpoint.updateTransaction(
+            let undoResponse: UndoableMutationResponse = try await apiService.request(endpoint: TerritoryEndpoint.updateTransactionUndoable(
                 id: tx.id,
                 territoryId: tx.territoryId,
                 personId: tx.personId, // Assuming personId is available in Transaction model
                 date: givenDate,
                 pickedDate: pickedDate
             ))
+            let undoHandle = undoResponse.handle(kind: .domain)
+            ToastManager.shared.show(
+                "dashboard.edit_transaction.success",
+                style: .success,
+                undoHandle: undoHandle,
+                duration: undoHandle.toastDuration
+            )
             NotificationCenter.default.post(name: .territoryDataChanged, object: nil)
         } catch {
             self.errorMessage = "Error updating transaction: \(error.localizedDescription)"
@@ -195,13 +209,20 @@ class DashboardViewModel: ObservableObject {
         guard canEditTransactions else { return }
         
         do {
-            try await apiService.request(endpoint: TerritoryEndpoint.updateTransaction(
+            let undoResponse: UndoableMutationResponse = try await apiService.request(endpoint: TerritoryEndpoint.updateTransactionUndoable(
                 id: originalTransactionId,
                 territoryId: territoryId,
                 personId: personId,
                 date: givenDate,
                 pickedDate: pickedDate
             ))
+            let undoHandle = undoResponse.handle(kind: .domain)
+            ToastManager.shared.show(
+                "dashboard.edit_transaction.success",
+                style: .success,
+                undoHandle: undoHandle,
+                duration: undoHandle.toastDuration
+            )
             NotificationCenter.default.post(name: .territoryDataChanged, object: nil)
         } catch {
             self.errorMessage = "Error updating transaction: \(error.localizedDescription)"

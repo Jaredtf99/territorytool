@@ -92,7 +92,11 @@ struct TerritoryCard: View {
     @ViewBuilder
     private var mapImage: some View {
         if let geometry = territory.mapGeometry {
-            TerritoryMapView(geometry: geometry, compact: true)
+            TerritorySnapshotBackdrop(
+                geometry: geometry,
+                centersTerritory: true,
+                strokeLineWidth: 2.5
+            )
         } else if let imgUrl = territory.imgUrl, let url = URL(string: imgUrl) {
             CachedAsyncImage(
                 url: url,

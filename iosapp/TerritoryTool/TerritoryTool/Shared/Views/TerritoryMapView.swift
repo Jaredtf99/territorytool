@@ -1,3 +1,5 @@
+import CryptoKit
+import ImageIO
 import MapKit
 import SwiftUI
 import UIKit
@@ -81,89 +83,39 @@ struct TerritorySnapshotBackdrop: View {
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.displayScale) private var displayScale
-    @State private var snapshot: MKMapSnapshotter.Snapshot?
+    @State private var snapshotImage: UIImage?
 
     var body: some View {
         GeometryReader { proxy in
             ZStack {
-                if let snapshot {
-                    Image(uiImage: snapshot.image)
+                if let snapshotImage {
+                    Image(uiImage: snapshotImage)
                         .resizable()
                         .frame(width: proxy.size.width, height: proxy.size.height)
-
-                    Canvas { context, _ in
-                        let project: (CLLocationCoordinate2D) -> CGPoint = { snapshot.point(for: $0) }
-
-                        func makePath(_ coordinates: [CLLocationCoordinate2D], closed: Bool) -> Path {
-                            var path = Path()
-                            guard let first = coordinates.first else { return path }
-                            path.move(to: project(first))
-                            for coordinate in coordinates.dropFirst() {
-                                path.addLine(to: project(coordinate))
-                            }
-                            if closed { path.closeSubpath() }
-                            return path
-                        }
-
-                        for polygon in geometry.polygons {
-                            let path = makePath(polygon.mapCoordinates.roundedCorners(), closed: true)
-                            context.fill(path, with: .color(fill.opacity(0.16)))
-                            context.stroke(
-                                path,
-                                with: .color(stroke),
-                                style: StrokeStyle(lineWidth: strokeLineWidth, lineCap: .round, lineJoin: .round)
-                            )
-                        }
-                        for polyline in geometry.polylines {
-                            let path = makePath(polyline.mapCoordinates.roundedCorners(closed: false), closed: false)
-                            context.stroke(
-                                path,
-                                with: .color(stroke.opacity(0.85)),
-                                style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round)
-                            )
-                        }
-                    }
-                    .frame(width: proxy.size.width, height: proxy.size.height)
                 } else {
                     Color.accent.opacity(0.06)
                 }
             }
-            .task(id: SnapshotKey(
-                width: proxy.size.width,
-                height: proxy.size.height,
-                dark: colorScheme == .dark,
-                centered: centersTerritory,
-                bias: verticalBias
-            )) {
-                await loadSnapshot(size: proxy.size, dark: colorScheme == .dark)
+            .task(id: snapshotCacheKey(size: proxy.size, dark: colorScheme == .dark)) {
+                await loadSnapshotImage(size: proxy.size, dark: colorScheme == .dark)
             }
         }
         .accessibilityHidden(true)
     }
 
-    private struct SnapshotKey: Equatable {
-        let width: CGFloat
-        let height: CGFloat
-        let dark: Bool
-        let centered: Bool
-        let bias: Double
-    }
-
-    private func loadSnapshot(size: CGSize, dark: Bool) async {
+    private func loadSnapshotImage(size: CGSize, dark: Bool) async {
         guard size.width > 1, size.height > 1 else { return }
         let cacheKey = snapshotCacheKey(size: size, dark: dark)
-        if let cached = TerritorySnapshotCache.shared.snapshot(for: cacheKey) {
-            snapshot = cached
+        if let cached = TerritorySnapshotCache.shared.image(for: cacheKey) {
+            snapshotImage = cached
             return
         }
 
+        let traitCollection = snapshotTraitCollection(dark: dark)
         let options = MKMapSnapshotter.Options()
         options.camera = territoryCamera()
         options.size = size
-        options.traitCollection = UITraitCollection(traitsFrom: [
-            UITraitCollection(userInterfaceStyle: dark ? .dark : .light),
-            UITraitCollection(displayScale: displayScale)
-        ])
+        options.traitCollection = traitCollection
         // Relieve realista (3D) + sin puntos de interés que distraigan.
         let configuration = MKStandardMapConfiguration(elevationStyle: .realistic)
         configuration.pointOfInterestFilter = .excludingAll
@@ -180,8 +132,56 @@ struct TerritorySnapshotBackdrop: View {
             }
         }
         if let result {
-            TerritorySnapshotCache.shared.insert(result, for: cacheKey)
-            snapshot = result
+            let image = renderedSnapshotImage(from: result, size: size, traitCollection: traitCollection)
+            TerritorySnapshotCache.shared.insert(image, for: cacheKey)
+            snapshotImage = image
+        }
+    }
+
+    private func renderedSnapshotImage(
+        from snapshot: MKMapSnapshotter.Snapshot,
+        size: CGSize,
+        traitCollection: UITraitCollection
+    ) -> UIImage {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = displayScale
+        format.opaque = true
+
+        let strokeColor = UIColor(stroke).resolvedColor(with: traitCollection)
+        let fillColor = UIColor(fill).resolvedColor(with: traitCollection)
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
+
+        return renderer.image { _ in
+            snapshot.image.draw(in: CGRect(origin: .zero, size: size))
+
+            func makePath(_ coordinates: [CLLocationCoordinate2D], closed: Bool) -> UIBezierPath {
+                let path = UIBezierPath()
+                guard let first = coordinates.first else { return path }
+                path.move(to: snapshot.point(for: first))
+                for coordinate in coordinates.dropFirst() {
+                    path.addLine(to: snapshot.point(for: coordinate))
+                }
+                if closed { path.close() }
+                path.lineCapStyle = .round
+                path.lineJoinStyle = .round
+                return path
+            }
+
+            for polygon in geometry.polygons {
+                let path = makePath(polygon.mapCoordinates.roundedCorners(), closed: true)
+                fillColor.withAlphaComponent(0.16).setFill()
+                path.fill()
+                strokeColor.setStroke()
+                path.lineWidth = strokeLineWidth
+                path.stroke()
+            }
+
+            for polyline in geometry.polylines {
+                let path = makePath(polyline.mapCoordinates.roundedCorners(closed: false), closed: false)
+                strokeColor.withAlphaComponent(0.85).setStroke()
+                path.lineWidth = 2.5
+                path.stroke()
+            }
         }
     }
 
@@ -217,41 +217,290 @@ struct TerritorySnapshotBackdrop: View {
 
     private func snapshotCacheKey(size: CGSize, dark: Bool) -> String {
         let bounds = geometry.bounds
+        let traitCollection = snapshotTraitCollection(dark: dark)
         return [
+            "v2",
+            geometry.snapshotFingerprint,
             String(format: "%.6f", bounds.south),
             String(format: "%.6f", bounds.west),
             String(format: "%.6f", bounds.north),
             String(format: "%.6f", bounds.east),
             "\(geometry.version)",
-            "\(Int(size.width.rounded()))x\(Int(size.height.rounded()))",
+            "\(Int(size.width.rounded()))x\(Int(size.height.rounded()))@\(String(format: "%.1f", displayScale))",
             dark ? "dark" : "light",
             centersTerritory ? "center" : "trailing",
             String(format: "%.2f", verticalBias),
-            String(format: "%.1f", strokeLineWidth)
+            String(format: "%.1f", strokeLineWidth),
+            stroke.snapshotColorKey(using: traitCollection),
+            fill.snapshotColorKey(using: traitCollection)
         ].joined(separator: "|")
+    }
+
+    private func snapshotTraitCollection(dark: Bool) -> UITraitCollection {
+        UITraitCollection(traitsFrom: [
+            UITraitCollection(userInterfaceStyle: dark ? .dark : .light),
+            UITraitCollection(displayScale: displayScale)
+        ])
     }
 }
 
 @MainActor
-private final class TerritorySnapshotCache {
+final class TerritorySnapshotCache {
     static let shared = TerritorySnapshotCache()
 
-    private var snapshots: [String: MKMapSnapshotter.Snapshot] = [:]
+    private var images: [String: UIImage] = [:]
     private var order: [String] = []
     private let capacity = 80
+    private let diskCapacityBytes = 50 * 1024 * 1024
+    private let maxDiskAge: TimeInterval = 30 * 24 * 60 * 60
+    private let fileManager = FileManager.default
+    private let directory: URL
 
-    func snapshot(for key: String) -> MKMapSnapshotter.Snapshot? {
-        snapshots[key]
+    private init() {
+        let caches = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first
+            ?? fileManager.temporaryDirectory
+        directory = caches.appendingPathComponent("TerritorySnapshotCache", isDirectory: true)
+        try? fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
     }
 
-    func insert(_ snapshot: MKMapSnapshotter.Snapshot, for key: String) {
-        snapshots[key] = snapshot
-        order.removeAll { $0 == key }
-        order.append(key)
+    func image(for key: String) -> UIImage? {
+        if let image = images[key] {
+            markRecentlyUsed(key)
+            return image
+        }
+
+        for url in fileURLs(for: key) {
+            if isExpired(url) {
+                try? fileManager.removeItem(at: url)
+                continue
+            }
+
+            guard let data = try? Data(contentsOf: url),
+                  let image = UIImage(data: data) else {
+                continue
+            }
+
+            insertInMemory(image, for: key)
+            try? fileManager.setAttributes([.modificationDate: Date()], ofItemAtPath: url.path)
+            return image
+        }
+
+        return nil
+    }
+
+    func insert(_ image: UIImage, for key: String) {
+        insertInMemory(image, for: key)
+
+        if let encoded = encodedData(for: image) {
+            try? encoded.data.write(to: fileURL(for: key, extension: encoded.fileExtension), options: [.atomic])
+            removeAlternativeFormats(for: key, keeping: encoded.fileExtension)
+            pruneDiskCacheIfNeeded()
+        }
+    }
+
+    func diskSizeBytes() -> Int64 {
+        guard let urls = try? fileManager.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: [.fileSizeKey],
+            options: [.skipsHiddenFiles]
+        ) else { return 0 }
+
+        return urls.reduce(into: Int64(0)) { total, url in
+            guard let values = try? url.resourceValues(forKeys: [.fileSizeKey]) else { return }
+            total += Int64(values.fileSize ?? 0)
+        }
+    }
+
+    func clear() {
+        images.removeAll()
+        order.removeAll()
+
+        guard let urls = try? fileManager.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ) else { return }
+
+        for url in urls {
+            try? fileManager.removeItem(at: url)
+        }
+    }
+
+    private func insertInMemory(_ image: UIImage, for key: String) {
+        images[key] = image
+        markRecentlyUsed(key)
         while order.count > capacity, let oldest = order.first {
             order.removeFirst()
-            snapshots.removeValue(forKey: oldest)
+            images.removeValue(forKey: oldest)
         }
+    }
+
+    private func markRecentlyUsed(_ key: String) {
+        order.removeAll { $0 == key }
+        order.append(key)
+    }
+
+    private func fileURLs(for key: String) -> [URL] {
+        [
+            fileURL(for: key, extension: "heic"),
+            fileURL(for: key, extension: "jpg"),
+            fileURL(for: key, extension: "png")
+        ]
+    }
+
+    private func fileURL(for key: String, extension fileExtension: String) -> URL {
+        directory.appendingPathComponent(key.sha256Hex).appendingPathExtension(fileExtension)
+    }
+
+    private func removeAlternativeFormats(for key: String, keeping fileExtension: String) {
+        for url in fileURLs(for: key) where url.pathExtension != fileExtension {
+            try? fileManager.removeItem(at: url)
+        }
+    }
+
+    private func encodedData(for image: UIImage) -> (data: Data, fileExtension: String)? {
+        if let heicData = image.heicData(compressionQuality: 0.38) {
+            return (heicData, "heic")
+        }
+
+        if let jpegData = image.jpegData(compressionQuality: 0.88) {
+            return (jpegData, "jpg")
+        }
+
+        return image.pngData().map { ($0, "png") }
+    }
+
+    private func isExpired(_ url: URL, now: Date = Date()) -> Bool {
+        guard let values = try? url.resourceValues(forKeys: [.contentModificationDateKey]),
+              let modified = values.contentModificationDate else {
+            return false
+        }
+        return now.timeIntervalSince(modified) > maxDiskAge
+    }
+
+    private func pruneDiskCacheIfNeeded() {
+        guard let urls = try? fileManager.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: [.contentModificationDateKey, .fileSizeKey],
+            options: [.skipsHiddenFiles]
+        ) else { return }
+
+        var entries: [(url: URL, modified: Date, size: Int)] = []
+        var totalSize = 0
+        let now = Date()
+
+        for url in urls {
+            guard let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey]) else {
+                continue
+            }
+            let modified = values.contentModificationDate ?? .distantPast
+            if now.timeIntervalSince(modified) > maxDiskAge {
+                try? fileManager.removeItem(at: url)
+                continue
+            }
+            let size = values.fileSize ?? 0
+            totalSize += size
+            entries.append((url, modified, size))
+        }
+
+        guard totalSize > diskCapacityBytes else { return }
+
+        for entry in entries.sorted(by: { $0.modified < $1.modified }) {
+            try? fileManager.removeItem(at: entry.url)
+            totalSize -= entry.size
+            if totalSize <= diskCapacityBytes { break }
+        }
+    }
+}
+
+private extension Color {
+    func snapshotColorKey(using traitCollection: UITraitCollection) -> String {
+        UIColor(self).resolvedColor(with: traitCollection).snapshotColorKey
+    }
+}
+
+private extension UIImage {
+    func heicData(compressionQuality: CGFloat) -> Data? {
+        guard let cgImage else { return nil }
+        let imageToEncode = opaqueRGBCGImage ?? cgImage
+
+        let data = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(data, "public.heic" as CFString, 1, nil) else {
+            return nil
+        }
+
+        let options: CFDictionary = [
+            kCGImageDestinationLossyCompressionQuality: compressionQuality
+        ] as CFDictionary
+
+        CGImageDestinationAddImage(destination, imageToEncode, options)
+        guard CGImageDestinationFinalize(destination) else { return nil }
+
+        return data as Data
+    }
+
+    private var opaqueRGBCGImage: CGImage? {
+        guard let cgImage else { return nil }
+
+        let width = cgImage.width
+        let height = cgImage.height
+        guard width > 0, height > 0 else { return nil }
+
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGBitmapInfo.byteOrder32Big.rawValue | CGImageAlphaInfo.noneSkipLast.rawValue
+        guard let context = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: width * 4,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo
+        ) else {
+            return nil
+        }
+
+        context.interpolationQuality = .high
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        return context.makeImage()
+    }
+}
+
+private extension UIColor {
+    var snapshotColorKey: String {
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        if getRed(&red, green: &green, blue: &blue, alpha: &alpha) {
+            return String(format: "%.3f,%.3f,%.3f,%.3f", red, green, blue, alpha)
+        }
+        return cgColor.components?.map { String(format: "%.3f", $0) }.joined(separator: ",") ?? "\(hash)"
+    }
+}
+
+private extension String {
+    var sha256Hex: String {
+        let digest = SHA256.hash(data: Data(utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+}
+
+private extension TerritoryMapGeometry {
+    var snapshotFingerprint: String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        if let data = try? encoder.encode(self) {
+            return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        }
+
+        let boundsKey = [
+            String(format: "%.6f", bounds.south),
+            String(format: "%.6f", bounds.west),
+            String(format: "%.6f", bounds.north),
+            String(format: "%.6f", bounds.east)
+        ].joined(separator: ",")
+        return "\(version)|\(boundsKey)|p:\(polygons.count)|l:\(polylines.count)|m:\(markers.count)"
     }
 }
 

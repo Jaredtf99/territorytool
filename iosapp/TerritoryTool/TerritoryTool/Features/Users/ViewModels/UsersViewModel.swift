@@ -47,6 +47,13 @@ class UsersViewModel: ObservableObject {
                 Task { [weak self] in await self?.fetchUsers() }
             }
             .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: .userDataChanged)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                Task { [weak self] in await self?.fetchUsers() }
+            }
+            .store(in: &cancellables)
     }
 
     func fetchUsers() async {
@@ -71,8 +78,14 @@ class UsersViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            try await networkManager.request(endpoint: TerritoryEndpoint.addUser(name: name, role: role.rawValue, password: password))
-            ToastManager.shared.show("users.add_success", style: .success)
+            let undoResponse: UndoableMutationResponse = try await networkManager.request(endpoint: TerritoryEndpoint.addUserUndoable(name: name, role: role.rawValue, password: password))
+            let undoHandle = undoResponse.handle(kind: .user)
+            ToastManager.shared.show(
+                "users.add_success",
+                style: .success,
+                undoHandle: undoHandle,
+                duration: undoHandle.toastDuration
+            )
             await fetchUsers()
             return true
         } catch {
@@ -88,8 +101,14 @@ class UsersViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            try await networkManager.request(endpoint: TerritoryEndpoint.updateUser(id: user.id, name: newName, role: newRole.rawValue))
-            ToastManager.shared.show("users.update_success", style: .success)
+            let undoResponse: UndoableMutationResponse = try await networkManager.request(endpoint: TerritoryEndpoint.updateUserUndoable(id: user.id, name: newName, role: newRole.rawValue))
+            let undoHandle = undoResponse.handle(kind: .user)
+            ToastManager.shared.show(
+                "users.update_success",
+                style: .success,
+                undoHandle: undoHandle,
+                duration: undoHandle.toastDuration
+            )
             await fetchUsers()
             return true
         } catch {
@@ -122,8 +141,14 @@ class UsersViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            try await networkManager.request(endpoint: TerritoryEndpoint.deleteUser(id: user.id))
-            ToastManager.shared.show("users.delete_success", style: .success)
+            let undoResponse: UndoableMutationResponse = try await networkManager.request(endpoint: TerritoryEndpoint.deleteUserUndoable(id: user.id))
+            let undoHandle = undoResponse.handle(kind: .user)
+            ToastManager.shared.show(
+                "users.delete_success",
+                style: .success,
+                undoHandle: undoHandle,
+                duration: undoHandle.toastDuration
+            )
             await fetchUsers()
         } catch {
              self.errorMessage = error.localizedDescription

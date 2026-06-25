@@ -8,6 +8,7 @@ class EditTerritoryViewModel: ObservableObject {
     @Published var mapUrl: String
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    @Published private(set) var lastUndoHandle: UndoHandle?
     
     private let apiService: APIService
     private let territoryId: Int
@@ -33,11 +34,13 @@ class EditTerritoryViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            try await apiService.request(endpoint: TerritoryEndpoint.updateTerritory(id: territoryId, code: code, name: name, mapUrl: mapUrl))
+            let undoResponse: UndoableMutationResponse = try await apiService.request(endpoint: TerritoryEndpoint.updateTerritoryUndoable(id: territoryId, code: code, name: name, mapUrl: mapUrl))
+            lastUndoHandle = undoResponse.handle(kind: .domain)
             isLoading = false
             return true
         } catch {
             isLoading = false
+            lastUndoHandle = nil
             errorMessage = mapError(error)
             return false
         }

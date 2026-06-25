@@ -366,18 +366,21 @@ struct EditTransactionSheet: View {
                 let dateFormatter = ISO8601DateFormatter()
                 dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
                 
-                try await apiService.request(endpoint: TerritoryEndpoint.updateTransaction(
+                let undoResponse: UndoableMutationResponse = try await apiService.request(endpoint: TerritoryEndpoint.updateTransactionUndoable(
                     id: transactionEvent.transaction.id,
                     territoryId: territory.id,
                     personId: person.id,
                     date: givenDate,
                     pickedDate: returnedDate
                 ))
+                let undoHandle = undoResponse.handle(kind: .domain)
                 
                 HapticManager.shared.notification(type: .success)
                 ToastManager.shared.show(
                     NSLocalizedString("dashboard.edit_transaction.success", value: "Transaction updated", comment: ""),
-                    style: .success
+                    style: .success,
+                    undoHandle: undoHandle,
+                    duration: undoHandle.toastDuration
                 )
                 
                 await onComplete()

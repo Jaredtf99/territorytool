@@ -106,7 +106,9 @@ struct TerritoriesView: View {
                     HapticManager.shared.notification(type: .success)
                     ToastManager.shared.show(
                         NSLocalizedString("territory.delete.success", comment: ""),
-                        style: .success
+                        style: .success,
+                        undoHandle: viewModel.lastDeleteUndoHandle,
+                        duration: viewModel.lastDeleteUndoHandle?.toastDuration ?? 3
                     )
                 }
             }

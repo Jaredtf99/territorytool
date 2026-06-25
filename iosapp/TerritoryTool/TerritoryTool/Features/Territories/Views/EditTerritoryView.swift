@@ -63,7 +63,12 @@ struct EditTerritoryView: View {
                         action: {
                             Task {
                                 if await viewModel.save() {
-                                    ToastManager.shared.show(NSLocalizedString("territory.edit.success", comment: ""), style: .success)
+                                    ToastManager.shared.show(
+                                        NSLocalizedString("territory.edit.success", comment: ""),
+                                        style: .success,
+                                        undoHandle: viewModel.lastUndoHandle,
+                                        duration: viewModel.lastUndoHandle?.toastDuration ?? 3
+                                    )
                                     HapticManager.shared.notification(type: .success)
                                     onSuccess?()
                                     dismiss()

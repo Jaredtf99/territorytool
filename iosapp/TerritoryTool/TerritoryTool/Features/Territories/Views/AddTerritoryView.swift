@@ -51,7 +51,12 @@ struct AddTerritoryView: View {
                         action: {
                             Task {
                                 if await viewModel.createTerritory() {
-                                    ToastManager.shared.show(NSLocalizedString("territory.add.success", value: "Territory added successfully", comment: ""), style: .success)
+                                    ToastManager.shared.show(
+                                        NSLocalizedString("territory.add.success", value: "Territory added successfully", comment: ""),
+                                        style: .success,
+                                        undoHandle: viewModel.lastUndoHandle,
+                                        duration: viewModel.lastUndoHandle?.toastDuration ?? 3
+                                    )
                                     dismiss()
                                 } else {
                                     HapticManager.shared.notification(type: .error)

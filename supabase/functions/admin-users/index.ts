@@ -10,10 +10,14 @@ import {
 
 type RequestBody =
   | { action: "create"; username: string; password: string; role?: MemberRole }
+  | { action: "create-undoable"; username: string; password: string; role?: MemberRole }
   | { action: "add-member"; username: string; role?: MemberRole }
   | { action: "update"; userId: string; username: string; role: MemberRole }
+  | { action: "update-undoable"; userId: string; username: string; role: MemberRole }
   | { action: "delete"; userId: string }
+  | { action: "delete-undoable"; userId: string }
   | { action: "change-password"; userId: string; newPassword: string }
+  | { action: "undo"; undoId: string }
   | { action: "list" };
 
 const INTERNAL_DOMAIN = "users.territorytool.invalid";
@@ -70,6 +74,41 @@ function canAssignRole(actor: ActorContext, role: MemberRole): boolean {
   return true;
 }
 
+async function createUndoAction(
+  supabase: ReturnType<typeof adminClient>,
+  actor: ActorContext,
+  actionType: string,
+  payload: Record<string, unknown>,
+): Promise<{ undoId: string; expiresAt: string }> {
+  const { data, error } = await supabase
+    .from("undoable_actions")
+    .insert({
+      action_type: actionType,
+      entity_type: "user",
+      actor_id: actor.userId,
+      congregation_id: actor.congregationId,
+      payload,
+    })
+    .select("id, created_at")
+    .single();
+  if (error || !data) throw error ?? new Error("UNDO_CREATE_FAILED");
+  return {
+    undoId: data.id as string,
+    expiresAt: new Date(new Date(data.created_at as string).getTime() + 5000).toISOString(),
+  };
+}
+
+async function markUndoConsumed(
+  supabase: ReturnType<typeof adminClient>,
+  undoId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("undoable_actions")
+    .update({ consumed_at: new Date().toISOString() })
+    .eq("id", undoId);
+  if (error) throw error;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -105,7 +144,117 @@ Deno.serve(async (req) => {
       return jsonResponse(users);
     }
 
-    if (body.action === "create") {
+    if (body.action === "undo") {
+      if (!body.undoId) return jsonResponse({ error: "INVALID_PARAMETERS" }, 400);
+
+      const { data: undo, error: undoError } = await supabase
+        .from("undoable_actions")
+        .select("*")
+        .eq("id", body.undoId)
+        .maybeSingle();
+      if (undoError) throw undoError;
+      if (
+        !undo ||
+        undo.actor_id !== actor.userId ||
+        undo.congregation_id !== congregationId ||
+        undo.entity_type !== "user"
+      ) {
+        return jsonResponse({ error: "UNDO_NOT_FOUND" }, 404);
+      }
+      if (undo.consumed_at) return jsonResponse({ error: "UNDO_ALREADY_CONSUMED" }, 409);
+      if (new Date(undo.expires_at).getTime() <= Date.now()) {
+        return jsonResponse({ error: "UNDO_EXPIRED" }, 410);
+      }
+
+      const payload = undo.payload as Record<string, unknown>;
+
+      if (undo.action_type === "add_user") {
+        const userId = payload.userId as string;
+        const { error: memberDeleteError } = await supabase
+          .from("congregation_members")
+          .delete()
+          .eq("user_id", userId)
+          .eq("congregation_id", congregationId);
+        if (memberDeleteError) return jsonResponse({ error: memberDeleteError.message }, 400);
+
+        const { count } = await supabase
+          .from("congregation_members")
+          .select("user_id", { count: "exact", head: true })
+          .eq("user_id", userId);
+        if ((count ?? 0) === 0) {
+          const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(userId);
+          if (deleteAuthError) return jsonResponse({ error: deleteAuthError.message }, 400);
+        } else {
+          await supabase
+            .from("profiles")
+            .update({ active_congregation_id: null })
+            .eq("id", userId)
+            .eq("active_congregation_id", congregationId);
+        }
+      } else if (undo.action_type === "update_user") {
+        const userId = payload.userId as string;
+        const before = payload.before as { username: string; role: MemberRole };
+        const after = payload.after as { username: string; role: MemberRole };
+
+        const { data: currentProfile } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", userId)
+          .maybeSingle();
+        const { data: currentMembership } = await supabase
+          .from("congregation_members")
+          .select("role")
+          .eq("user_id", userId)
+          .eq("congregation_id", congregationId)
+          .maybeSingle();
+        if (
+          currentProfile?.username !== after.username ||
+          currentMembership?.role !== after.role
+        ) {
+          return jsonResponse({ error: "UNDO_CONFLICT" }, 409);
+        }
+
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({ username: before.username })
+          .eq("id", userId);
+        if (profileError) return jsonResponse({ error: profileError.message }, 400);
+
+        const { error: memberError } = await supabase
+          .from("congregation_members")
+          .update({ role: before.role })
+          .eq("user_id", userId)
+          .eq("congregation_id", congregationId);
+        if (memberError) return jsonResponse({ error: memberError.message }, 400);
+      } else if (undo.action_type === "delete_user") {
+        const userId = payload.userId as string;
+        const role = payload.role as MemberRole;
+        const previousActiveCongregationId = payload.previousActiveCongregationId as string | null;
+
+        const { error: memberError } = await supabase
+          .from("congregation_members")
+          .upsert(
+            { user_id: userId, congregation_id: congregationId, role },
+            { onConflict: "user_id,congregation_id" },
+          );
+        if (memberError) return jsonResponse({ error: memberError.message }, 400);
+
+        if (previousActiveCongregationId === congregationId) {
+          const { error: activeError } = await supabase
+            .from("profiles")
+            .update({ active_congregation_id: congregationId })
+            .eq("id", userId);
+          if (activeError) return jsonResponse({ error: activeError.message }, 400);
+        }
+      } else {
+        return jsonResponse({ error: "UNDO_UNSUPPORTED" }, 400);
+      }
+
+      await markUndoConsumed(supabase, body.undoId);
+      return jsonResponse({ ok: true });
+    }
+
+    if (body.action === "create" || body.action === "create-undoable") {
       const role: MemberRole = body.role ?? "USER";
       if (!body.username || !body.password || !isMemberRole(role)) {
         return jsonResponse({ error: "INVALID_PARAMETERS" }, 400);
@@ -157,6 +306,14 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: memberError.message }, 400);
       }
 
+      if (body.action === "create-undoable") {
+        return jsonResponse(await createUndoAction(supabase, actor, "add_user", {
+          userId: created.user.id,
+          username: body.username,
+          role,
+          createdNewUser: true,
+        }));
+      }
       return jsonResponse({ userId: created.user.id });
     }
 
@@ -188,7 +345,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ userId: profile.id });
     }
 
-    if (body.action === "update") {
+    if (body.action === "update" || body.action === "update-undoable") {
       if (!body.userId || !body.username || !isMemberRole(body.role)) {
         return jsonResponse({ error: "INVALID_PARAMETERS" }, 400);
       }
@@ -201,6 +358,12 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: "USER_NOT_FOUND" }, 404);
       }
       if (!canManage(actor, target)) return jsonResponse({ error: "FORBIDDEN" }, 403);
+
+      const { data: beforeProfile } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", body.userId)
+        .single();
 
       const { error: nameError } = await supabase
         .from("profiles")
@@ -215,11 +378,24 @@ Deno.serve(async (req) => {
         .eq("congregation_id", congregationId);
       if (roleError) return jsonResponse({ error: roleError.message }, 400);
 
+      if (body.action === "update-undoable") {
+        return jsonResponse(await createUndoAction(supabase, actor, "update_user", {
+          userId: body.userId,
+          before: {
+            username: beforeProfile?.username ?? body.username,
+            role: target.roleInCongregation,
+          },
+          after: {
+            username: body.username,
+            role: body.role,
+          },
+        }));
+      }
       return jsonResponse({ ok: true });
     }
 
     // Remove a member from the active congregation (does not delete the account).
-    if (body.action === "delete") {
+    if (body.action === "delete" || body.action === "delete-undoable") {
       if (!body.userId) return jsonResponse({ error: "INVALID_PARAMETERS" }, 400);
 
       const target = await getTarget(body.userId, congregationId);
@@ -227,6 +403,12 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: "USER_NOT_FOUND" }, 404);
       }
       if (!canManage(actor, target)) return jsonResponse({ error: "FORBIDDEN" }, 403);
+
+      const { data: beforeProfile } = await supabase
+        .from("profiles")
+        .select("active_congregation_id")
+        .eq("id", body.userId)
+        .single();
 
       const { error } = await supabase
         .from("congregation_members")
@@ -248,6 +430,13 @@ Deno.serve(async (req) => {
         .eq("id", body.userId)
         .eq("active_congregation_id", congregationId);
 
+      if (body.action === "delete-undoable") {
+        return jsonResponse(await createUndoAction(supabase, actor, "delete_user", {
+          userId: body.userId,
+          role: target.roleInCongregation,
+          previousActiveCongregationId: beforeProfile?.active_congregation_id ?? null,
+        }));
+      }
       return jsonResponse({ ok: true });
     }
 

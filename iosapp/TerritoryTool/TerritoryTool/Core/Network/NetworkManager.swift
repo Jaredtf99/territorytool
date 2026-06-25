@@ -98,6 +98,28 @@ final class NetworkManager: APIService {
             ])
             return mapExplorerTerritories(rows)
 
+        case .searchQuickAction(let term):
+            // Buscador unificado: una sola RPC devuelve territorios y personas mezclados,
+            // ya rankeados por score. El `data` viene en crudo; reusamos los mismos
+            // mapeos (territorios necesitan firmar la URL de imagen).
+            let rows = try await rpcRows("search_quick_action", body: [
+                "term": term,
+                "take": 20
+            ])
+            var hits: [[String: Any]] = []
+            for row in rows {
+                let kind = (row["kind"] as? String) ?? ""
+                let score = (row["score"] as? NSNumber)?.doubleValue ?? (row["score"] as? Double) ?? 0
+                guard let data = row["data"] as? [String: Any] else { continue }
+                if kind == "person" {
+                    hits.append(["kind": "person", "score": score, "person": data, "territory": NSNull()])
+                } else {
+                    let territory = (try await mapTerritories([data])).first ?? [:]
+                    hits.append(["kind": "territory", "score": score, "territory": territory, "person": NSNull()])
+                }
+            }
+            return hits
+
         case .getTerritory(let id):
             let row = try await singleRow("/rest/v1/territory_current_state", queryItems: [
                 URLQueryItem(name: "select", value: "*"),
@@ -151,8 +173,21 @@ final class NetworkManager: APIService {
                 "custom_date": date.map { isoFormatter.string(from: $0) } ?? NSNull()
             ])
 
+        case .giveTerritoryUndoable(let code, let personName, let date):
+            return try await rpcObject("give_territory_undoable", body: [
+                "territory_code": code,
+                "person_name": personName,
+                "custom_date": date.map { isoFormatter.string(from: $0) } ?? NSNull()
+            ])
+
         case .pickTerritory(let code, let date):
             return try await rpcObject("pick_territory", body: [
+                "territory_code": code,
+                "custom_date": date.map { isoFormatter.string(from: $0) } ?? NSNull()
+            ])
+
+        case .pickTerritoryUndoable(let code, let date):
+            return try await rpcObject("pick_territory_undoable", body: [
                 "territory_code": code,
                 "custom_date": date.map { isoFormatter.string(from: $0) } ?? NSNull()
             ])
@@ -221,14 +256,26 @@ final class NetworkManager: APIService {
         case .addPerson(let name):
             return try await rpcObject("add_person", body: ["name": name])
 
+        case .addPersonUndoable(let name):
+            return try await rpcObject("add_person_undoable", body: ["name": name])
+
         case .updatePerson(let id, let name, let enabled):
             return try await rpcObject("update_person", body: ["person_id": id, "name": name, "enabled": enabled])
+
+        case .updatePersonUndoable(let id, let name, let enabled):
+            return try await rpcObject("update_person_undoable", body: ["person_id": id, "name": name, "enabled": enabled])
 
         case .deletePerson(let name):
             return try await rpcObject("delete_person", body: ["name": name])
 
+        case .deletePersonUndoable(let name):
+            return try await rpcObject("delete_person_undoable", body: ["name": name])
+
         case .addTerritory(let code, let name, let mapUrl):
             return try await rpcObject("add_territory", body: ["code": code, "name": name, "map_url": mapUrl])
+
+        case .addTerritoryUndoable(let code, let name, let mapUrl):
+            return try await rpcObject("add_territory_undoable", body: ["code": code, "name": name, "map_url": mapUrl])
 
         case .updateTerritory(let id, let code, let name, let mapUrl):
             return try await rpcObject("update_territory", body: [
@@ -238,8 +285,22 @@ final class NetworkManager: APIService {
                 "map_url": mapUrl
             ])
 
+        case .updateTerritoryUndoable(let id, let code, let name, let mapUrl):
+            return try await rpcObject("update_territory_undoable", body: [
+                "territory_id": id,
+                "code": code,
+                "name": name,
+                "map_url": mapUrl
+            ])
+
         case .deleteTerritory(let id):
             return try await rpcObject("delete_territory", body: ["territory_id": id])
+
+        case .deleteTerritoryUndoable(let id):
+            return try await rpcObject("delete_territory_undoable", body: ["territory_id": id])
+
+        case .undoAction(let id):
+            return try await rpcObject("undo_action", body: ["p_undo_id": id])
 
         case .refreshTerritoryImage(let id):
             return try await edgeFunction("refresh-territory-image", body: ["territoryId": id])
@@ -299,6 +360,14 @@ final class NetworkManager: APIService {
                 "password": password
             ])
 
+        case .addUserUndoable(let name, let role, let password):
+            return try await edgeFunction("admin-users", body: [
+                "action": "create-undoable",
+                "username": name,
+                "role": role,
+                "password": password
+            ])
+
         case .updateUser(let id, let name, let role):
             return try await edgeFunction("admin-users", body: [
                 "action": "update",
@@ -307,8 +376,22 @@ final class NetworkManager: APIService {
                 "role": role
             ])
 
+        case .updateUserUndoable(let id, let name, let role):
+            return try await edgeFunction("admin-users", body: [
+                "action": "update-undoable",
+                "userId": id,
+                "username": name,
+                "role": role
+            ])
+
         case .deleteUser(let id):
             return try await edgeFunction("admin-users", body: ["action": "delete", "userId": id])
+
+        case .deleteUserUndoable(let id):
+            return try await edgeFunction("admin-users", body: ["action": "delete-undoable", "userId": id])
+
+        case .undoUserAction(let id):
+            return try await edgeFunction("admin-users", body: ["action": "undo", "undoId": id])
 
         case .changeUserPassword(let id, let newPassword):
             return try await edgeFunction("admin-users", body: [
@@ -320,8 +403,19 @@ final class NetworkManager: APIService {
         case .deleteTransaction(let id):
             return try await rpcObject("delete_transaction", body: ["transaction_id": id])
 
+        case .deleteTransactionUndoable(let id):
+            return try await rpcObject("delete_transaction_undoable", body: ["transaction_id": id])
+
         case .updateTransaction(let id, _, let personId, let date, let pickedDate):
             return try await rpcObject("update_transaction", body: [
+                "transaction_id": id,
+                "person_id": personId ?? NSNull(),
+                "given_at": isoFormatter.string(from: date),
+                "picked_at": pickedDate.map { isoFormatter.string(from: $0) } ?? NSNull()
+            ])
+
+        case .updateTransactionUndoable(let id, _, let personId, let date, let pickedDate):
+            return try await rpcObject("update_transaction_undoable", body: [
                 "transaction_id": id,
                 "person_id": personId ?? NSNull(),
                 "given_at": isoFormatter.string(from: date),

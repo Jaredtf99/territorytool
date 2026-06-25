@@ -138,15 +138,18 @@ class TerritoryAssignmentViewModel: ObservableObject {
         
         do {
             let date = useCustomDate ? customDate : nil
-            try await apiService.request(endpoint: TerritoryEndpoint.giveTerritory(
+            let undoResponse: UndoableMutationResponse = try await apiService.request(endpoint: TerritoryEndpoint.giveTerritoryUndoable(
                 code: territory.code,
                 personName: person.name,
                 date: date
             ))
+            let undoHandle = undoResponse.handle(kind: .domain)
             
             ToastManager.shared.show(
                 NSLocalizedString("assignment.success", comment: ""),
-                style: .success
+                style: .success,
+                undoHandle: undoHandle,
+                duration: undoHandle.toastDuration
             )
             NotificationCenter.default.post(name: .territoryDataChanged, object: nil)
             

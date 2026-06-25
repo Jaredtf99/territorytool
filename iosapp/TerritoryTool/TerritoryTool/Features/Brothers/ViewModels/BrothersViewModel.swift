@@ -76,8 +76,14 @@ class BrothersViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            try await networkManager.request(endpoint: TerritoryEndpoint.addPerson(name: name))
-            ToastManager.shared.show("brothers.add_success", style: .success)
+            let undoResponse: UndoableMutationResponse = try await networkManager.request(endpoint: TerritoryEndpoint.addPersonUndoable(name: name))
+            let undoHandle = undoResponse.handle(kind: .domain)
+            ToastManager.shared.show(
+                "brothers.add_success",
+                style: .success,
+                undoHandle: undoHandle,
+                duration: undoHandle.toastDuration
+            )
             await fetchBrothers()
             return true
         } catch {
@@ -97,8 +103,14 @@ class BrothersViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            try await networkManager.request(endpoint: TerritoryEndpoint.updatePerson(id: person.id, name: newName, enabled: enabled))
-            ToastManager.shared.show("brothers.update_success", style: .success)
+            let undoResponse: UndoableMutationResponse = try await networkManager.request(endpoint: TerritoryEndpoint.updatePersonUndoable(id: person.id, name: newName, enabled: enabled))
+            let undoHandle = undoResponse.handle(kind: .domain)
+            ToastManager.shared.show(
+                "brothers.update_success",
+                style: .success,
+                undoHandle: undoHandle,
+                duration: undoHandle.toastDuration
+            )
             await fetchBrothers()
             return true
         } catch {
@@ -120,8 +132,14 @@ class BrothersViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            try await networkManager.request(endpoint: TerritoryEndpoint.deletePerson(name: person.name))
-            ToastManager.shared.show("brothers.delete_success", style: .success)
+            let undoResponse: UndoableMutationResponse = try await networkManager.request(endpoint: TerritoryEndpoint.deletePersonUndoable(name: person.name))
+            let undoHandle = undoResponse.handle(kind: .domain)
+            ToastManager.shared.show(
+                "brothers.delete_success",
+                style: .success,
+                undoHandle: undoHandle,
+                duration: undoHandle.toastDuration
+            )
             await fetchBrothers()
         } catch {
             self.errorMessage = error.localizedDescription

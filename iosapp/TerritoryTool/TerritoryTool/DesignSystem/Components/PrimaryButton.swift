@@ -5,6 +5,9 @@ struct PrimaryButton: View {
     let title: LocalizedStringKey
     var isLoading: Bool = false
     var isDisabled: Bool = false
+    /// Tinte del CTA. Verde por defecto; usar `.accentTertiary` para acciones de
+    /// devolución, `.accentDeep` para entregas, etc.
+    var tint: Color = .accent
     let action: () -> Void
 
     var body: some View {
@@ -22,7 +25,7 @@ struct PrimaryButton: View {
             .padding(.vertical, AppSpacing.xs)
         }
         .buttonStyle(.glassProminent)
-        .tint(.accent)
+        .tint(tint)
         .controlSize(.large)
         .disabled(isDisabled || isLoading)
     }

@@ -59,6 +59,7 @@ final class TerritoriesViewModel: ObservableObject {
     @Published var presentation: TerritoriesPresentation
     @Published var selectedTerritoryID: Int?
     @Published var drawerDetent: TerritoryDrawerDetent = .medium
+    @Published private(set) var lastDeleteUndoHandle: UndoHandle?
 
     // Listas derivadas materializadas: se recalculan SOLO cuando cambian sus entradas
     // (`territories`, búsqueda, orden, `attentionDays`), no en cada redibujado de la vista.
@@ -212,9 +213,11 @@ final class TerritoriesViewModel: ObservableObject {
     func deleteTerritory(_ territory: Territory) async {
         errorMessage = nil
         do {
-            try await apiService.request(endpoint: TerritoryEndpoint.deleteTerritory(id: territory.id))
+            let undoResponse: UndoableMutationResponse = try await apiService.request(endpoint: TerritoryEndpoint.deleteTerritoryUndoable(id: territory.id))
+            lastDeleteUndoHandle = undoResponse.handle(kind: .domain)
             NotificationCenter.default.post(name: .territoryDeleted, object: nil)
         } catch {
+            lastDeleteUndoHandle = nil
             errorMessage = error.localizedDescription
         }
     }

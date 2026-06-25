@@ -10,6 +10,7 @@ class TerritoryDetailViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var showDeleteConfirmation: Bool = false
     @Published var isRefreshingImage: Bool = false
+    @Published private(set) var lastUndoHandle: UndoHandle?
     
     private let apiService: APIService
     let territoryId: Int
@@ -78,9 +79,11 @@ class TerritoryDetailViewModel: ObservableObject {
     
     func deleteTerritory() async -> Bool {
         do {
-            try await apiService.request(endpoint: TerritoryEndpoint.deleteTerritory(id: territoryId))
+            let undoResponse: UndoableMutationResponse = try await apiService.request(endpoint: TerritoryEndpoint.deleteTerritoryUndoable(id: territoryId))
+            lastUndoHandle = undoResponse.handle(kind: .domain)
             return true
         } catch {
+            lastUndoHandle = nil
             self.errorMessage = "Error deleting territory: \(error.localizedDescription)"
             return false
         }
@@ -90,7 +93,8 @@ class TerritoryDetailViewModel: ObservableObject {
     
     func deleteTransaction(id: Int) async -> Bool {
         do {
-            try await apiService.request(endpoint: TerritoryEndpoint.deleteTransaction(id: id))
+            let undoResponse: UndoableMutationResponse = try await apiService.request(endpoint: TerritoryEndpoint.deleteTransactionUndoable(id: id))
+            lastUndoHandle = undoResponse.handle(kind: .domain)
             // Remove from local list
             if let index = transactions.firstIndex(where: { $0.id == id }) {
                 transactions.remove(at: index)
@@ -99,6 +103,7 @@ class TerritoryDetailViewModel: ObservableObject {
             await loadData()
             return true
         } catch {
+            lastUndoHandle = nil
             self.errorMessage = "Error deleting transaction: \(error.localizedDescription)"
             return false
         }
@@ -123,17 +128,19 @@ class TerritoryDetailViewModel: ObservableObject {
     
     func updateFullTransaction(originalTransactionId: Int, territoryId: Int, personId: Int, givenDate: Date, pickedDate: Date?) async {
         do {
-            try await apiService.request(endpoint: TerritoryEndpoint.updateTransaction(
+            let undoResponse: UndoableMutationResponse = try await apiService.request(endpoint: TerritoryEndpoint.updateTransactionUndoable(
                 id: originalTransactionId,
                 territoryId: territoryId,
                 personId: personId, // Ensure optionality is handled if API expects it
                 date: givenDate,
                 pickedDate: pickedDate
             ))
+            lastUndoHandle = undoResponse.handle(kind: .domain)
             
             // Reload data to reflect changes
             await loadData()
         } catch {
+            lastUndoHandle = nil
             self.errorMessage = "Error updating transaction: \(error.localizedDescription)"
         }
     }

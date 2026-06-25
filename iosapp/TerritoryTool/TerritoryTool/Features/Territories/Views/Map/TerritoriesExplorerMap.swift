@@ -234,13 +234,23 @@ struct TerritoriesExplorerMap: View {
 
     private func territory(containing coordinate: CLLocationCoordinate2D) -> Territory? {
         viewModel.territoriesWithGeometry.first { territory in
-            territory.mapGeometry?.polygons.contains { polygon in
+            if let preparedGeometry = preparedGeometries[territory.id] {
+                return preparedGeometry.polygons.contains { polygon in
+                    pointInPolygon(coordinate, polygon.coordinates)
+                }
+            }
+
+            return territory.mapGeometry?.polygons.contains { polygon in
                 pointInPolygon(coordinate, polygon.coordinates)
             } ?? false
         }
     }
 
     private func pointInPolygon(_ point: CLLocationCoordinate2D, _ coordinates: [TerritoryMapCoordinate]) -> Bool {
+        pointInPolygon(point, coordinates.map(\.clCoordinate))
+    }
+
+    private func pointInPolygon(_ point: CLLocationCoordinate2D, _ coordinates: [CLLocationCoordinate2D]) -> Bool {
         guard coordinates.count > 2 else { return false }
         var inside = false
         var j = coordinates.count - 1
@@ -439,32 +449,117 @@ struct TerritoriesExplorerMap: View {
 
     private func updateMapCaches() {
         var placements: [Int: TerritoryLabelPlacement] = [:]
-        var geometries: [Int: TerritoryPreparedMapGeometry] = [:]
+        var polylinesByTerritory: [Int: [TerritoryPreparedMapFeature]] = [:]
+        var sourcePolygons: [TerritoryPreparedSourcePolygon] = []
 
         for territory in viewModel.territoriesWithGeometry {
             guard let geometry = territory.mapGeometry else { continue }
-            geometries[territory.id] = TerritoryPreparedMapGeometry(
-                polygons: geometry.polygons.map {
-                    TerritoryPreparedMapFeature(
-                        id: $0.id,
-                        coordinates: $0.coordinates.map(\.clCoordinate)
-                    )
-                },
-                polylines: geometry.polylines.map {
-                    TerritoryPreparedMapFeature(
-                        id: $0.id,
-                        coordinates: $0.coordinates.map(\.clCoordinate)
+            sourcePolygons.append(
+                contentsOf: geometry.polygons.compactMap { polygon in
+                    let points = polygon.coordinates.map { MKMapPoint($0.clCoordinate) }
+                    guard points.count >= 3 else { return nil }
+                    return TerritoryPreparedSourcePolygon(
+                        territoryID: territory.id,
+                        id: polygon.id,
+                        points: points
                     )
                 }
             )
+            polylinesByTerritory[territory.id] = geometry.polylines.map {
+                TerritoryPreparedMapFeature(
+                    id: $0.id,
+                    coordinates: $0.coordinates.map(\.clCoordinate)
+                )
+            }
             if let placement = geometry.labelPlacement {
                 placements[territory.id] = placement.withTextSize(labelTextSize(for: territory.name))
             }
         }
 
+        let adjustedPolygons = adjustedDisplayPolygons(from: sourcePolygons)
+        var geometries: [Int: TerritoryPreparedMapGeometry] = [:]
+        for territory in viewModel.territoriesWithGeometry {
+            let polygons = adjustedPolygons[territory.id] ?? []
+            let polylines = polylinesByTerritory[territory.id] ?? []
+            geometries[territory.id] = TerritoryPreparedMapGeometry(
+                polygons: polygons,
+                polylines: polylines
+            )
+        }
+
         preparedGeometries = geometries
         labelPlacements = placements
         visibleLabelIDs = calculateVisibleLabelIDs(in: visibleMapRect, placements: placements)
+    }
+
+    /// Ajuste visual local: cuando un vértice de un territorio cae dentro de otro,
+    /// se mueve a medio camino hacia el borde del vecino. En el caso habitual de dos
+    /// fronteras casi paralelas que se solapan, ambos lados convergen hacia la línea
+    /// media sin modificar la geometría guardada en Supabase.
+    private func adjustedDisplayPolygons(
+        from polygons: [TerritoryPreparedSourcePolygon]
+    ) -> [Int: [TerritoryPreparedMapFeature]] {
+        guard polygons.count > 1 else {
+            var result: [Int: [TerritoryPreparedMapFeature]] = [:]
+            for polygon in polygons {
+                result[polygon.territoryID, default: []].append(polygon.preparedFeature)
+            }
+            return result
+        }
+
+        var result: [Int: [TerritoryPreparedMapFeature]] = [:]
+        for polygon in polygons {
+            let adjustedPoints = polygon.points.enumerated().map { index, point in
+                adjustedPoint(
+                    point,
+                    pointIndex: index,
+                    in: polygon,
+                    comparedWith: polygons
+                )
+            }
+            let closedPoints = polygon.isClosed ? adjustedPoints.closedWithFirstPoint() : adjustedPoints
+            result[polygon.territoryID, default: []].append(
+                TerritoryPreparedMapFeature(
+                    id: polygon.id,
+                    coordinates: closedPoints.map(\.coordinate)
+                )
+            )
+        }
+        return result
+    }
+
+    private func adjustedPoint(
+        _ point: MKMapPoint,
+        pointIndex: Int,
+        in polygon: TerritoryPreparedSourcePolygon,
+        comparedWith polygons: [TerritoryPreparedSourcePolygon]
+    ) -> MKMapPoint {
+        if polygon.isClosed, pointIndex == polygon.points.count - 1 {
+            return adjustedPoint(
+                polygon.points[0],
+                pointIndex: 0,
+                in: polygon,
+                comparedWith: polygons
+            )
+        }
+
+        var nearestBoundary: (point: MKMapPoint, distanceSquared: Double)?
+        let pointRect = MKMapRect(x: point.x, y: point.y, width: 1, height: 1)
+
+        for other in polygons where other.territoryID != polygon.territoryID {
+            guard other.expandedBounds.intersects(pointRect),
+                  signedDistance(from: point, to: other.points) > 0,
+                  let boundary = closestBoundaryPoint(to: point, in: other.points) else {
+                continue
+            }
+
+            if nearestBoundary == nil || boundary.distanceSquared < nearestBoundary!.distanceSquared {
+                nearestBoundary = boundary
+            }
+        }
+
+        guard let nearestBoundary else { return point }
+        return midpoint(point, nearestBoundary.point)
     }
 
     private func labelTextSize(for name: String) -> CGSize {
@@ -583,6 +678,36 @@ private struct TerritoryPreparedMapGeometry {
 private struct TerritoryPreparedMapFeature: Identifiable {
     let id: String
     let coordinates: [CLLocationCoordinate2D]
+}
+
+private struct TerritoryPreparedSourcePolygon {
+    let territoryID: Int
+    let id: String
+    let points: [MKMapPoint]
+    let bounds: MKMapRect
+
+    init(territoryID: Int, id: String, points: [MKMapPoint]) {
+        self.territoryID = territoryID
+        self.id = id
+        self.points = points
+        self.bounds = points.mapRect
+    }
+
+    var expandedBounds: MKMapRect {
+        bounds.insetBy(dx: -1, dy: -1)
+    }
+
+    var isClosed: Bool {
+        guard let first = points.first, let last = points.last else { return false }
+        return abs(first.x - last.x) < 0.001 && abs(first.y - last.y) < 0.001
+    }
+
+    var preparedFeature: TerritoryPreparedMapFeature {
+        TerritoryPreparedMapFeature(
+            id: id,
+            coordinates: points.map(\.coordinate)
+        )
+    }
 }
 
 private extension TerritoryMapGeometry {
@@ -739,4 +864,81 @@ private func squaredSegmentDistance(_ point: MKMapPoint, _ start: MKMapPoint, _ 
     let pointDX = point.x - x
     let pointDY = point.y - y
     return pointDX * pointDX + pointDY * pointDY
+}
+
+private func closestBoundaryPoint(
+    to point: MKMapPoint,
+    in polygon: [MKMapPoint]
+) -> (point: MKMapPoint, distanceSquared: Double)? {
+    guard polygon.count > 1 else { return nil }
+
+    var closest: (point: MKMapPoint, distanceSquared: Double)?
+    var previous = polygon.count - 1
+    for current in polygon.indices {
+        let candidate = closestPointOnSegment(point, polygon[current], polygon[previous])
+        if closest == nil || candidate.distanceSquared < closest!.distanceSquared {
+            closest = candidate
+        }
+        previous = current
+    }
+    return closest
+}
+
+private func closestPointOnSegment(
+    _ point: MKMapPoint,
+    _ start: MKMapPoint,
+    _ end: MKMapPoint
+) -> (point: MKMapPoint, distanceSquared: Double) {
+    let dx = end.x - start.x
+    let dy = end.y - start.y
+    let candidate: MKMapPoint
+
+    if dx == 0 && dy == 0 {
+        candidate = start
+    } else {
+        let rawT = ((point.x - start.x) * dx + (point.y - start.y) * dy) / (dx * dx + dy * dy)
+        let t = min(1, max(0, rawT))
+        candidate = MKMapPoint(x: start.x + dx * t, y: start.y + dy * t)
+    }
+
+    let pointDX = point.x - candidate.x
+    let pointDY = point.y - candidate.y
+    return (candidate, pointDX * pointDX + pointDY * pointDY)
+}
+
+private func midpoint(_ lhs: MKMapPoint, _ rhs: MKMapPoint) -> MKMapPoint {
+    MKMapPoint(x: (lhs.x + rhs.x) / 2, y: (lhs.y + rhs.y) / 2)
+}
+
+private extension Array where Element == MKMapPoint {
+    var mapRect: MKMapRect {
+        guard let first else { return .null }
+        var minX = first.x
+        var maxX = first.x
+        var minY = first.y
+        var maxY = first.y
+
+        for point in dropFirst() {
+            minX = Swift.min(minX, point.x)
+            maxX = Swift.max(maxX, point.x)
+            minY = Swift.min(minY, point.y)
+            maxY = Swift.max(maxY, point.y)
+        }
+
+        return MKMapRect(
+            x: minX,
+            y: minY,
+            width: Swift.max(maxX - minX, 1),
+            height: Swift.max(maxY - minY, 1)
+        )
+    }
+
+    func closedWithFirstPoint() -> [MKMapPoint] {
+        guard let first else { return self }
+        var values = self
+        if values.indices.contains(values.count - 1) {
+            values[values.count - 1] = first
+        }
+        return values
+    }
 }
