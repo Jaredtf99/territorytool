@@ -1,125 +1,237 @@
+import Combine
 import SwiftUI
 
-/// Resolución de la Acción rápida. Se **empuja** en la pila del hub (sin hojas
-/// anidadas): confirma qué encontró la app y guía la acción correcta —entregar,
-/// devolver o encadenar ambas— con el lenguaje "Cartográfico cálido".
-struct QuickActionResolutionView: View {
-    @StateObject private var vm: QuickActionResolutionViewModel
-    @Environment(\.dismiss) private var dismiss
+// MARK: - ViewModel de selección (buscador inteligente)
 
-    /// La acción terminó: deja al hub refrescar y recordar contexto.
-    private let onCompleted: (QuickActionResolutionViewModel.SuccessKind) -> Void
-    /// Cerrar todo el flujo de Acción rápida (no solo volver al hub).
-    private let onFinish: () -> Void
+/// Selector de personas o de territorios libres con el buscador inteligente.
+/// Vacío -> lista por defecto (todas las personas / libres). Al teclear -> `search_quick_action`.
+@MainActor
+final class QuickActionPickerViewModel: ObservableObject {
+    enum Mode { case persons, freeTerritories }
 
-    init(
-        resolution: QuickActionResolution,
-        onCompleted: @escaping (QuickActionResolutionViewModel.SuccessKind) -> Void = { _ in },
-        onFinish: @escaping () -> Void = {}
-    ) {
-        self.onCompleted = onCompleted
-        self.onFinish = onFinish
-        _vm = StateObject(
-            wrappedValue: QuickActionResolutionViewModel(
-                apiService: DIContainer.shared.apiService,
-                resolution: resolution
-            )
-        )
+    @Published var search = ""
+    @Published var persons: [Person] = []
+    @Published var territories: [Territory] = []
+    @Published var isLoading = false
+    @Published var errorMessage: String?
+
+    let mode: Mode
+    private let apiService: APIService
+    private var cancellables = Set<AnyCancellable>()
+
+    init(apiService: APIService, mode: Mode) {
+        self.apiService = apiService
+        self.mode = mode
+
+        $search
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .removeDuplicates()
+            .dropFirst()
+            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
+            .sink { [weak self] _ in Task { [weak self] in await self?.run() } }
+            .store(in: &cancellables)
     }
+
+    func loadInitial() async { await run() }
+
+    private func run() async {
+        let term = search.trimmingCharacters(in: .whitespacesAndNewlines)
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            if term.isEmpty {
+                switch mode {
+                case .persons:
+                    persons = try await apiService.request(endpoint: TerritoryEndpoint.getPersons(search: nil))
+                case .freeTerritories:
+                    territories = try await apiService.request(
+                        endpoint: TerritoryEndpoint.getTerritories(
+                            term: nil, inUse: false,
+                            orderBy: TerritorySortOption.name.rawValue, orderByAscending: true,
+                            lastGivenDateFrom: nil, lastGivenDateTo: nil
+                        )
+                    )
+                }
+            } else {
+                let hits: [QuickSearchHit] = try await apiService.request(
+                    endpoint: TerritoryEndpoint.searchQuickAction(term: term)
+                )
+                switch mode {
+                case .persons:
+                    persons = hits.compactMap(\.person)
+                case .freeTerritories:
+                    territories = hits.compactMap(\.territory).filter { !$0.isAssigned }
+                }
+            }
+        } catch {
+            if !error.isCancellation { errorMessage = error.localizedDescription }
+        }
+    }
+}
+
+// MARK: - Entregar un territorio libre: elegir persona
+
+struct QuickActionPickPersonView: View {
+    let territory: Territory
+    let onDone: () -> Void
+
+    @StateObject private var vm = QuickActionPickerViewModel(apiService: DIContainer.shared.apiService, mode: .persons)
+    @FocusState private var focused: Bool
+    @State private var action: QuickActionAction?
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: AppSpacing.lg) {
-                content
+            VStack(alignment: .leading, spacing: AppSpacing.md) {
+                CompactTerritoryRow(territory: territory, accessory: .none)
+                    .appear(index: 0)
+
+                QASectionHeader(title: "quick_action.who_deliver", systemImage: "person.crop.circle.badge.plus")
+
+                personList
             }
             .padding(.horizontal, AppSpacing.md)
             .padding(.top, AppSpacing.sm)
             .padding(.bottom, AppSpacing.xl)
         }
         .scrollIndicators(.hidden)
-        .background { LiquidBackgroundView() }
-        .safeAreaInset(edge: .bottom) { bottomBar }
-        .navigationTitle("quick_action.title")
+        .background { LiquidBackgroundView().ignoresSafeArea() }
+        .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom) {
+            QuickActionSearchBar(placeholder: "quick_action.search_publisher", text: $vm.search, focus: $focused)
+        }
+        .navigationTitle("assignment.title")
         .navigationBarTitleDisplayMode(.inline)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: vm.step)
-        .onChange(of: vm.successKind) { _, kind in
-            if let kind { onCompleted(kind) }
-        }
-        .alert(
-            "common.error",
-            isPresented: Binding(get: { vm.errorMessage != nil }, set: { if !$0 { vm.errorMessage = nil } })
-        ) {
-            Button("common.ok", role: .cancel) {}
-        } message: {
-            Text(vm.errorMessage ?? "")
-        }
+        .navigationDestination(item: $action) { QuickActionConfirmView(action: $0, onDone: onDone) }
+        .task { await vm.loadInitial() }
     }
 
-    // MARK: - Contenido por paso
-
     @ViewBuilder
-    private var content: some View {
-        switch vm.step {
-        case .returnConfirm:         returnConfirmContent
-        case .deliverNeedsPerson:    deliverNeedsPersonContent
-        case .personDecision:        personDecisionContent
-        case .deliverNeedsTerritory: deliverNeedsTerritoryContent
-        case .success:               successContent
-        }
-    }
-
-    // MARK: Devolución
-
-    @ViewBuilder
-    private var returnConfirmContent: some View {
-        if let territory = vm.subjectTerritory {
-            ResolutionTerritoryHero(territory: territory)
-                .appear(index: 0)
-
-            if let days = territory.daysAssigned(), days >= 90 {
-                CartoEmptyState(
-                    systemImage: "clock.badge.exclamationmark",
-                    message: "quick_action.long_held",
-                    tint: .accentTertiary
-                )
-                .appear(index: 1)
+    private var personList: some View {
+        if vm.isLoading && vm.persons.isEmpty {
+            ProgressView().frame(maxWidth: .infinity).padding(.vertical, AppSpacing.lg)
+        } else if vm.persons.isEmpty {
+            CartoEmptyState(systemImage: "person.slash", message: "common.no_results")
+        } else {
+            VStack(spacing: AppSpacing.xs) {
+                ForEach(vm.persons) { person in
+                    Button {
+                        HapticManager.shared.selection()
+                        action = .deliver(territory: territory, personName: person.name)
+                    } label: {
+                        PersonQuickRow(person: person)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
         }
     }
+}
 
-    // MARK: Entrega de territorio libre (elegir persona)
+// MARK: - Persona seleccionada: decidir (recoger uno / entregar otro)
 
-    @ViewBuilder
-    private var deliverNeedsPersonContent: some View {
-        if let territory = vm.subjectTerritory {
-            ResolutionTerritoryHero(territory: territory)
-                .appear(index: 0)
-        }
+struct QuickActionPersonView: View {
+    let person: Person
+    let onDone: () -> Void
 
-        VStack(alignment: .leading, spacing: AppSpacing.sm) {
-            CartoSectionHeader(title: "quick_action.who_deliver", systemImage: "person.crop.circle.badge.plus")
-            QuickSearchField(placeholder: "quick_action.search_publisher", text: $vm.personSearch)
-            personResultsList
-        }
-        .appear(index: 1)
-        .task { await vm.loadPersons() }
+    private enum Mode { case decision, pickTerritory }
+    @State private var mode: Mode
+    @StateObject private var vm = QuickActionPickerViewModel(apiService: DIContainer.shared.apiService, mode: .freeTerritories)
+    @FocusState private var focused: Bool
+    @State private var action: QuickActionAction?
+
+    init(person: Person, onDone: @escaping () -> Void) {
+        self.person = person
+        self.onDone = onDone
+        _mode = State(initialValue: person.hasActiveTerritory ? .decision : .pickTerritory)
     }
 
-    // MARK: Decisión de persona
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: AppSpacing.lg) {
+                PersonHero(person: person).appear(index: 0)
+
+                switch mode {
+                case .decision: decisionContent
+                case .pickTerritory: pickTerritoryContent
+                }
+            }
+            .padding(.horizontal, AppSpacing.md)
+            .padding(.top, AppSpacing.sm)
+            .padding(.bottom, AppSpacing.xl)
+        }
+        .scrollIndicators(.hidden)
+        .background { LiquidBackgroundView().ignoresSafeArea() }
+        .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom) {
+            if mode == .pickTerritory {
+                QuickActionSearchBar(placeholder: "quick_action.search_territory", text: $vm.search, focus: $focused)
+            }
+        }
+        .navigationTitle(Text(person.name))
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(item: $action) { act in
+            QuickActionConfirmView(action: act, onDone: onDone, onDeliverAnother: { _ in
+                // Recogido: continúa entregando otro a esta misma persona.
+                action = nil
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { mode = .pickTerritory }
+                Task { await vm.loadInitial() }
+            })
+        }
+        .task {
+            if mode == .pickTerritory { await vm.loadInitial() }
+        }
+    }
 
     @ViewBuilder
-    private var personDecisionContent: some View {
-        if let person = vm.subjectPerson {
-            PersonHero(person: person).appear(index: 0)
+    private var decisionContent: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.sm) {
+            QASectionHeader(title: "quick_action.return_one", systemImage: "tray.and.arrow.down", tint: .accentSecondary)
+            VStack(spacing: AppSpacing.sm) {
+                ForEach(person.territoriesInUse ?? [], id: \.territoryId) { assignment in
+                    let territory = assignment.asTerritory(personName: person.name)
+                    Button {
+                        HapticManager.shared.selection()
+                        action = .returnTerritory(territory)
+                    } label: {
+                        CompactTerritoryRow(territory: territory)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .appear(index: 1)
 
-            VStack(alignment: .leading, spacing: AppSpacing.sm) {
-                CartoSectionHeader(title: "quick_action.return_one", systemImage: "tray.and.arrow.down", tint: .accentSecondary)
-                VStack(spacing: AppSpacing.sm) {
-                    ForEach(person.territoriesInUse ?? [], id: \.territoryId) { assignment in
-                        let territory = assignment.asTerritory(personName: person.name)
+        Button {
+            HapticManager.shared.selection()
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { mode = .pickTerritory }
+            Task { await vm.loadInitial() }
+        } label: {
+            ActionPromptCard(
+                icon: "person.badge.plus",
+                title: "quick_action.deliver_other_territory",
+                subtitle: "quick_action.deliver_other_hint",
+                tint: .accentDeep
+            )
+        }
+        .buttonStyle(ScaleButtonStyle())
+        .appear(index: 2)
+    }
+
+    @ViewBuilder
+    private var pickTerritoryContent: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.sm) {
+            QASectionHeader(title: "quick_action.choose_territory", systemImage: "leaf.fill")
+
+            if vm.isLoading && vm.territories.isEmpty {
+                ProgressView().frame(maxWidth: .infinity).padding(.vertical, AppSpacing.lg)
+            } else if vm.territories.isEmpty {
+                CartoEmptyState(systemImage: "mappin.slash", message: "common.no_results")
+            } else {
+                VStack(spacing: AppSpacing.xs) {
+                    ForEach(vm.territories) { territory in
                         Button {
                             HapticManager.shared.selection()
-                            vm.chooseReturn(assignment)
+                            action = .deliver(territory: territory, personName: person.name)
                         } label: {
                             CompactTerritoryRow(territory: territory)
                         }
@@ -127,369 +239,49 @@ struct QuickActionResolutionView: View {
                     }
                 }
             }
-            .appear(index: 1)
-
-            Button {
-                HapticManager.shared.selection()
-                vm.chooseDeliverAnother()
-            } label: {
-                ActionPromptCard(
-                    icon: "person.badge.plus",
-                    title: "quick_action.deliver_other_territory",
-                    subtitle: "quick_action.deliver_other_hint",
-                    tint: .accentDeep
-                )
-            }
-            .buttonStyle(ScaleButtonStyle())
-            .appear(index: 2)
-        }
-    }
-
-    // MARK: Entrega a persona (elegir territorio)
-
-    @ViewBuilder
-    private var deliverNeedsTerritoryContent: some View {
-        if let name = vm.targetPersonName {
-            DeliverTargetHeader(personName: name).appear(index: 0)
-        }
-
-        VStack(alignment: .leading, spacing: AppSpacing.sm) {
-            QuickSearchField(placeholder: "quick_action.search_territory", text: $vm.territorySearch)
-
-            if vm.territorySearch.isEmpty && !vm.suggestedTerritories.isEmpty {
-                CartoSectionHeader(title: "quick_action.suggestions.free", systemImage: "leaf.fill")
-                territoryList(vm.suggestedTerritories)
-            } else {
-                territoryList(vm.territoryResults)
-            }
         }
         .appear(index: 1)
-        .task {
-            await vm.loadSuggestions()
-            await vm.loadTerritories()
-        }
-    }
-
-    // MARK: Éxito
-
-    @ViewBuilder
-    private var successContent: some View {
-        if let kind = vm.successKind {
-            VStack(spacing: AppSpacing.md) {
-                Image(systemName: kind.isReturn ? "tray.and.arrow.down.fill" : "checkmark.seal.fill")
-                    .font(.system(size: 52))
-                    .foregroundStyle(.white)
-                    .frame(width: 92, height: 92)
-                    .background(
-                        Circle().fill(
-                            LinearGradient(
-                                colors: [kind.tint, kind.tint.opacity(0.8)],
-                                startPoint: .topLeading, endPoint: .bottomTrailing
-                            )
-                        )
-                    )
-                    .shadow(color: kind.tint.opacity(0.4), radius: 12, x: 0, y: 6)
-                    .symbolEffect(.bounce, value: vm.successKind)
-
-                Text(successTitle(kind))
-                    .font(.system(.title2, design: .rounded).weight(.bold))
-                    .foregroundStyle(Color.textPrimary)
-
-                Text(successMessage(kind))
-                    .font(.appBody())
-                    .foregroundStyle(Color.textSecondary)
-                    .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, AppSpacing.xl)
-            .padding(.horizontal, AppSpacing.md)
-            .paperCard(cornerRadius: AppRadius.xl)
-            .appear(index: 0)
-
-            // Acción inteligente: tras devolver, ofrecer entregar otro a la misma persona.
-            if case let .returned(_, person?) = kind {
-                Button {
-                    HapticManager.shared.selection()
-                    vm.chainDeliverToReturnedPerson()
-                } label: {
-                    ActionPromptCard(
-                        icon: "arrow.turn.up.right",
-                        title: LocalizedStringKey(String(format: String.localized("quick_action.chain_deliver"), person)),
-                        subtitle: "quick_action.chain_deliver_hint",
-                        tint: .accentSecondary
-                    )
-                }
-                .buttonStyle(ScaleButtonStyle())
-                .appear(index: 1)
-            }
-        }
-    }
-
-    // MARK: - Listas de selección
-
-    @ViewBuilder
-    private var personResultsList: some View {
-        if vm.isLoadingPersons && vm.personResults.isEmpty {
-            ProgressView().frame(maxWidth: .infinity).padding(.vertical, AppSpacing.md)
-        } else {
-            VStack(spacing: AppSpacing.xs) {
-                ForEach(vm.personResults) { person in
-                    Button {
-                        HapticManager.shared.selection()
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { vm.selectedPerson = person }
-                    } label: {
-                        PersonQuickRow(person: person, accessory: .selection(vm.selectedPerson?.id == person.id))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func territoryList(_ items: [Territory]) -> some View {
-        if vm.isLoadingTerritories && items.isEmpty {
-            ProgressView().frame(maxWidth: .infinity).padding(.vertical, AppSpacing.md)
-        } else {
-            VStack(spacing: AppSpacing.xs) {
-                ForEach(items) { territory in
-                    Button {
-                        HapticManager.shared.selection()
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { vm.selectedTerritory = territory }
-                    } label: {
-                        CompactTerritoryRow(
-                            territory: territory,
-                            accessory: .selection(vm.selectedTerritory?.id == territory.id)
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-    }
-
-    // MARK: - Barra inferior de acción
-
-    @ViewBuilder
-    private var bottomBar: some View {
-        switch vm.step {
-        case .returnConfirm:
-            actionBar {
-                PrimaryButton(
-                    title: "quick_action.confirm_return",
-                    isLoading: vm.isSubmitting,
-                    isDisabled: vm.isSubmitting,
-                    tint: .success
-                ) { Task { await vm.confirmReturn() } }
-            }
-
-        case .deliverNeedsPerson:
-            actionBar {
-                PrimaryButton(
-                    title: deliverPersonTitle,
-                    isLoading: vm.isSubmitting,
-                    isDisabled: vm.selectedPerson == nil || vm.isSubmitting,
-                    tint: .accent
-                ) { Task { await vm.confirmDeliver() } }
-            }
-
-        case .deliverNeedsTerritory:
-            actionBar {
-                PrimaryButton(
-                    title: deliverTerritoryTitle,
-                    isLoading: vm.isSubmitting,
-                    isDisabled: vm.selectedTerritory == nil || vm.isSubmitting,
-                    tint: .accent
-                ) { Task { await vm.confirmDeliver() } }
-            }
-
-        case .success:
-            actionBar {
-                HStack(spacing: AppSpacing.sm) {
-                    Button { dismiss() } label: {
-                        Label("quick_action.scan_another", systemImage: "qrcode.viewfinder")
-                            .font(.appSubheadline().weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, AppSpacing.xs)
-                    }
-                    .buttonStyle(.glassProminent)
-                    .controlSize(.large)
-                    .tint(.accentDeep)
-
-                    Button { onFinish() } label: {
-                        Text("common.done")
-                            .font(.appSubheadline().weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, AppSpacing.xs)
-                    }
-                    .buttonStyle(.glass)
-                    .controlSize(.large)
-                    .tint(.accentDeep)
-                }
-            }
-
-        case .personDecision:
-            EmptyView()
-        }
-    }
-
-    private func actionBar<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        content()
-            .padding(.horizontal, AppSpacing.md)
-            .padding(.top, AppSpacing.sm)
-            .padding(.bottom, AppSpacing.sm)
-    }
-
-    private var deliverPersonTitle: LocalizedStringKey {
-        if let name = vm.selectedPerson?.name {
-            return LocalizedStringKey(String(format: String.localized("quick_action.deliver_to"), name))
-        }
-        return "quick_action.confirm_deliver"
-    }
-
-    private var deliverTerritoryTitle: LocalizedStringKey {
-        if let code = vm.selectedTerritory?.code, let name = vm.targetPersonName {
-            return LocalizedStringKey(String(format: String.localized("quick_action.deliver_code_to"), code, name))
-        }
-        return "quick_action.confirm_deliver"
-    }
-
-    // MARK: - Textos de éxito
-
-    private func successTitle(_ kind: QuickActionResolutionViewModel.SuccessKind) -> LocalizedStringKey {
-        switch kind {
-        case .delivered: "quick_action.success.delivered_title"
-        case .returned:  "quick_action.success.returned_title"
-        }
-    }
-
-    private func successMessage(_ kind: QuickActionResolutionViewModel.SuccessKind) -> String {
-        switch kind {
-        case let .delivered(code, person):
-            return String(format: String.localized("quick_action.success.delivered_msg"), code, person)
-        case let .returned(code, _):
-            return String(format: String.localized("quick_action.success.returned_msg"), code)
-        }
     }
 }
 
-// MARK: - Helpers de SuccessKind
+// MARK: - Piezas compartidas
 
-private extension QuickActionResolutionViewModel.SuccessKind {
-    var isReturn: Bool { if case .returned = self { true } else { false } }
-    /// Verde de éxito al recoger; verde de acento al entregar (igual que el resto de CTAs).
-    var tint: Color { isReturn ? .success : .accent }
-}
-
-// MARK: - Cabecera hero del territorio (pantalla de confirmar)
-
-/// Presentación "bonita" del territorio que estamos confirmando: mapa prominente
-/// arriba + código grande, nombre, estado y (si está entregado) la persona. Es
-/// deliberadamente distinta de la fila compacta del buscador.
-private struct ResolutionTerritoryHero: View {
-    let territory: Territory
-
-    private var status: TerritoryStatusPresentation {
-        TerritoryStatusPresentation(territory.operationalStatus())
-    }
+/// Cabecera de sección simple (sin línea de puntos), una sola línea.
+struct QASectionHeader: View {
+    let title: LocalizedStringKey
+    var systemImage: String
+    var tint: Color = .accent
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            mapBanner
-                .frame(height: 168)
-                .frame(maxWidth: .infinity)
-                .clipped()
-
-            VStack(alignment: .leading, spacing: AppSpacing.sm) {
-                HStack(spacing: AppSpacing.sm) {
-                    TerritoryCodeBadge(code: territory.code, fontSize: .system(.title3, design: .rounded))
-                    statusChip
-                    Spacer(minLength: 0)
-                }
-
-                Text(territory.name)
-                    .font(.system(.title, design: .rounded).weight(.bold))
-                    .foregroundStyle(Color.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                if let person = territory.personName {
-                    HStack(spacing: AppSpacing.xs) {
-                        QAInitialsAvatar(name: person, size: 32, tint: status.color)
-                        Text(person)
-                            .font(.appHeadline())
-                            .foregroundStyle(Color.textPrimary)
-                            .lineLimit(1)
-                    }
-                } else {
-                    Label(status.detail, systemImage: "calendar")
-                        .font(.appCaption())
-                        .foregroundStyle(status.color)
-                }
-            }
-            .padding(AppSpacing.md)
+        HStack(spacing: AppSpacing.xs) {
+            Image(systemName: systemImage)
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(tint)
+            Text(title)
+                .font(.system(.headline, design: .rounded).weight(.bold))
+                .foregroundStyle(Color.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Spacer(minLength: 0)
         }
-        .background(Color.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
-                .strokeBorder(Color.hairline, lineWidth: 1)
-        )
-        .shadow(color: Color.glassShadow, radius: 14, x: 0, y: 8)
-    }
-
-    @ViewBuilder
-    private var mapBanner: some View {
-        if let geometry = territory.mapGeometry {
-            TerritorySnapshotBackdrop(
-                geometry: geometry,
-                stroke: status.color,
-                fill: status.color,
-                centersTerritory: true
-            )
-        } else if let url = territory.imgUrl.flatMap(URL.init(string:)) {
-            CachedAsyncImage(
-                url: url,
-                content: { $0.resizable().scaledToFill() },
-                placeholder: { mapPlaceholder },
-                errorView: { mapPlaceholder }
-            )
-        } else {
-            mapPlaceholder
-        }
-    }
-
-    private var mapPlaceholder: some View {
-        status.color.opacity(0.10)
-            .overlay(
-                Image(systemName: "map.fill")
-                    .font(.largeTitle)
-                    .foregroundStyle(status.color.opacity(0.45))
-            )
-    }
-
-    private var statusChip: some View {
-        Text(status.title)
-            .font(.appCaption().weight(.bold))
-            .foregroundStyle(status.color)
-            .padding(.horizontal, AppSpacing.sm)
-            .padding(.vertical, AppSpacing.xxs)
-            .background(status.color.opacity(0.14), in: Capsule())
     }
 }
 
-// MARK: - Cabecera de persona (decisión)
-
-private struct PersonHero: View {
+/// Cabecera de persona (avatar grande + nombre + nº de territorios).
+struct PersonHero: View {
     let person: Person
 
     var body: some View {
         HStack(spacing: AppSpacing.sm) {
-            QAInitialsAvatar(name: person.name, size: 52)
+            InitialsAvatar(name: person.name, size: 52, tint: person.hasActiveTerritory ? .accentSecondary : .accent)
             VStack(alignment: .leading, spacing: 2) {
-                Text(String(format: String.localized("quick_action.person_question"), person.name.firstName))
+                Text(person.name)
                     .font(.system(.title3, design: .rounded).weight(.bold))
                     .foregroundStyle(Color.textPrimary)
-                Text(String(format: String.localized("quick_action.person_territory_count"), person.activeTerritoryCount))
+                    .lineLimit(1)
+                Text(person.hasActiveTerritory
+                     ? String(format: String.localized("quick_action.person_territory_count"), person.activeTerritoryCount)
+                     : String.localized("quick_action.person_no_territory"))
                     .font(.appSubheadline())
                     .foregroundStyle(Color.textSecondary)
             }
@@ -500,33 +292,8 @@ private struct PersonHero: View {
     }
 }
 
-// MARK: - Cabecera "Entregar a {persona}"
-
-private struct DeliverTargetHeader: View {
-    let personName: String
-
-    var body: some View {
-        HStack(spacing: AppSpacing.sm) {
-            QAInitialsAvatar(name: personName, size: 44)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("quick_action.deliver_target")
-                    .font(.appCaption())
-                    .foregroundStyle(Color.textSecondary)
-                Text(personName)
-                    .font(.appHeadline())
-                    .foregroundStyle(Color.textPrimary)
-            }
-            Spacer()
-        }
-        .padding(AppSpacing.md)
-        .paperCard(cornerRadius: AppRadius.lg)
-    }
-}
-
-// MARK: - Filas y tarjetas auxiliares
-
 /// Tarjeta-prompt de acción (icono en círculo tintado + título + subtítulo + chevron).
-private struct ActionPromptCard: View {
+struct ActionPromptCard: View {
     let icon: String
     let title: LocalizedStringKey
     let subtitle: LocalizedStringKey
@@ -553,34 +320,4 @@ private struct ActionPromptCard: View {
         .padding(AppSpacing.md)
         .paperCard(cornerRadius: AppRadius.lg)
     }
-}
-
-// MARK: - Campo de búsqueda inline
-
-struct QuickSearchField: View {
-    let placeholder: LocalizedStringKey
-    @Binding var text: String
-
-    var body: some View {
-        HStack(spacing: AppSpacing.xs) {
-            Image(systemName: "magnifyingglass").foregroundStyle(Color.textSecondary)
-            TextField(placeholder, text: $text)
-                .textFieldStyle(.plain)
-                .font(.appBody())
-                .foregroundStyle(Color.textPrimary)
-            if !text.isEmpty {
-                Button { text = "" } label: {
-                    Image(systemName: "xmark.circle.fill").foregroundStyle(Color.textSecondary)
-                }
-            }
-        }
-        .padding(AppSpacing.md)
-        .background(Color.surface, in: RoundedRectangle(cornerRadius: AppRadius.md, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: AppRadius.md, style: .continuous).strokeBorder(Color.hairline, lineWidth: 1))
-    }
-}
-
-private extension String {
-    /// Primer nombre (para titulares cercanos: "¿Qué quieres hacer con Andrés?").
-    var firstName: String { split(separator: " ").first.map(String.init) ?? self }
 }

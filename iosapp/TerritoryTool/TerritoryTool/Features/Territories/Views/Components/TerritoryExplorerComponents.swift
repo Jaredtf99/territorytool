@@ -321,33 +321,14 @@ struct TerritoryExplorerRow: View {
     }
 
     private var statusLabel: some View {
-        HStack(spacing: AppSpacing.xs) {
-            Image(systemName: status.icon)
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(.white)
-                .frame(width: 28, height: 28)
-                .background(
-                    LinearGradient(
-                        colors: [status.color, status.color.opacity(0.78)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    in: Circle()
-                )
-                .shadow(color: status.color.opacity(0.35), radius: 5, x: 0, y: 2)
-
-            Text(status.title)
-                .font(.appSubheadline().weight(.bold))
-                .foregroundStyle(status.color)
-                .lineLimit(1)
-        }
+        TerritoryStatusIndicator(presentation: status, detail: availableDetail)
     }
 
     @ViewBuilder
     private var assignmentDetail: some View {
         if let personName = territory.personName {
             HStack(spacing: AppSpacing.xs) {
-                TerritoryListAvatar(name: personName, tint: status.color)
+                InitialsAvatar(name: personName, size: 32, tint: status.color)
 
                 VStack(alignment: .leading, spacing: 2) {
                     // Mismo diseño que el nombre en "Prioridad de hoy".
@@ -356,16 +337,23 @@ struct TerritoryExplorerRow: View {
                         .foregroundStyle(Color.textPrimary)
                         .lineLimit(1)
 
-                    Label(status.detail, systemImage: "calendar")
-                        .font(.appCaption())
+                    Text(status.detail)
+                        .font(.appCaption().weight(.medium))
                         .foregroundStyle(status.color)
                         .lineLimit(1)
                 }
             }
         } else {
-            // Disponibles: el indicador con icono en círculo + "Disponible" (antes arriba).
             statusLabel
         }
+    }
+
+    private var availableDetail: LocalizedStringKey {
+        guard let lastPickedDate = territory.lastPickedDateUtc else {
+            return "territories.drawer.never_picked"
+        }
+        let days = max(Calendar.current.dateComponents([.day], from: lastPickedDate, to: Date()).day ?? 0, 0)
+        return LocalizedStringKey(String(format: String.localized("territories.status.days_available"), days))
     }
 
     @ViewBuilder
@@ -443,30 +431,6 @@ struct TerritoryExplorerRow: View {
     }
 }
 
-private struct TerritoryListAvatar: View {
-    let name: String
-    let tint: Color
-
-    private var initials: String {
-        name
-            .split(separator: " ")
-            .prefix(2)
-            .compactMap(\.first)
-            .map(String.init)
-            .joined()
-            .uppercased()
-    }
-
-    var body: some View {
-        Text(initials.isEmpty ? "?" : initials)
-            .font(.appCaption().weight(.bold))
-            .foregroundStyle(Color.textPrimary)
-            .frame(width: 32, height: 32)
-            .background(tint.opacity(0.13), in: Circle())
-            .overlay(Circle().strokeBorder(tint.opacity(0.28), lineWidth: 1))
-            .accessibilityHidden(true)
-    }
-}
 
 struct TerritoryPolygonThumbnail: View {
     let geometry: TerritoryMapGeometry?
@@ -548,32 +512,5 @@ struct PresentationToggle: View {
         .buttonStyle(.plain)
         .contentShape(Rectangle())
         .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-}
-
-struct TerritoryStatusPresentation {
-    let title: LocalizedStringKey
-    let detail: LocalizedStringKey
-    let icon: String
-    let color: Color
-
-    init(_ status: TerritoryOperationalStatus) {
-        switch status {
-        case .available:
-            title = "territory.status.available"
-            detail = "territories.status.available_now"
-            icon = "checkmark.circle.fill"
-            color = .accent
-        case .assigned(let days):
-            title = "territory.status.assigned"
-            detail = LocalizedStringKey(String(format: String.localized("territories.status.days_assigned"), days))
-            icon = "person.crop.circle.fill"
-            color = .accentSecondary
-        case .attention(let days):
-            title = "territories.filter.attention"
-            detail = LocalizedStringKey(String(format: String.localized("territories.status.days_assigned"), days))
-            icon = "exclamationmark.triangle.fill"
-            color = .accentTertiary
-        }
     }
 }

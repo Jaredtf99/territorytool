@@ -283,7 +283,7 @@
 "dashboard.priority.follow_up" = "Follow up";
 "dashboard.priority.given_on" = "Assigned on %@";
 "dashboard.priority.view" = "View territory";
-"dashboard.priority.all_available" = "All territories are available.";
+"dashboard.priority.none_overdue" = "No territories have reached 90 days.";
 "dashboard.flow.title" = "Circulation";
 "dashboard.flow.free" = "free";
 "dashboard.flow.given" = "assigned this week";
@@ -347,9 +347,35 @@
 "quick_action.days_in_use" = "%d days in use";
 "quick_action.deliver_other_territory" = "Assign another territory";
 "quick_action.deliver_other_hint" = "Browse the available ones";
+"quick_action.choose_territory" = "Choose a territory";
+"quick_action.confirm.return_caption" = "It will be returned and become available.";
+"quick_action.date_now" = "Now";
+"quick_action.in_use_since" = "In use for";
+"quick_action.free_since_label" = "Not taken for";
+"quick_action.return_deliver" = "Return and assign another";
+"quick_action.return_deliver_short" = "Assign another";
+"quick_action.return_deliver_hint" = "Close this assignment and start a new one";
+
+// Clear errors (backend codes)
+"error.action_failed" = "Couldn't complete the action. Please try again.";
+"error.code.GIVEN_DATE_BEFORE_LAST_PICKED_DATE" = "The assignment date can't be earlier than the last return.";
+"error.code.PICKED_DATE_BEFORE_GIVEN_DATE" = "The return date can't be earlier than the assignment date.";
+"error.code.TERRITORY_ALREADY_IN_USE" = "This territory is already assigned.";
+"error.code.TERRITORY_NOT_IN_USE" = "This territory isn't assigned.";
+"error.code.TERRITORY_NOT_FOUND" = "Territory not found.";
+"error.code.PERSON_NOT_FOUND" = "Brother not found.";
+"error.code.INVALID_DATE" = "The date isn't valid.";
+"error.code.INVALID_DATES" = "The dates aren't valid.";
+"error.code.FORBIDDEN" = "You don't have permission to do this.";
+"error.code.UNAUTHENTICATED" = "Your session has expired. Please log in again.";
+"quick_action.deliver_now" = "Assign now";
+"quick_action.return_now" = "Return now";
+"quick_action.result" = "Result";
+"quick_action.result.available" = "%@ will become available";
+"quick_action.result.delivered" = "%1$@ will be assigned to %2$@";
 "quick_action.deliver_target" = "Assign to";
 "quick_action.person_question" = "What do you want to do with %@?";
-"quick_action.never_taken" = "Never taken";
+"quick_action.never_taken" = "Never used";
 "quick_action.chain_deliver" = "Assign another to %@";
 "quick_action.chain_deliver_hint" = "It's usually the next step after a return";
 "quick_action.scan_another" = "Scan another";
@@ -376,7 +402,8 @@
 "territories.section.assigned" = "In use";
 "territories.section.no_geometry" = "Not located on the map";
 "territories.status.available_now" = "Available now";
-"territories.status.days_assigned" = "Assigned for %d days";
+"territories.status.days_available" = "For %d days";
+"territories.status.days_assigned" = "For %d days";
 "territories.empty_filtered" = "Try another search or remove the filters.";
 "territories.clear_filters" = "Clear filters";
 "territories.drawer.relevant" = "Most relevant";
@@ -394,7 +421,7 @@
 "territories.drawer.assigned_for_days" = "Assigned for %d days";
 "territories.drawer.free_for_days" = "Not picked for %d days";
 "territories.drawer.returned_days_ago" = "Returned %d days ago";
-"territories.drawer.never_picked" = "Never picked";
+"territories.drawer.never_picked" = "Never used";
 "territories.drawer.assigned_on" = "Assigned on %@";
 "territories.drawer.returned_on" = "Returned on %@";
 "territories.status.available_distance" = "Available · %@";

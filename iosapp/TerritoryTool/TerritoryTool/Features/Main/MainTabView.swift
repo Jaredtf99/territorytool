@@ -23,9 +23,17 @@ struct MainTabView: View {
             // Acción rápida a pantalla completa (cubre la tab bar real) con entrada
             // tipo zoom. No es una hoja: es una vista normal superpuesta.
             if router.isQuickActionPresented {
-                QuickActionHubView(onClose: { router.isQuickActionPresented = false })
-                    .transition(.scale(scale: 0.92).combined(with: .opacity))
-                    .zIndex(1)
+                QuickActionHubView(
+                    onClose: { router.isQuickActionPresented = false },
+                    onComplete: {
+                        // Tras entregar/recoger: cerrar y volver al tablero (raíz).
+                        router.dashboardPath = NavigationPath()
+                        router.selectedTab = .dashboard
+                        router.isQuickActionPresented = false
+                    }
+                )
+                .transition(.scale(scale: 0.92).combined(with: .opacity))
+                .zIndex(1)
             }
         }
         .animation(.spring(response: 0.42, dampingFraction: 0.86), value: router.isQuickActionPresented)

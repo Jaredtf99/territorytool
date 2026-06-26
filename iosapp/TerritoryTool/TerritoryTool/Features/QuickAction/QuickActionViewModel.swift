@@ -4,7 +4,8 @@ import SwiftUI
 
 /// ViewModel de la pantalla principal de Acción rápida (centro de escaneo).
 /// Responsable del buscador universal, la resolución de escaneos y las sugerencias.
-/// La lógica de entregar/devolver vive en `QuickActionResolutionViewModel`.
+/// La selección/confirmación de entregar/recoger vive en las vistas empujadas
+/// (`QuickActionPickPersonView`, `QuickActionPersonView`, `QuickActionConfirmView`).
 @MainActor
 final class QuickActionViewModel: ObservableObject {
     // Buscador universal: lista única (territorios + personas) rankeada por el backend.
@@ -20,9 +21,6 @@ final class QuickActionViewModel: ObservableObject {
     // Escaneo
     @Published var isResolvingScan = false
 
-    // Encadenado: persona a la que se acaba de devolver un territorio.
-    @Published var lastReturnedPersonName: String?
-
     @Published var errorMessage: String?
 
     private let apiService: APIService
@@ -35,6 +33,22 @@ final class QuickActionViewModel: ObservableObject {
         $searchTerm
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .removeDuplicates()
+            // Marca "buscando" de inmediato (antes del debounce) para que no aparezca
+            // el mensaje de "sin resultados" en el hueco mientras se espera a teclear.
+            .handleEvents(receiveOutput: { [weak self] term in
+                guard let self else { return }
+                if term.isEmpty {
+                    // Con el buscador enfocado y vacío se navegan todos los territorios.
+                    if self.isBrowsing {
+                        self.isSearching = true
+                    } else {
+                        self.searchHits = []
+                        self.isSearching = false
+                    }
+                } else {
+                    self.isSearching = true
+                }
+            })
             .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
             .sink { [weak self] term in
                 Task { [weak self] in await self?.search(term: term) }
@@ -52,9 +66,23 @@ final class QuickActionViewModel: ObservableObject {
 
     // MARK: - Buscador universal
 
+    /// Activo cuando el buscador está enfocado: con texto vacío se navegan todos los
+    /// territorios (en vez de no mostrar nada).
+    private var isBrowsing = false
+
+    /// Lo llama el hub al enfocar/desenfocar el buscador.
+    func setBrowsing(_ focused: Bool) async {
+        isBrowsing = focused
+        await search(term: searchTerm.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
     private func search(term: String) async {
         guard !term.isEmpty else {
-            searchHits = []
+            if isBrowsing {
+                await loadBrowse()
+            } else {
+                searchHits = []
+            }
             isSearching = false
             return
         }
@@ -69,6 +97,14 @@ final class QuickActionViewModel: ObservableObject {
             searchHits = []
         }
         isSearching = false
+    }
+
+    /// Todos los territorios ordenados por código (navegación con buscador vacío).
+    private func loadBrowse() async {
+        let all = await fetchTerritories(term: nil, inUse: nil)
+        searchHits = all
+            .sorted { $0.code.localizedStandardCompare($1.code) == .orderedAscending }
+            .map { QuickSearchHit(kind: .territory, territory: $0) }
     }
 
     // MARK: - Sugerencias

@@ -231,27 +231,6 @@ private struct DashboardHeader: View {
     }
 }
 
-/// Avatar circular con iniciales y gradiente de acento.
-private struct InitialsAvatar: View {
-    let name: String
-    var size: CGFloat = 40
-
-    private var initials: String {
-        let parts = name.split(separator: " ").prefix(2)
-        let letters = parts.compactMap { $0.first }.map(String.init)
-        return letters.joined().uppercased()
-    }
-
-    var body: some View {
-        Text(initials.isEmpty ? "?" : initials)
-            .font(.system(size: size * 0.4, weight: .semibold, design: .rounded))
-            .foregroundStyle(Color.accentDeep)
-            .frame(width: size, height: size)
-            .background(Color.accent.opacity(0.14), in: Circle())
-            .overlay(Circle().strokeBorder(Color.accent.opacity(0.28), lineWidth: 1))
-            .accessibilityHidden(true)
-    }
-}
 
 private struct DailyPriorityCard: View {
     let priority: DashboardPriority?
@@ -269,7 +248,7 @@ private struct DailyPriorityCard: View {
                 priorityLabel
                 CartoEmptyState(
                     systemImage: "checkmark.seal.fill",
-                    message: "dashboard.priority.all_available",
+                    message: "dashboard.priority.none_overdue",
                     tint: .accent
                 )
             }
@@ -593,66 +572,63 @@ private struct WeeklyActivityChart: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.sm) {
-            HStack(spacing: AppSpacing.xs) {
-                Image(systemName: "waveform.path.ecg")
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(Color.accent)
-                Text("dashboard.week.title")
-                    .font(.system(.subheadline, design: .rounded).weight(.bold))
-                    .foregroundStyle(Color.textPrimary)
-                    .lineLimit(2)
-            }
+            Label("dashboard.week.title", systemImage: "waveform.path.ecg")
+                .font(.system(.headline, design: .rounded).weight(.bold))
+                .foregroundStyle(Color.textPrimary)
 
-            HStack(spacing: AppSpacing.md) {
-                ActivityLegend(value: givenTotal, label: "dashboard.week.given", color: Self.givenColor)
-                ActivityLegend(value: returnedTotal, label: "dashboard.week.returned", color: Self.returnedColor)
-            }
-
-            Chart(activity) { day in
-                AreaMark(
-                    x: .value("Day", day.date, unit: .day),
-                    y: .value("Given", animated ? day.givenCount : 0)
-                )
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [Self.givenColor.opacity(0.25), Self.givenColor.opacity(0.02)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .interpolationMethod(.monotone)
-
-                LineMark(
-                    x: .value("Day", day.date, unit: .day),
-                    y: .value("Returned", animated ? day.returnedCount : 0),
-                    series: .value("Series", "returned")
-                )
-                .foregroundStyle(Self.returnedColor)
-                .interpolationMethod(.monotone)
-                .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round))
-
-                LineMark(
-                    x: .value("Day", day.date, unit: .day),
-                    y: .value("Given", animated ? day.givenCount : 0),
-                    series: .value("Series", "given")
-                )
-                .foregroundStyle(Self.givenColor)
-                .interpolationMethod(.monotone)
-                .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round))
-            }
-            .chartXAxis {
-                AxisMarks(values: .stride(by: .day)) { _ in
-                    AxisValueLabel(format: .dateTime.weekday(.narrow))
-                        .font(.caption2)
+            VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                HStack(spacing: AppSpacing.md) {
+                    ActivityLegend(value: givenTotal, label: "dashboard.week.given", color: Self.givenColor)
+                    ActivityLegend(value: returnedTotal, label: "dashboard.week.returned", color: Self.returnedColor)
                 }
+
+                Chart(activity) { day in
+                    AreaMark(
+                        x: .value("Day", day.date, unit: .day),
+                        y: .value("Given", animated ? day.givenCount : 0)
+                    )
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Self.givenColor.opacity(0.25), Self.givenColor.opacity(0.02)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .interpolationMethod(.monotone)
+
+                    LineMark(
+                        x: .value("Day", day.date, unit: .day),
+                        y: .value("Returned", animated ? day.returnedCount : 0),
+                        series: .value("Series", "returned")
+                    )
+                    .foregroundStyle(Self.returnedColor)
+                    .interpolationMethod(.monotone)
+                    .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round))
+
+                    LineMark(
+                        x: .value("Day", day.date, unit: .day),
+                        y: .value("Given", animated ? day.givenCount : 0),
+                        series: .value("Series", "given")
+                    )
+                    .foregroundStyle(Self.givenColor)
+                    .interpolationMethod(.monotone)
+                    .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                }
+                .chartXAxis {
+                    AxisMarks(values: .stride(by: .day)) { _ in
+                        AxisValueLabel(format: .dateTime.weekday(.narrow))
+                            .font(.caption2)
+                    }
+                }
+                .chartYAxis(.hidden)
+                .frame(height: 104)
+                .accessibilityLabel(Text("dashboard.week.accessibility"))
             }
-            .chartYAxis(.hidden)
-            .frame(height: 104)
-            .accessibilityLabel(Text("dashboard.week.accessibility"))
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .padding(AppSpacing.md)
+            .paperCard(cornerRadius: AppRadius.xl)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
-        .padding(AppSpacing.md)
-        .paperCard(cornerRadius: AppRadius.xl)
         .onAppear {
             guard !reduceMotion else { animated = true; return }
             withAnimation(.easeOut(duration: 0.8)) { animated = true }
@@ -696,36 +672,39 @@ struct MovementRow: View {
     var body: some View {
         HStack(spacing: AppSpacing.sm) {
             Image(systemName: eventIcon)
-                .font(.subheadline.weight(.bold))
-                .foregroundStyle(eventTint)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(.white)
                 .frame(width: 42, height: 42)
-                .background(eventTint.opacity(0.14), in: Circle())
-                .overlay(Circle().strokeBorder(eventTint.opacity(0.24), lineWidth: 1))
+                .background(
+                    LinearGradient(colors: [eventTint, eventTint.opacity(0.78)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing),
+                    in: Circle()
+                )
+                .shadow(color: eventTint.opacity(0.35), radius: 5, x: 0, y: 2)
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: AppSpacing.xs) {
                     Text(movement.territoryCode)
-                        .font(.subheadline.weight(.bold).monospaced())
+                        .font(.system(.subheadline, design: .rounded).weight(.bold))
                         .foregroundStyle(eventTint)
                     Text(movement.territoryName)
-                        .font(.subheadline.weight(.semibold))
+                        .font(.system(.subheadline, design: .rounded).weight(.semibold))
                         .foregroundStyle(Color.textPrimary)
                         .lineLimit(1)
                 }
 
                 Text(personSummary)
-                    .font(.caption)
+                    .font(.appCaption())
                     .foregroundStyle(Color.textSecondary)
                     .lineLimit(1)
 
-                Label(
+                Text(
                     String(
                         format: String(localized: "movements.recorded_by"),
                         movement.actorName
-                    ),
-                    systemImage: "person.crop.circle.badge.checkmark"
+                    )
                 )
-                    .font(.caption2)
+                    .font(.system(.caption2, design: .rounded))
                     .foregroundStyle(Color.textSecondary)
                     .lineLimit(1)
             }
@@ -734,11 +713,11 @@ struct MovementRow: View {
 
             VStack(alignment: .trailing, spacing: 3) {
                 Text(isReturn ? "movements.returned" : "movements.given")
-                    .font(.caption2.weight(.bold))
+                    .font(.system(.caption2, design: .rounded).weight(.bold))
                     .foregroundStyle(eventTint)
                     .textCase(.uppercase)
                 Text(movement.eventDate, style: .relative)
-                    .font(.caption)
+                    .font(.appCaption().monospacedDigit())
                     .foregroundStyle(Color.textSecondary)
                     .lineLimit(1)
             }

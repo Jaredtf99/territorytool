@@ -12,28 +12,6 @@ enum CompactRowAccessory: Equatable {
     case none
 }
 
-/// Avatar de iniciales canónico (mismo estilo que `TerritoryListAvatar`).
-struct QAInitialsAvatar: View {
-    let name: String
-    var size: CGFloat = 38
-    var tint: Color = .accent
-
-    private var initials: String {
-        name.split(separator: " ").prefix(2)
-            .compactMap(\.first).map(String.init).joined().uppercased()
-    }
-
-    var body: some View {
-        Text(initials.isEmpty ? "?" : initials)
-            .font(.system(size: size * 0.4, weight: .bold, design: .rounded))
-            .foregroundStyle(Color.textPrimary)
-            .frame(width: size, height: size)
-            .background(tint.opacity(0.13), in: Circle())
-            .overlay(Circle().strokeBorder(tint.opacity(0.28), lineWidth: 1))
-            .accessibilityHidden(true)
-    }
-}
-
 /// Fila de territorio compacta: icono de estado + código + nombre + línea de estado.
 struct CompactTerritoryRow: View {
     let territory: Territory
@@ -57,17 +35,13 @@ struct CompactTerritoryRow: View {
 
     var body: some View {
         HStack(spacing: AppSpacing.sm) {
-            Image(systemName: status.icon)
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(status.color)
+            TerritoryStatusIcon(presentation: status, size: .regular)
                 .frame(width: 38, height: 38)
-                .background(status.color.opacity(0.14), in: Circle())
-                .overlay(Circle().strokeBorder(status.color.opacity(0.24), lineWidth: 1))
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: AppSpacing.xs) {
                     Text(territory.code)
-                        .font(.subheadline.weight(.bold).monospaced())
+                        .font(.system(.subheadline, design: .rounded).weight(.bold))
                         .foregroundStyle(status.color)
                     Text(territory.name)
                         .font(.system(.subheadline, design: .rounded).weight(.semibold))
@@ -75,7 +49,7 @@ struct CompactTerritoryRow: View {
                         .lineLimit(1)
                 }
                 Text(detail)
-                    .font(.caption)
+                    .font(.appCaption())
                     .foregroundStyle(Color.textSecondary)
                     .lineLimit(1)
             }
@@ -142,7 +116,7 @@ struct PersonQuickRow: View {
 
     var body: some View {
         HStack(spacing: AppSpacing.sm) {
-            QAInitialsAvatar(name: person.name, size: 38, tint: tint)
+            InitialsAvatar(name: person.name, size: 38, tint: tint)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(person.name)
@@ -150,7 +124,7 @@ struct PersonQuickRow: View {
                     .foregroundStyle(Color.textPrimary)
                     .lineLimit(1)
                 Text(subtitle)
-                    .font(.caption)
+                    .font(.appCaption())
                     .foregroundStyle(Color.textSecondary)
                     .lineLimit(1)
             }
@@ -175,5 +149,52 @@ struct PersonQuickRow: View {
                 .strokeBorder(isSelected ? Color.accent : Color.hairline, lineWidth: isSelected ? 1.5 : 1)
         )
         .contentShape(Rectangle())
+    }
+}
+
+// MARK: - Barra de búsqueda inferior (cristal a ancho completo, tipo tab bar)
+
+/// Barra de búsqueda anclada abajo, reutilizada por el hub y los selectores.
+struct QuickActionSearchBar: View {
+    let placeholder: LocalizedStringKey
+    @Binding var text: String
+    var focus: FocusState<Bool>.Binding
+
+    var body: some View {
+        HStack(spacing: AppSpacing.sm) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(Color.textSecondary)
+
+            TextField(placeholder, text: $text)
+                .textFieldStyle(.plain)
+                .font(.appBody())
+                .foregroundStyle(Color.textPrimary)
+                .focused(focus)
+                .submitLabel(.search)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+
+            if !text.isEmpty {
+                Button {
+                    text = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(Color.textSecondary)
+                        .frame(width: 36, height: 36)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("common.clear"))
+            }
+        }
+        .padding(.horizontal, AppSpacing.md)
+        .frame(height: 52)
+        .frame(maxWidth: .infinity)
+        // Sin `.interactive()`: el cristal interactivo se "comía" el toque del botón de
+        // limpiar. `contentShape` evita que el toque se cuele a la fila de debajo.
+        .contentShape(Capsule())
+        .glassEffect(.regular, in: .capsule)
+        .padding(.horizontal, AppSpacing.sm)
+        .padding(.bottom, AppSpacing.xs)
     }
 }

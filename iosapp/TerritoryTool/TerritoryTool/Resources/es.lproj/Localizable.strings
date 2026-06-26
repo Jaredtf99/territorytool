@@ -285,7 +285,7 @@
 "dashboard.priority.follow_up" = "Seguimiento";
 "dashboard.priority.given_on" = "Entregado el %@";
 "dashboard.priority.view" = "Ver territorio";
-"dashboard.priority.all_available" = "Todos los territorios están disponibles.";
+"dashboard.priority.none_overdue" = "No hay territorios con 90 días o más.";
 "dashboard.flow.title" = "Circulación";
 "dashboard.flow.free" = "libres";
 "dashboard.flow.given" = "entregados esta semana";
@@ -349,9 +349,35 @@
 "quick_action.days_in_use" = "%d días en uso";
 "quick_action.deliver_other_territory" = "Entregar otro territorio";
 "quick_action.deliver_other_hint" = "Buscar entre los disponibles";
+"quick_action.choose_territory" = "Elegir territorio";
+"quick_action.confirm.return_caption" = "Se recogerá y quedará disponible.";
+"quick_action.date_now" = "Ahora";
+"quick_action.in_use_since" = "En uso desde";
+"quick_action.free_since_label" = "Sin coger desde";
+"quick_action.return_deliver" = "Devolver y entregar otro";
+"quick_action.return_deliver_short" = "Entregar otro";
+"quick_action.return_deliver_hint" = "Cierra esta entrega y empieza otra";
+
+// Errores claros (códigos de backend)
+"error.action_failed" = "No se pudo completar la acción. Inténtalo de nuevo.";
+"error.code.GIVEN_DATE_BEFORE_LAST_PICKED_DATE" = "La fecha de entrega no puede ser anterior a la última recogida.";
+"error.code.PICKED_DATE_BEFORE_GIVEN_DATE" = "La fecha de recogida no puede ser anterior a la de entrega.";
+"error.code.TERRITORY_ALREADY_IN_USE" = "Este territorio ya está entregado.";
+"error.code.TERRITORY_NOT_IN_USE" = "Este territorio no está entregado.";
+"error.code.TERRITORY_NOT_FOUND" = "No se encontró el territorio.";
+"error.code.PERSON_NOT_FOUND" = "No se encontró el hermano.";
+"error.code.INVALID_DATE" = "La fecha no es válida.";
+"error.code.INVALID_DATES" = "Las fechas no son válidas.";
+"error.code.FORBIDDEN" = "No tienes permiso para hacer esto.";
+"error.code.UNAUTHENTICATED" = "Tu sesión ha caducado. Inicia sesión de nuevo.";
+"quick_action.deliver_now" = "Entregar ahora";
+"quick_action.return_now" = "Devolver ahora";
+"quick_action.result" = "Resultado";
+"quick_action.result.available" = "%@ quedará disponible";
+"quick_action.result.delivered" = "%1$@ quedará entregado a %2$@";
 "quick_action.deliver_target" = "Entregar a";
 "quick_action.person_question" = "¿Qué quieres hacer con %@?";
-"quick_action.never_taken" = "Nunca se ha cogido";
+"quick_action.never_taken" = "Nunca se ha usado";
 "quick_action.chain_deliver" = "Entregar otro a %@";
 "quick_action.chain_deliver_hint" = "Suele ser el siguiente paso tras una devolución";
 "quick_action.scan_another" = "Escanear otro";
@@ -378,7 +404,8 @@
 "territories.section.assigned" = "En uso";
 "territories.section.no_geometry" = "Sin ubicación en el mapa";
 "territories.status.available_now" = "Disponible ahora";
-"territories.status.days_assigned" = "Asignado desde hace %d días";
+"territories.status.days_available" = "Desde hace %d días";
+"territories.status.days_assigned" = "Desde hace %d días";
 "territories.empty_filtered" = "Prueba con otra búsqueda o elimina los filtros.";
 "territories.clear_filters" = "Limpiar filtros";
 "territories.drawer.relevant" = "Más relevantes";
@@ -396,7 +423,7 @@
 "territories.drawer.assigned_for_days" = "Entregado hace %d días";
 "territories.drawer.free_for_days" = "Sin coger desde hace %d días";
 "territories.drawer.returned_days_ago" = "Devuelto hace %d días";
-"territories.drawer.never_picked" = "Nunca se ha cogido";
+"territories.drawer.never_picked" = "Nunca se ha usado";
 "territories.drawer.assigned_on" = "Entregado el %@";
 "territories.drawer.returned_on" = "Devuelto el %@";
 "territories.status.available_distance" = "Disponible · %@";

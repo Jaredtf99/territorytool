@@ -5,8 +5,8 @@ import Foundation
 // acción a partir del territorio o la persona seleccionada. Ver mockups y spec.
 
 /// Resultado que la pantalla quiere resolver (escaneo o selección).
-/// Se empuja en la pila de navegación del hub (sin hojas anidadas) y el
-/// `QuickActionResolutionViewModel` decide el paso inicial.
+/// Se empuja en la pila de navegación del hub (sin hojas anidadas); el hub decide
+/// la vista destino (confirmar recogida, elegir persona, o decisión de persona).
 enum QuickActionResolution: Identifiable, Hashable {
     case territory(Territory)
     case person(Person)
@@ -39,6 +39,14 @@ struct QuickSearchHit: Decodable, Identifiable {
     let score: Double
     let territory: Territory?
     let person: Person?
+
+    /// Para construir hits localmente (p. ej. al navegar todos los territorios).
+    init(kind: Kind, score: Double = 0, territory: Territory? = nil, person: Person? = nil) {
+        self.kind = kind
+        self.score = score
+        self.territory = territory
+        self.person = person
+    }
 
     var id: String {
         switch kind {

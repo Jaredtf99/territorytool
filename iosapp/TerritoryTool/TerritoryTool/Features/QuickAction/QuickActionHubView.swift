@@ -7,6 +7,8 @@ import SwiftUI
 struct QuickActionHubView: View {
     /// Cierra todo el flujo (lo controla `MainTabView`, que lo presenta superpuesto).
     let onClose: () -> Void
+    /// Acción completada: cierra el flujo y lleva al tablero.
+    let onComplete: () -> Void
 
     @StateObject private var vm = QuickActionViewModel(apiService: DIContainer.shared.apiService)
     @Environment(\.scenePhase) private var scenePhase
@@ -40,7 +42,7 @@ struct QuickActionHubView: View {
                         .transition(.move(edge: .top).combined(with: .opacity))
                     }
 
-                    if vm.hasSearch {
+                    if searchFocused || vm.hasSearch {
                         searchResults
                     } else {
                         suggestions
@@ -54,7 +56,9 @@ struct QuickActionHubView: View {
             .scrollIndicators(.hidden)
             .background { LiquidBackgroundView().ignoresSafeArea() }
             .scrollDismissesKeyboard(.interactively)
-            .safeAreaInset(edge: .bottom) { searchBar }
+            .safeAreaInset(edge: .bottom) {
+                QuickActionSearchBar(placeholder: "quick_action.search_placeholder", text: $vm.searchTerm, focus: $searchFocused)
+            }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -66,13 +70,28 @@ struct QuickActionHubView: View {
                 }
             }
             .navigationDestination(item: $resolution) { resolution in
-                QuickActionResolutionView(
-                    resolution: resolution,
-                    onCompleted: handleCompleted,
-                    onFinish: onClose
-                )
+                switch resolution {
+                case .territory(let territory) where territory.isAssigned:
+                    QuickActionConfirmView(
+                        action: .returnTerritory(territory),
+                        onDone: onComplete,
+                        onDeliverAnother: { name in
+                            // Recogido: continúa entregando otro a la misma persona.
+                            // Reemplaza el destino por el flujo de persona (modo elegir territorio).
+                            let person = Person(id: Int.random(in: 1_000_000...9_999_999), name: name, enabled: true, territoriesInUse: [])
+                            self.resolution = .person(person)
+                        }
+                    )
+                case .territory(let territory):
+                    QuickActionPickPersonView(territory: territory, onDone: onComplete)
+                case .person(let person):
+                    QuickActionPersonView(person: person, onDone: onComplete)
+                }
             }
             .task { await vm.loadSuggestions() }
+            .onChange(of: searchFocused) { _, focused in
+                Task { await vm.setBrowsing(focused) }
+            }
             .onReceive(NotificationCenter.default.publisher(for: .territoryDataChanged)) { _ in
                 Task { await vm.loadSuggestions() }
             }
@@ -85,47 +104,6 @@ struct QuickActionHubView: View {
                 Text(vm.errorMessage ?? "")
             }
         }
-    }
-
-    // MARK: - Buscador inferior (barra de cristal a ancho completo, tipo tab bar)
-
-    private var searchBar: some View {
-        HStack(spacing: AppSpacing.sm) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(Color.textSecondary)
-
-            TextField("quick_action.search_placeholder", text: $vm.searchTerm)
-                .textFieldStyle(.plain)
-                .font(.appBody())
-                .foregroundStyle(Color.textPrimary)
-                .focused($searchFocused)
-                .submitLabel(.search)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-
-            if !vm.searchTerm.isEmpty {
-                Button {
-                    vm.searchTerm = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(Color.textSecondary)
-                        .frame(width: 36, height: 36)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("common.clear"))
-            }
-        }
-        .padding(.horizontal, AppSpacing.md)
-        .frame(height: 52)
-        .frame(maxWidth: .infinity)
-        // Captura todo el toque dentro de la cápsula para que no se cuele a la fila de
-        // debajo. Sin `.interactive()`: el cristal interactivo se "comía" el toque del
-        // botón de limpiar (mismo criterio que el buscador del explorador).
-        .contentShape(Capsule())
-        .glassEffect(.regular, in: .capsule)
-        .padding(.horizontal, AppSpacing.sm)
-        .padding(.bottom, AppSpacing.xs)
     }
 
     // MARK: - Resultados de búsqueda
@@ -167,13 +145,6 @@ struct QuickActionHubView: View {
     @ViewBuilder
     private var suggestions: some View {
         VStack(alignment: .leading, spacing: AppSpacing.lg) {
-            if let name = vm.lastReturnedPersonName {
-                Button { deliverToReturnedPerson(name) } label: {
-                    ChainSuggestionCard(personName: name)
-                }
-                .buttonStyle(ScaleButtonStyle())
-            }
-
             if vm.isLoadingSuggestions && vm.attentionTerritories.isEmpty && vm.oldestFreeTerritories.isEmpty {
                 ProgressView().frame(maxWidth: .infinity).padding(.vertical, AppSpacing.lg)
             }
@@ -253,48 +224,4 @@ struct QuickActionHubView: View {
         resolution = res
     }
 
-    private func handleCompleted(_ kind: QuickActionResolutionViewModel.SuccessKind) {
-        if case let .returned(_, person?) = kind {
-            vm.lastReturnedPersonName = person
-        } else {
-            vm.lastReturnedPersonName = nil
-        }
-        Task { await vm.loadSuggestions() }
-    }
-
-    private func deliverToReturnedPerson(_ name: String) {
-        // Persona mínima sin territorios: la resolución llevará a elegir territorio.
-        let person = Person(id: Int.random(in: 1_000_000...9_999_999), name: name, enabled: true, territoriesInUse: [])
-        select(.person(person))
-    }
-}
-
-/// Tarjeta de sugerencia encadenada: "Entregar otro a {persona}".
-private struct ChainSuggestionCard: View {
-    let personName: String
-
-    var body: some View {
-        HStack(spacing: AppSpacing.sm) {
-            Image(systemName: "arrow.turn.up.right")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 40, height: 40)
-                .background(
-                    LinearGradient(colors: [.accentSecondary, .accentSecondary.opacity(0.78)],
-                                   startPoint: .topLeading, endPoint: .bottomTrailing),
-                    in: Circle()
-                )
-                .shadow(color: Color.accentSecondary.opacity(0.35), radius: 5, x: 0, y: 2)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(String(format: String.localized("quick_action.chain_deliver"), personName))
-                    .font(.appHeadline()).foregroundStyle(Color.textPrimary)
-                Text("quick_action.chain_deliver_hint")
-                    .font(.appCaption()).foregroundStyle(Color.textSecondary)
-            }
-            Spacer()
-            Image(systemName: "chevron.right").foregroundStyle(Color.textSecondary)
-        }
-        .padding(AppSpacing.md)
-        .paperCard(cornerRadius: AppRadius.lg)
-    }
 }

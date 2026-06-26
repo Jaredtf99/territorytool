@@ -163,26 +163,12 @@ struct TerritoryMapDrawer: View {
                 )
 
             VStack(alignment: .leading, spacing: selected ? 5 : 3) {
-                HStack(spacing: 6) {
-                    Text(territory.code)
-                        .font(.appHeadline())
-                        .foregroundStyle(Color.textPrimary)
-                        .lineLimit(1)
-
-                    statusCapsule(territory, presentation: presentation, includesDays: selected)
-                        .layoutPriority(1)
-                }
-
-                Text(personOrAvailability(territory))
-                    .font(selected ? .appSubheadline() : .appCaption().weight(.medium))
-                    .foregroundStyle(territory.personName == nil ? presentation.color : Color.textPrimary)
+                Text(territory.code)
+                    .font(.appHeadline())
+                    .foregroundStyle(Color.textPrimary)
                     .lineLimit(1)
 
-                Text(selected ? selectedDateDetail(territory) : temporalDetail(territory))
-                    .font(.appCaption())
-                    .foregroundStyle(Color.textSecondary)
-                    .lineLimit(selected ? 2 : 1)
-                    .contentTransition(.opacity)
+                drawerAssignmentDetail(territory, presentation: presentation, selected: selected)
 
                 if selected {
                     HStack(spacing: AppSpacing.xs) {
@@ -321,71 +307,51 @@ struct TerritoryMapDrawer: View {
     }
 
     @ViewBuilder
-    private func statusCapsule(
+    private func drawerAssignmentDetail(
         _ territory: Territory,
         presentation: TerritoryStatusPresentation,
-        includesDays: Bool
+        selected: Bool
     ) -> some View {
-        Text(statusText(territory, includesDays: includesDays))
-            .font(.caption2.weight(.bold))
-            .foregroundStyle(presentation.color)
-            .lineLimit(1)
-            .minimumScaleFactor(0.78)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
-            .background(presentation.color.opacity(0.13), in: .capsule)
-            .accessibilityLabel(presentation.title)
-    }
+        if let personName = territory.personName {
+            HStack(spacing: AppSpacing.xs) {
+                InitialsAvatar(name: personName, size: selected ? 30 : 26, tint: presentation.color)
 
-    private func statusText(_ territory: Territory, includesDays: Bool) -> String {
-        switch viewModel.status(for: territory) {
-        case .available:
-            return String(localized: "territories.drawer.status.free")
-        case .assigned(let days):
-            return includesDays
-                ? String(format: String.localized("territories.drawer.status.in_use_days"), days)
-                : String(localized: "territories.drawer.status.in_use")
-        case .attention(let days):
-            return includesDays
-                ? String(format: String.localized("territories.drawer.status.attention_days"), days)
-                : String(localized: "territories.drawer.status.attention")
-        }
-    }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(personName)
+                        .font(selected ? .appSubheadline() : .appCaption().weight(.semibold))
+                        .foregroundStyle(Color.textPrimary)
+                        .lineLimit(1)
 
-    private func personOrAvailability(_ territory: Territory) -> String {
-        territory.personName ?? String(localized: "territories.status.available_now")
-    }
-
-    private func temporalDetail(_ territory: Territory, now: Date = Date()) -> String {
-        switch viewModel.status(for: territory) {
-        case .available:
-            guard let lastPickedDate = territory.lastPickedDateUtc else {
-                return String(localized: "territories.drawer.never_picked")
+                    Text(assignedDetail(territory))
+                        .font(.appCaption().weight(.medium))
+                        .foregroundStyle(presentation.color)
+                        .lineLimit(1)
+                }
             }
-            let elapsedDays = days(from: lastPickedDate, to: now)
-            if elapsedDays <= 7 {
-                return String(format: String.localized("territories.drawer.returned_days_ago"), elapsedDays)
-            }
-            return String(format: String.localized("territories.drawer.free_for_days"), elapsedDays)
-        case .assigned(let assignedDays), .attention(let assignedDays):
-            return String(format: String.localized("territories.drawer.assigned_for_days"), assignedDays)
-        }
-    }
-
-    private func selectedDateDetail(_ territory: Territory) -> String {
-        if let givenDate = territory.givenDateUtc {
-            return String(
-                format: String.localized("territories.drawer.assigned_on"),
-                givenDate.formatted(date: .abbreviated, time: .omitted)
+        } else {
+            TerritoryStatusIndicator(
+                presentation: presentation,
+                detail: availableDetail(territory),
+                size: selected ? .regular : .compact
             )
         }
-        if let lastPickedDate = territory.lastPickedDateUtc {
-            return String(
-                format: String.localized("territories.drawer.returned_on"),
-                lastPickedDate.formatted(date: .abbreviated, time: .omitted)
-            )
+    }
+
+    private func assignedDetail(_ territory: Territory) -> LocalizedStringKey {
+        switch viewModel.status(for: territory) {
+        case .assigned(let days), .attention(let days):
+            return LocalizedStringKey(String(format: String.localized("territories.status.days_assigned"), days))
+        case .available:
+            return availableDetail(territory)
         }
-        return temporalDetail(territory)
+    }
+
+    private func availableDetail(_ territory: Territory) -> LocalizedStringKey {
+        guard let lastPickedDate = territory.lastPickedDateUtc else {
+            return "territories.drawer.never_picked"
+        }
+        let elapsedDays = days(from: lastPickedDate, to: Date())
+        return LocalizedStringKey(String(format: String.localized("territories.status.days_available"), elapsedDays))
     }
 
     private func days(from start: Date, to end: Date) -> Int {
