@@ -24,15 +24,16 @@ struct MainTabView: View {
             // tipo zoom. No es una hoja: es una vista normal superpuesta.
             if router.isQuickActionPresented {
                 QuickActionHubView(
-                    onClose: { router.isQuickActionPresented = false },
+                    initialResolution: router.quickActionInitialResolution,
+                    onClose: { router.closeQuickAction() },
                     onComplete: {
                         // Tras entregar/recoger: cerrar y volver al tablero (raíz).
                         router.dashboardPath = NavigationPath()
                         router.selectedTab = .dashboard
-                        router.isQuickActionPresented = false
+                        router.closeQuickAction()
                     }
                 )
-                .transition(.scale(scale: 0.92).combined(with: .opacity))
+                .transition(quickActionTransition)
                 .zIndex(1)
             }
         }
@@ -120,8 +121,15 @@ struct MainTabView: View {
             guard newValue == .quickAction else { return }
             // No navegamos a la pestaña; volvemos a la anterior y abrimos la Acción rápida.
             router.selectedTab = oldValue == .quickAction ? .dashboard : oldValue
-            router.isQuickActionPresented = true
+            router.openQuickAction()
         }
+    }
+
+    private var quickActionTransition: AnyTransition {
+        if router.quickActionInitialResolution == nil {
+            return .scale(scale: 0.92).combined(with: .opacity)
+        }
+        return .opacity
     }
 
     private func presentToast(_ message: ToastMessage) {

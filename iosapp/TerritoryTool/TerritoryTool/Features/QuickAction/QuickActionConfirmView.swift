@@ -52,6 +52,7 @@ struct QuickActionConfirmView: View {
     /// Solo en devolución: recoge y continúa para entregar otro territorio a la misma
     /// persona (recibe el nombre). Lo gestiona el hub reemplazando el destino.
     var onDeliverAnother: ((String) -> Void)? = nil
+    var onClose: (() -> Void)? = nil
 
     @State private var dateExpanded = false
     @State private var customized = false
@@ -86,6 +87,18 @@ struct QuickActionConfirmView: View {
         .safeAreaInset(edge: .bottom) { bottomBar }
         .navigationTitle(action.isDeliver ? "assignment.title" : "return.title")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(onClose != nil)
+        .toolbar {
+            if let onClose {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { onClose() } label: {
+                        Image(systemName: "xmark")
+                            .font(.subheadline.weight(.bold))
+                    }
+                    .accessibilityLabel(Text("common.close"))
+                }
+            }
+        }
         .task { await hydrateGeometryIfNeeded() }
     }
 
@@ -193,23 +206,23 @@ struct QuickActionConfirmView: View {
     @ViewBuilder
     private var bottomBar: some View {
         Group {
-            // Devolución con opción de encadenar: dos botones al mismo nivel.
+            // Devolución con opción de encadenar: dos acciones a ancho completo.
             if !action.isDeliver, territory.personName != nil, onDeliverAnother != nil {
-                HStack(spacing: AppSpacing.sm) {
-                    Button { Task { await submit() } } label: {
-                        actionLabel("quick_action.action.return", systemImage: "arrow.uturn.backward")
-                    }
-                    .buttonStyle(.glassProminent)
-                    .controlSize(.large)
-                    .tint(.success)
-
+                VStack(spacing: AppSpacing.sm) {
                     Button { Task { await submit(deliverAnother: true) } } label: {
-                        actionLabel("quick_action.return_deliver_short", systemImage: "arrow.2.squarepath")
+                        actionLabel("quick_action.return_deliver", systemImage: "arrow.2.squarepath")
                     }
                     .buttonStyle(.glass)
                     .controlSize(.large)
                     .tint(.accentSecondary)
                     .accessibilityLabel(Text("quick_action.return_deliver"))
+
+                    Button { Task { await submit() } } label: {
+                        actionLabel("quick_action.action.return", systemImage: "tray.and.arrow.down")
+                    }
+                    .buttonStyle(.glassProminent)
+                    .controlSize(.large)
+                    .tint(.accentSecondary)
                 }
                 .disabled(isSubmitting)
             } else {
@@ -217,7 +230,8 @@ struct QuickActionConfirmView: View {
                     title: action.isDeliver ? "quick_action.confirm_deliver" : "quick_action.confirm_return",
                     isLoading: isSubmitting,
                     isDisabled: isSubmitting,
-                    tint: action.isDeliver ? .accent : .success
+                    systemImage: action.isDeliver ? "paperplane.fill" : "tray.and.arrow.down",
+                    tint: action.isDeliver ? .accent : .accentSecondary
                 ) {
                     Task { await submit() }
                 }
@@ -231,7 +245,7 @@ struct QuickActionConfirmView: View {
     private func actionLabel(_ title: LocalizedStringKey, systemImage: String) -> some View {
         HStack(spacing: AppSpacing.xs) {
             Image(systemName: systemImage)
-            Text(title).fontWeight(.semibold).lineLimit(1).minimumScaleFactor(0.8)
+            Text(title).fontWeight(.semibold).lineLimit(1).minimumScaleFactor(0.72)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, AppSpacing.xs)

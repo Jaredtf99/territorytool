@@ -53,6 +53,7 @@ enum TerritoryEndpoint: APIEndpoint {
     case resolveTerritorySelector(value: String)
     case getDashboardSnapshot(weekStart: Date, timeZone: String, attentionDays: Int)
     case getMovementHistory(page: Int, pageSize: Int, search: String?, filter: MovementHistoryFilter, sort: MovementHistorySort)
+    case getTerritoryReport(start: Date, end: Date)
     case login(credentials: LoginCredentials)
     case giveTerritoryUndoable(code: String, personName: String, date: Date?)
     case pickTerritoryUndoable(code: String, date: Date?)
@@ -98,7 +99,8 @@ enum TerritoryEndpoint: APIEndpoint {
         switch self {
         case .getTerritory, .getTerritoryDetail, .getTerritoryStats, .getTerritoryTransactions,
              .getPersons, .getPersonsWithAssignments, .searchQuickAction, .resolveTerritorySelector,
-             .getDashboardSnapshot, .getMovementHistory, .getTerritories, .getTerritoryExplorer:
+             .getDashboardSnapshot, .getMovementHistory, .getTerritories, .getTerritoryExplorer,
+             .getTerritoryReport:
             return .GET
         case .giveTerritory, .giveTerritoryUndoable, .pickTerritory, .pickTerritoryUndoable, .login, .refreshTerritoryImage, .syncTerritoryMap, .syncAllTerritoryMaps,
              .addPerson, .addPersonUndoable, .updateTerritory, .updateTerritoryUndoable, .addTerritory, .addTerritoryUndoable,

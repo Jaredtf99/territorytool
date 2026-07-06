@@ -26,6 +26,12 @@ struct SettingsView: View {
                 }
             }
 
+            Section(header: Text("settings.reports")) {
+                NavigationLink(destination: TerritoryReportView()) {
+                    Label("reports.title", systemImage: "doc.richtext.fill")
+                }
+            }
+
             Section(header: Text("settings.appearance")) {
                 Picker("settings.appearance", selection: $themeManager.currentTheme) {
                     ForEach(AppTheme.allCases) { theme in

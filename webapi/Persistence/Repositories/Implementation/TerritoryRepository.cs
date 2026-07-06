@@ -301,9 +301,21 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
 
         public async Task<TerritoryStatistics> GetTerritoryStatistics(int territoryId)
         {
+            var territory = await _context.Territory
+                .AsNoTracking()
+                .Where(t => t.Id == territoryId)
+                .Select(t => new { t.Id, t.PersonId })
+                .FirstOrDefaultAsync();
+
+            if (territory == null)
+                throw new KeyNotFoundException();
+
+            var now = DateTime.UtcNow;
+
             var territoryUsages = await _context.Territory
                 .Select(t => new { t.Id, Count = t.Transactions.Count })
                 .OrderByDescending(t => t.Count)
+                .ThenBy(t => t.Id)
                 .ToListAsync();
 
             var currentTerritoryRank = territoryUsages
@@ -311,142 +323,153 @@ namespace TerritoryTool.ServerSide.Persistence.Repositories.Implementation
                 .FirstOrDefault(t => t.Id == territoryId);
 
             var totalTerritories = await _context.Territory.CountAsync();
+            var territoryIds = await _context.Territory
+                .Select(t => t.Id)
+                .ToListAsync();
 
             var stats = new TerritoryStatistics
             {
                 TotalTerritories = totalTerritories
             };
 
-            var globalStats = await _context.Territory
-                .Where(t => t.Transactions.Any())
-                .Select(t => new
+            var allHistories = await _context.Transaction
+                .OrderBy(tr => tr.GivenDateUtc)
+                .ThenBy(tr => tr.Id)
+                .Select(tr => new TerritoryStatisticsTransaction
                 {
-                    FirstGivenDate = t.Transactions.Min(tr => tr.GivenDateUtc),
-                    Transactions = t.Transactions
-                        .Select(tr => new { 
-                            tr.GivenDateUtc, 
-                            tr.PickedDateUtc,
-                            tr.PersonId
-                        })
-                        .ToList()
+                    Id = tr.Id,
+                    TerritoryId = tr.TerritoryId,
+                    GivenDateUtc = tr.GivenDateUtc,
+                    PickedDateUtc = tr.PickedDateUtc,
+                    PersonId = tr.PersonId
                 })
                 .ToListAsync();
+
+            var historiesByTerritory = allHistories
+                .GroupBy(h => h.TerritoryId)
+                .ToDictionary(g => g.Key, g => g.OrderBy(h => h.GivenDateUtc).ThenBy(h => h.Id).ToList());
+
+            var globalStats = territoryIds
+                .Select(id => CalculateTerritoryStatistics(
+                    historiesByTerritory.TryGetValue(id, out var territoryHistories)
+                        ? territoryHistories
+                        : Enumerable.Empty<TerritoryStatisticsTransaction>(),
+                    now,
+                    isCurrentlyAssigned: false))
+                .ToList();
 
             if (globalStats.Any())
             {
                 var globalAssignedPercentages = globalStats
-                    .Where(t => t.FirstGivenDate != null)
-                    .Select(t =>
-                    {
-                        var territoryDays = (DateTime.UtcNow - t.FirstGivenDate).TotalDays; // Ensure Value is used for Nullable DateTime
-                        if (territoryDays == 0) return 0; // Avoid division by zero
-                        var territoryAssignedDays = t.Transactions
-                            .Sum(tr => ((tr.PickedDateUtc ?? DateTime.UtcNow) - tr.GivenDateUtc).TotalDays);
-                        return (territoryAssignedDays / territoryDays) * 100;
-                    });
+                    .Select(t => t.AssignedTimePercentage);
                 if (globalAssignedPercentages.Any()) stats.GlobalAverageAssignedTimePercentage = globalAssignedPercentages.Average();
 
-
                 var globalReassignmentPeriods = globalStats
-                    .SelectMany(t => t.Transactions
-                        .Select((tr, i) => new { Transaction = tr, Index = i }) // Keep track of index for next transaction
-                        .Where(x => x.Transaction.PickedDateUtc.HasValue)
-                        .Select(x => 
-                            x.Index < t.Transactions.Count - 1 
-                            ? (t.Transactions[x.Index + 1].GivenDateUtc - x.Transaction.PickedDateUtc!.Value).TotalDays
-                            : (DateTime.UtcNow - x.Transaction.PickedDateUtc!.Value).TotalDays
-                        ));
-                 if (globalReassignmentPeriods.Any()) stats.GlobalAverageReassignmentTime = globalReassignmentPeriods.Average();
-
+                    .Select(t => t.AverageReassignmentTime);
+                if (globalReassignmentPeriods.Any()) stats.GlobalAverageReassignmentTime = globalReassignmentPeriods.Average();
 
                 var globalHoldingPeriods = globalStats
-                    .SelectMany(t => t.Transactions
-                        .Where(tr => tr.PickedDateUtc.HasValue)
-                        .Select(tr => (tr.PickedDateUtc!.Value - tr.GivenDateUtc).TotalDays));
+                    .Select(t => t.AverageHoldingTime);
                 if (globalHoldingPeriods.Any()) stats.GlobalAverageHoldingTime = globalHoldingPeriods.Average();
 
                 var globalUniqueUsers = globalStats
-                    .Select(t => t.Transactions
-                        .Select(tr => tr.PersonId)
-                        .Distinct()
-                        .Count());
+                    .Select(t => t.UniqueUsersCount);
                 if (globalUniqueUsers.Any()) stats.GlobalAverageUniqueUsersCount = globalUniqueUsers.Average();
             }
 
-            var histories = await _context.Transaction
+            var histories = allHistories
                 .Where(tr => tr.TerritoryId == territoryId)
                 .OrderBy(tr => tr.GivenDateUtc)
-                .Select(tr => new { tr.GivenDateUtc, tr.PickedDateUtc, tr.PersonId })
-                .ToListAsync();
+                .ThenBy(tr => tr.Id)
+                .ToList();
 
             if (histories.Any())
             {
-                var firstTransaction = histories.First();
-                var totalDays = (DateTime.UtcNow - firstTransaction.GivenDateUtc).TotalDays;
-                if (totalDays > 0) // Avoid division by zero
-                {
-                    var assignedDays = histories.Sum(h => 
-                        ((h.PickedDateUtc ?? DateTime.UtcNow) - h.GivenDateUtc).TotalDays);
-                    stats.AssignedTimePercentage = (assignedDays / totalDays) * 100;
-                }
-
-
-                var reassignmentPeriods = new List<double>();
-                for (int i = 0; i < histories.Count; i++)
-                {
-                    var current = histories[i];
-                    if (current.PickedDateUtc.HasValue)
-                    {
-                        double reassignmentTime;
-                        if (i < histories.Count - 1)
-                        {
-                            var next = histories[i + 1];
-                            reassignmentTime = (next.GivenDateUtc - current.PickedDateUtc.Value).TotalDays;
-                        }
-                        else if (current.PersonId == null) // No longer assigned to anyone
-                        {
-                            reassignmentTime = (DateTime.UtcNow - current.PickedDateUtc.Value).TotalDays;
-                        }
-                        else continue; // Still assigned or last transaction
-
-                        reassignmentPeriods.Add(reassignmentTime);
-                    }
-                }
-                if (reassignmentPeriods.Any()) stats.AverageReassignmentTime = reassignmentPeriods.Average();
-
-
-                var holdingPeriods = histories
-                    .Where(h => h.PickedDateUtc.HasValue)
-                    .Select(h => (h.PickedDateUtc!.Value - h.GivenDateUtc).TotalDays);
-                if (holdingPeriods.Any()) stats.AverageHoldingTime = holdingPeriods.Average();
-
-                var lastTransaction = histories.LastOrDefault();
-                if (lastTransaction != null && lastTransaction.PersonId == null && lastTransaction.PickedDateUtc.HasValue) // Check if currently unassigned
-                {
-                     stats.CurrentUnassignedTime = (DateTime.UtcNow - lastTransaction.PickedDateUtc.Value).TotalDays;
-                } else if (lastTransaction != null && lastTransaction.PersonId != null && !lastTransaction.PickedDateUtc.HasValue) { // Currently assigned
-                    stats.CurrentUnassignedTime = 0; 
-                } else if (!histories.Any()) { // Never assigned
-                    // This case might need specific handling if totalDays from first transaction is not applicable
-                }
-
-
-                stats.UniqueUsersCount = histories
-                    .Select(h => h.PersonId)
-                    .Distinct()
-                    .Count();
+                var territoryStats = CalculateTerritoryStatistics(histories, now, territory.PersonId != null);
+                stats.AssignedTimePercentage = territoryStats.AssignedTimePercentage;
+                stats.AverageReassignmentTime = territoryStats.AverageReassignmentTime;
+                stats.AverageHoldingTime = territoryStats.AverageHoldingTime;
+                stats.CurrentUnassignedTime = territoryStats.CurrentUnassignedTime;
+                stats.UniqueUsersCount = territoryStats.UniqueUsersCount;
             }
 
             stats.UsageRank = currentTerritoryRank?.Rank ?? totalTerritories;
             if (totalTerritories > 0) // Avoid division by zero if there are no territories
             {
-                stats.IsHighUsage = stats.UsageRank <= (totalTerritories * 0.25);
-                stats.IsLowUsage = stats.UsageRank > (totalTerritories * 0.75);
+                stats.IsHighUsage = stats.UsageRank <= Math.Max(1, Math.Ceiling(totalTerritories * 0.25));
+                stats.IsLowUsage = stats.UsageRank > Math.Ceiling(totalTerritories * 0.75);
             } else {
                 stats.IsHighUsage = false;
                 stats.IsLowUsage = false;
             }
-            
+
+            return stats;
+        }
+
+        private sealed class TerritoryStatisticsTransaction
+        {
+            public int Id { get; set; }
+            public int TerritoryId { get; set; }
+            public DateTime GivenDateUtc { get; set; }
+            public DateTime? PickedDateUtc { get; set; }
+            public int PersonId { get; set; }
+        }
+
+        private static TerritoryStatistics CalculateTerritoryStatistics(
+            IEnumerable<TerritoryStatisticsTransaction> rawHistories,
+            DateTime now,
+            bool isCurrentlyAssigned)
+        {
+            var histories = rawHistories
+                .OrderBy(h => h.GivenDateUtc)
+                .ThenBy(h => h.Id)
+                .ToList();
+
+            var stats = new TerritoryStatistics();
+
+            if (!histories.Any())
+                return stats;
+
+            var firstGivenDate = histories.First().GivenDateUtc;
+            var totalDays = Math.Max((now - firstGivenDate).TotalDays, 0);
+            if (totalDays > 0)
+            {
+                var assignedDays = histories.Sum(h =>
+                    Math.Max(((h.PickedDateUtc ?? now) - h.GivenDateUtc).TotalDays, 0));
+                stats.AssignedTimePercentage = (assignedDays / totalDays) * 100;
+            }
+
+            var reassignmentPeriods = new List<double>();
+            for (int i = 0; i < histories.Count - 1; i++)
+            {
+                var current = histories[i];
+                var next = histories[i + 1];
+
+                if (current.PickedDateUtc.HasValue)
+                    reassignmentPeriods.Add(Math.Max((next.GivenDateUtc - current.PickedDateUtc.Value).TotalDays, 0));
+            }
+
+            if (reassignmentPeriods.Any())
+                stats.AverageReassignmentTime = reassignmentPeriods.Average();
+
+            var holdingPeriods = histories
+                .Where(h => h.PickedDateUtc.HasValue)
+                .Select(h => Math.Max((h.PickedDateUtc!.Value - h.GivenDateUtc).TotalDays, 0));
+            if (holdingPeriods.Any())
+                stats.AverageHoldingTime = holdingPeriods.Average();
+
+            var lastPickedDate = histories
+                .Where(h => h.PickedDateUtc.HasValue)
+                .Select(h => h.PickedDateUtc!.Value)
+                .DefaultIfEmpty()
+                .Max();
+            if (!isCurrentlyAssigned && lastPickedDate != default)
+                stats.CurrentUnassignedTime = Math.Max((now - lastPickedDate).TotalDays, 0);
+
+            stats.UniqueUsersCount = histories
+                .Select(h => h.PersonId)
+                .Distinct()
+                .Count();
 
             return stats;
         }

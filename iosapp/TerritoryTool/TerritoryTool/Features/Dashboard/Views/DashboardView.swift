@@ -288,15 +288,16 @@ private struct DailyPriorityCard: View {
                 .controlSize(.large)
                 .tint(.accentDeep)
 
-                NavigationLink {
-                    TerritoryReturnView(territory: priority.territory)
+                Button {
+                    HapticManager.shared.selection()
+                    AppRouter.shared.openQuickAction(.territory(priority.territory))
                 } label: {
                     Label("territory.detail.return", systemImage: "tray.and.arrow.down.fill")
                         .font(.appSubheadline().weight(.semibold))
                 }
                 .buttonStyle(.glass)
                 .controlSize(.large)
-                .tint(.accentDeep)
+                .tint(.accentSecondary)
             }
         }
         .padding(AppSpacing.md)

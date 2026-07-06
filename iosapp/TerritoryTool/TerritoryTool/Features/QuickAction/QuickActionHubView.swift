@@ -9,12 +9,24 @@ struct QuickActionHubView: View {
     let onClose: () -> Void
     /// Acción completada: cierra el flujo y lleva al tablero.
     let onComplete: () -> Void
+    private let startsFromResolution: Bool
 
     @StateObject private var vm = QuickActionViewModel(apiService: DIContainer.shared.apiService)
     @Environment(\.scenePhase) private var scenePhase
 
     @State private var resolution: QuickActionResolution?
     @FocusState private var searchFocused: Bool
+
+    init(
+        initialResolution: QuickActionResolution? = nil,
+        onClose: @escaping () -> Void,
+        onComplete: @escaping () -> Void
+    ) {
+        self.onClose = onClose
+        self.onComplete = onComplete
+        self.startsFromResolution = initialResolution != nil
+        _resolution = State(initialValue: initialResolution)
+    }
 
     /// El usuario está buscando: hay texto o el campo tiene el foco.
     private var isSearching: Bool {
@@ -29,80 +41,101 @@ struct QuickActionHubView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: AppSpacing.lg) {
-                    // Mientras se busca, la cámara no aporta nada: se oculta.
-                    if !isSearching {
-                        ScannerCameraCard(
-                            isActive: .constant(cameraActive),
-                            onScan: handleScan,
-                            onManualSearch: { searchFocused = true }
-                        )
-                        .appear(index: 0)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                    }
-
-                    if searchFocused || vm.hasSearch {
-                        searchResults
-                    } else {
-                        suggestions
-                    }
-                }
-                .padding(.horizontal, AppSpacing.md)
-                .padding(.top, AppSpacing.sm)
-                .padding(.bottom, AppSpacing.xl)
-                .animation(.spring(response: 0.4, dampingFraction: 0.88), value: isSearching)
-            }
-            .scrollIndicators(.hidden)
-            .background { LiquidBackgroundView().ignoresSafeArea() }
-            .scrollDismissesKeyboard(.interactively)
-            .safeAreaInset(edge: .bottom) {
-                QuickActionSearchBar(placeholder: "quick_action.search_placeholder", text: $vm.searchTerm, focus: $searchFocused)
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button { onClose() } label: {
-                        Image(systemName: "xmark")
-                            .font(.subheadline.weight(.bold))
-                    }
-                    .accessibilityLabel(Text("common.close"))
-                }
-            }
-            .navigationDestination(item: $resolution) { resolution in
-                switch resolution {
-                case .territory(let territory) where territory.isAssigned:
-                    QuickActionConfirmView(
-                        action: .returnTerritory(territory),
-                        onDone: onComplete,
-                        onDeliverAnother: { name in
-                            // Recogido: continúa entregando otro a la misma persona.
-                            // Reemplaza el destino por el flujo de persona (modo elegir territorio).
-                            let person = Person(id: Int.random(in: 1_000_000...9_999_999), name: name, enabled: true, territoriesInUse: [])
-                            self.resolution = .person(person)
+            if startsFromResolution, let resolution {
+                destination(for: resolution, directEntry: true)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: AppSpacing.lg) {
+                        // Mientras se busca, la cámara no aporta nada: se oculta.
+                        if !isSearching {
+                            ScannerCameraCard(
+                                isActive: .constant(cameraActive),
+                                onScan: handleScan,
+                                onManualSearch: { searchFocused = true }
+                            )
+                            .appear(index: 0)
+                            .transition(.move(edge: .top).combined(with: .opacity))
                         }
-                    )
-                case .territory(let territory):
-                    QuickActionPickPersonView(territory: territory, onDone: onComplete)
-                case .person(let person):
-                    QuickActionPersonView(person: person, onDone: onComplete)
+
+                        if searchFocused || vm.hasSearch {
+                            searchResults
+                        } else {
+                            suggestions
+                        }
+                    }
+                    .padding(.horizontal, AppSpacing.md)
+                    .padding(.top, AppSpacing.sm)
+                    .padding(.bottom, AppSpacing.xl)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.88), value: isSearching)
+                }
+                .scrollIndicators(.hidden)
+                .background { LiquidBackgroundView().ignoresSafeArea() }
+                .scrollDismissesKeyboard(.interactively)
+                .safeAreaInset(edge: .bottom) {
+                    QuickActionSearchBar(placeholder: "quick_action.search_placeholder", text: $vm.searchTerm, focus: $searchFocused)
+                }
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button { onClose() } label: {
+                            Image(systemName: "xmark")
+                                .font(.subheadline.weight(.bold))
+                        }
+                        .accessibilityLabel(Text("common.close"))
+                    }
+                }
+                .navigationDestination(item: $resolution) { resolution in
+                    destination(for: resolution, directEntry: false)
                 }
             }
-            .task { await vm.loadSuggestions() }
-            .onChange(of: searchFocused) { _, focused in
-                Task { await vm.setBrowsing(focused) }
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .territoryDataChanged)) { _ in
-                Task { await vm.loadSuggestions() }
-            }
-            .alert(
-                "common.error",
-                isPresented: Binding(get: { vm.errorMessage != nil }, set: { if !$0 { vm.errorMessage = nil } })
-            ) {
-                Button("common.ok", role: .cancel) {}
-            } message: {
-                Text(vm.errorMessage ?? "")
-            }
+        }
+        .task {
+            guard !startsFromResolution else { return }
+            await vm.loadSuggestions()
+        }
+        .onChange(of: searchFocused) { _, focused in
+            guard !startsFromResolution else { return }
+            Task { await vm.setBrowsing(focused) }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .territoryDataChanged)) { _ in
+            guard !startsFromResolution else { return }
+            Task { await vm.loadSuggestions() }
+        }
+        .alert(
+            "common.error",
+            isPresented: Binding(get: { vm.errorMessage != nil }, set: { if !$0 { vm.errorMessage = nil } })
+        ) {
+            Button("common.ok", role: .cancel) {}
+        } message: {
+            Text(vm.errorMessage ?? "")
+        }
+    }
+
+    @ViewBuilder
+    private func destination(for resolution: QuickActionResolution, directEntry: Bool) -> some View {
+        switch resolution {
+        case .territory(let territory) where territory.isAssigned:
+            QuickActionConfirmView(
+                action: .returnTerritory(territory),
+                onDone: onComplete,
+                onDeliverAnother: { name in
+                    let person = Person(id: Int.random(in: 1_000_000...9_999_999), name: name, enabled: true, territoriesInUse: [])
+                    self.resolution = .person(person)
+                },
+                onClose: directEntry ? onClose : nil
+            )
+        case .territory(let territory):
+            QuickActionPickPersonView(
+                territory: territory,
+                onDone: onComplete,
+                onClose: directEntry ? onClose : nil
+            )
+        case .person(let person):
+            QuickActionPersonView(
+                person: person,
+                onDone: onComplete,
+                onClose: directEntry ? onClose : nil
+            )
         }
     }
 

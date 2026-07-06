@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using TerritoryTool.ServerSide.Persistence.Entities;
 using TerritoryTool.ServerSide.Persistence.Repositories.Implementation;
 using TerritoryTool.ServerSide.Persistence; 
@@ -288,6 +290,74 @@ namespace TerritoryTool.ServerSide.Tests.Persistence.Repositories.Implementation
 
             var resultGiven = repository.SearchTerritories(null, false, true).ToList(); // onlyGiven
             Assert.Equal(territories.Count(t => t.PersonId != null), resultGiven.Count);
+        }
+
+        [Fact]
+        public async Task GetTerritoryStatistics_ReturnsCompleteUsageMetrics()
+        {
+            var now = DateTime.UtcNow;
+            var territories = new List<Territory>
+            {
+                new Territory { Id = 1, Name = "North", Code = "N01", MapUrl = "https://maps.example/north", PersonId = null },
+                new Territory { Id = 2, Name = "South", Code = "S01", MapUrl = "https://maps.example/south", PersonId = 3 },
+                new Territory { Id = 3, Name = "Empty", Code = "E01", MapUrl = "https://maps.example/empty", PersonId = null }
+            };
+
+            var context = GetInMemoryDbContext(territories);
+            context.Transaction.AddRange(
+                new Transaction
+                {
+                    Id = 1,
+                    TerritoryId = 1,
+                    PersonId = 1,
+                    GivenBy = "user",
+                    GivenDateUtc = now.AddDays(-100),
+                    PickedBy = "user",
+                    PickedDateUtc = now.AddDays(-90),
+                    IsAutomaticGivenDate = true,
+                    IsAutomaticPickedDate = true
+                },
+                new Transaction
+                {
+                    Id = 2,
+                    TerritoryId = 1,
+                    PersonId = 2,
+                    GivenBy = "user",
+                    GivenDateUtc = now.AddDays(-70),
+                    PickedBy = "user",
+                    PickedDateUtc = now.AddDays(-50),
+                    IsAutomaticGivenDate = true,
+                    IsAutomaticPickedDate = true
+                },
+                new Transaction
+                {
+                    Id = 3,
+                    TerritoryId = 2,
+                    PersonId = 3,
+                    GivenBy = "user",
+                    GivenDateUtc = now.AddDays(-10),
+                    IsAutomaticGivenDate = true
+                }
+            );
+            context.SaveChanges();
+
+            var repository = new TerritoryRepository(context, NullLogger<TerritoryRepository>.Instance);
+
+            var stats = await repository.GetTerritoryStatistics(1);
+
+            Assert.Equal(3, stats.TotalTerritories);
+            Assert.Equal(1, stats.UsageRank);
+            Assert.True(stats.IsHighUsage);
+            Assert.False(stats.IsLowUsage);
+            Assert.InRange(stats.AssignedTimePercentage, 29.9, 30.1);
+            Assert.InRange(stats.GlobalAverageAssignedTimePercentage, 43.2, 43.5);
+            Assert.InRange(stats.AverageReassignmentTime, 19.9, 20.1);
+            Assert.InRange(stats.GlobalAverageReassignmentTime, 6.6, 6.8);
+            Assert.InRange(stats.AverageHoldingTime, 14.9, 15.1);
+            Assert.InRange(stats.GlobalAverageHoldingTime, 4.9, 5.1);
+            Assert.InRange(stats.CurrentUnassignedTime, 49.9, 50.1);
+            Assert.Equal(2, stats.UniqueUsersCount);
+            Assert.InRange(stats.GlobalAverageUniqueUsersCount, 0.9, 1.1);
         }
     }
 }

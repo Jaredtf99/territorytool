@@ -94,7 +94,7 @@
 "territory.detail.map_unavailable" = "Mapa no disponible";
 "territory.detail.map" = "Mapa del territorio";
 "territory.detail.assigned_to" = "Asignado a";
-"territory.detail.assign" = "Asignar Territorio";
+"territory.detail.assign" = "Entregar territorio";
 "territory.detail.return" = "Devolver Territorio";
 "territory.detail.edit" = "Editar";
 "territory.detail.refresh_image" = "Actualizar Imagen";
@@ -125,8 +125,53 @@
 "territory.stats.avg_duration_desc" = "Promedio de días que se mantiene cada asignación del territorio.";
 "territory.stats.unique_users_desc" = "Número de personas diferentes que han usado este territorio.";
 
+// Detalle de territorio (rediseño)
+"territory.detail.menu.refresh_map" = "Actualizar mapa";
+"territory.detail.menu.accessibility" = "Opciones del territorio";
+"territory.detail.cycle.title" = "Ciclo actual";
+"territory.detail.cycle.started_label" = "En uso desde hace";
+"territory.detail.cycle.since_date" = "desde el %@";
+"territory.detail.cycle.responsible" = "Responsable actual";
+"territory.detail.cycle.review_title" = "Conviene revisar esta asignación";
+"territory.detail.cycle.review_avg" = "La media de la congregación es %d días";
+"territory.detail.available_label" = "Disponible desde hace";
+"territory.detail.available_never" = "Aún sin asignaciones";
+"territory.detail.trajectory.title" = "Trayectoria";
+"territory.detail.trajectory.empty" = "Aún no hay ciclos de asignación";
+"territory.detail.trajectory.ongoing" = "En uso";
+"territory.detail.trajectory.slower" = "Este territorio tarda %d días más que la media en volver a estar disponible";
+"territory.detail.trajectory.faster" = "Este territorio vuelve a estar disponible %d días antes que la media";
+"territory.detail.trajectory.on_track" = "Este territorio rota en línea con la media de la congregación";
+"territory.detail.stats.title" = "Estadísticas";
+"territory.detail.stats.rank_position" = "Nº %d";
+"territory.detail.stats.rank_of" = "de %d territorios";
+"territory.detail.stats.rank_high" = "Entre los más usados de la congregación";
+"territory.detail.stats.rank_low" = "Entre los menos usados de la congregación";
+"territory.detail.stats.rank_mid" = "Uso equilibrado en la congregación";
+"territory.detail.stats.avg_short" = "media %@";
+"territory.detail.stats.rotation" = "Uso";
+"territory.detail.stats.rotation_high" = "uso alto";
+"territory.detail.stats.rotation_low" = "uso bajo";
+"territory.detail.stats.rotation_balanced" = "equilibrado";
+"territory.detail.stats.more_rotated" = "más usado";
+"territory.detail.stats.less_rotated" = "menos usado";
+"territory.detail.stats.usage" = "Uso";
+"territory.detail.stats.activity" = "Actividad";
+"territory.detail.stats.avg_value" = "media %@";
+"territory.detail.stats.average_marker" = "Media";
+"territory.detail.stats.on_average" = "en media";
+"territory.detail.stats.cycle_rhythm" = "Ritmo de ciclo";
+"territory.detail.stats.cycle_rhythm_subtitle" = "Asignación y espera";
+"territory.detail.stats.cycle_rhythm_desc" = "Compara cuánto tiempo se mantiene el territorio asignado y cuánto espera entre asignaciones frente a la media de la congregación.";
+"territory.detail.stats.assigned_segment" = "Asignado";
+"territory.detail.stats.wait_segment" = "Espera";
+"territory.detail.stats.reach" = "Alcance";
+"territory.detail.stats.users_count" = "%d usuarios";
+"territory.detail.stats.users_label" = "usuarios";
+"territory.detail.stats.users_average" = "%.1f usuarios";
+
 // Assignment
-"assignment.title" = "Asignar";
+"assignment.title" = "Entregar";
 "assignment.section.territory" = "Seleccionar Territorio";
 "assignment.section.publisher" = "Seleccionar Publicador";
 "assignment.search_territory" = "Buscar territorio...";
@@ -164,6 +209,25 @@
 "brothers.add_success" = "Hermano añadido correctamente";
 "brothers.update_success" = "Hermano actualizado correctamente";
 "brothers.delete_success" = "Hermano eliminado correctamente";
+
+// Brothers — explorador rediseñado
+"brothers.filter.all" = "Todos";
+"brothers.filter.available" = "Disponibles";
+"brothers.filter.with_territories" = "Con territorios";
+"brothers.filter.inactive" = "Inactivos";
+"brothers.give" = "Entregar";
+"brothers.give_to %@" = "Entregar un territorio a %@";
+"brothers.days_format" = "%d d";
+"brothers.summary.have" = "%d hermanos tienen";
+"brothers.summary.territories" = "%d territorios";
+"brothers.summary.accessibility" = "%d hermanos tienen %d territorios";
+"brothers.territory.open_hint" = "Abre el detalle del territorio";
+"brothers.sort.title" = "Ordenar";
+"brothers.sort.name" = "Nombre";
+"brothers.sort.territories" = "Nº de territorios";
+"brothers.sort.days" = "Días con territorio";
+"brothers.empty_filtered" = "Ningún hermano coincide con la búsqueda";
+"brothers.clear_filters" = "Limpiar filtros";
 
 // Action Logs
 "actionlogs.title" = "Logs de Acciones";
@@ -355,7 +419,7 @@
 "quick_action.in_use_since" = "En uso desde";
 "quick_action.free_since_label" = "Sin coger desde";
 "quick_action.return_deliver" = "Devolver y entregar otro";
-"quick_action.return_deliver_short" = "Entregar otro";
+"quick_action.return_deliver_short" = "Devolver + entregar";
 "quick_action.return_deliver_hint" = "Cierra esta entrega y empieza otra";
 
 // Errores claros (códigos de backend)
@@ -396,7 +460,6 @@
 "territories.summary" = "%d territorios · %d requieren atención";
 "territories.summary_short" = "%d territorios";
 "territories.sort.title" = "Ordenar territorios";
-"territories.sort.relevance" = "Relevancia";
 "territories.sort.nearest" = "Más cercanos";
 "territories.section.results" = "Resultados";
 "territories.section.attention" = "Requieren atención";
@@ -441,3 +504,34 @@
 "undo.success" = "Acción deshecha";
 "undo.expired" = "Ya no se puede deshacer";
 "undo.failed" = "No se pudo deshacer";
+
+/* Informes */
+"settings.reports" = "Informes";
+"reports.title" = "Informe de territorios";
+"reports.date_range" = "Rango de fechas";
+"reports.description" = "Genera un PDF con las entregas y recogidas de territorios entre las fechas elegidas, agrupadas por territorio y con una vista del uso de cada uno.";
+"reports.start_date" = "Desde";
+"reports.end_date" = "Hasta";
+"reports.generate" = "Generar PDF";
+"reports.generating" = "Generando informe…";
+"reports.share" = "Compartir";
+"reports.error.invalid_range" = "La fecha inicial debe ser anterior a la final.";
+"reports.error.empty" = "No hay movimientos en el rango seleccionado.";
+"reports.pdf.generated_on" = "Generado el %@";
+"reports.pdf.movements" = "Movimientos";
+"reports.pdf.territories" = "Territorios";
+"reports.pdf.given" = "Entregas";
+"reports.pdf.picked" = "Recogidas";
+"reports.pdf.persons" = "Hermanos";
+"reports.pdf.person" = "Hermano";
+"reports.pdf.given_date" = "Entrega";
+"reports.pdf.picked_date" = "Devolución";
+"reports.pdf.days" = "Días";
+"reports.pdf.usage" = "Uso en el período";
+"reports.pdf.legend.completed" = "Asignación completada";
+"reports.pdf.legend.in_progress" = "Aún entregado";
+"reports.pdf.in_progress" = "En curso";
+"reports.pdf.continued" = "(continúa)";
+"reports.pdf.assignments_count" = "%d asignaciones";
+"reports.pdf.page" = "Página %d";
+"reports.pdf.assignments_one" = "1 asignación";

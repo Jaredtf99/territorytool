@@ -96,7 +96,7 @@ final class NetworkManager: APIService {
                 "attention_days": attentionDays,
                 "take": 1000
             ])
-            return mapExplorerTerritories(rows)
+            return try await mapExplorerTerritories(rows)
 
         case .searchQuickAction(let term):
             // Buscador unificado: una sola RPC devuelve territorios y personas mezclados,
@@ -156,6 +156,28 @@ final class NetworkManager: APIService {
                 "p_timezone": timeZone,
                 "p_attention_days": attentionDays
             ])
+
+        case .getTerritoryReport(let start, let end):
+            // Misma consulta que la edge function `generate-territory-report`:
+            // movimientos cuya entrega o recogida cae dentro del rango. RLS
+            // limita las filas a la congregación activa del JWT.
+            let startStr = isoFormatter.string(from: start)
+            let endStr = isoFormatter.string(from: end)
+            let rows = try await restRows("/rest/v1/territory_details", queryItems: [
+                URLQueryItem(name: "select", value: "territory_id,name,code,person_name,given_at,picked_at"),
+                URLQueryItem(name: "or", value: "(and(given_at.gte.\(startStr),given_at.lte.\(endStr)),and(picked_at.gte.\(startStr),picked_at.lte.\(endStr)))"),
+                URLQueryItem(name: "order", value: "code.asc,given_at.asc")
+            ])
+            return rows.map { row in
+                [
+                    "territoryId": row["territory_id"] ?? 0,
+                    "code": row["code"] ?? "",
+                    "territoryName": row["name"] ?? "",
+                    "personName": row["person_name"] ?? NSNull(),
+                    "givenAt": row["given_at"] ?? NSNull(),
+                    "pickedAt": row["picked_at"] ?? NSNull()
+                ]
+            }
 
         case .getMovementHistory(let page, let pageSize, let search, let filter, let sort):
             return try await rpcObject("get_movement_history", body: [
@@ -572,20 +594,23 @@ final class NetworkManager: APIService {
         return territories
     }
 
-    private func mapExplorerTerritories(_ rows: [[String: Any]]) -> [[String: Any]] {
-        rows.map { row in
-            [
+    private func mapExplorerTerritories(_ rows: [[String: Any]]) async throws -> [[String: Any]] {
+        var territories: [[String: Any]] = []
+        for row in rows {
+            let imagePath = row["image_path"] as? String
+            territories.append([
                 "id": row["id"] ?? 0,
                 "code": row["code"] ?? "",
                 "name": row["name"] ?? "",
                 "mapUrl": row["map_url"] ?? "",
-                "imgUrl": NSNull(),
+                "imgUrl": try await signedImageURL(for: imagePath) ?? NSNull(),
                 "personName": row["person_name"] ?? NSNull(),
                 "givenDateUtc": row["given_at"] ?? NSNull(),
                 "lastPickedDateUtc": row["last_picked_at"] ?? NSNull(),
                 "mapGeometry": row["map_geometry"] ?? NSNull()
-            ]
+            ])
         }
+        return territories
     }
 
     private func mapTransactions(_ rows: [[String: Any]]) -> [[String: Any]] {

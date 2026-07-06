@@ -74,6 +74,7 @@ final class QuickActionPickerViewModel: ObservableObject {
 struct QuickActionPickPersonView: View {
     let territory: Territory
     let onDone: () -> Void
+    var onClose: (() -> Void)? = nil
 
     @StateObject private var vm = QuickActionPickerViewModel(apiService: DIContainer.shared.apiService, mode: .persons)
     @FocusState private var focused: Bool
@@ -101,6 +102,18 @@ struct QuickActionPickPersonView: View {
         }
         .navigationTitle("assignment.title")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(onClose != nil)
+        .toolbar {
+            if let onClose {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { onClose() } label: {
+                        Image(systemName: "xmark")
+                            .font(.subheadline.weight(.bold))
+                    }
+                    .accessibilityLabel(Text("common.close"))
+                }
+            }
+        }
         .navigationDestination(item: $action) { QuickActionConfirmView(action: $0, onDone: onDone) }
         .task { await vm.loadInitial() }
     }
@@ -132,6 +145,7 @@ struct QuickActionPickPersonView: View {
 struct QuickActionPersonView: View {
     let person: Person
     let onDone: () -> Void
+    var onClose: (() -> Void)? = nil
 
     private enum Mode { case decision, pickTerritory }
     @State private var mode: Mode
@@ -139,9 +153,10 @@ struct QuickActionPersonView: View {
     @FocusState private var focused: Bool
     @State private var action: QuickActionAction?
 
-    init(person: Person, onDone: @escaping () -> Void) {
+    init(person: Person, onDone: @escaping () -> Void, onClose: (() -> Void)? = nil) {
         self.person = person
         self.onDone = onDone
+        self.onClose = onClose
         _mode = State(initialValue: person.hasActiveTerritory ? .decision : .pickTerritory)
     }
 
@@ -169,6 +184,18 @@ struct QuickActionPersonView: View {
         }
         .navigationTitle(Text(person.name))
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(onClose != nil)
+        .toolbar {
+            if let onClose {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { onClose() } label: {
+                        Image(systemName: "xmark")
+                            .font(.subheadline.weight(.bold))
+                    }
+                    .accessibilityLabel(Text("common.close"))
+                }
+            }
+        }
         .navigationDestination(item: $action) { act in
             QuickActionConfirmView(action: act, onDone: onDone, onDeliverAnother: { _ in
                 // Recogido: continúa entregando otro a esta misma persona.
@@ -207,10 +234,10 @@ struct QuickActionPersonView: View {
             Task { await vm.loadInitial() }
         } label: {
             ActionPromptCard(
-                icon: "person.badge.plus",
+                icon: "paperplane.fill",
                 title: "quick_action.deliver_other_territory",
                 subtitle: "quick_action.deliver_other_hint",
-                tint: .accentDeep
+                tint: .accent
             )
         }
         .buttonStyle(ScaleButtonStyle())

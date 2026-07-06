@@ -91,6 +91,11 @@ extension Person {
     var activeTerritoryCount: Int { territoriesInUse?.count ?? 0 }
 
     var hasActiveTerritory: Bool { activeTerritoryCount > 0 }
+
+    /// Días de la asignación activa más antigua (nil si no tiene territorios).
+    var maxDaysHeld: Int? {
+        territoriesInUse?.map { $0.daysHeld() }.max()
+    }
 }
 
 extension TerritoryInUse {

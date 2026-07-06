@@ -48,17 +48,19 @@ extension View {
     }
 
     /// Solo el fondo de papel (sin padding): superficie + borde fino + sombra cálida.
+    /// La sombra va en la forma del fondo, no tras `overlay`: aplicada al final se
+    /// propagaría a cada subvista (un blur por texto/icono) y hunde los FPS en listas.
     func paperCard(cornerRadius: CGFloat = AppRadius.lg, fill: Color = .surface) -> some View {
         self
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(fill)
+                    .shadow(color: Color.glassShadow, radius: 14, x: 0, y: 8)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .strokeBorder(Color.hairline, lineWidth: 1)
             )
-            .shadow(color: Color.glassShadow, radius: 14, x: 0, y: 8)
     }
 }
 
@@ -88,14 +90,16 @@ struct PrimaryActionButtonStyle: ButtonStyle {
         configuration.label
             .foregroundStyle(.white)
             .background(
+                // Sombra en la cápsula (no tras el overlay): evita que se propague
+                // al texto/icono y duplique blurs en cada fila de una lista.
                 Capsule(style: .continuous)
                     .fill(Color.accent.opacity(isEnabled ? 1 : 0.4))
+                    .shadow(color: Color.accent.opacity(isEnabled ? 0.30 : 0), radius: 10, x: 0, y: 5)
             )
             .overlay(
                 Capsule(style: .continuous)
                     .fill(.white.opacity(configuration.isPressed ? 0.12 : 0))
             )
-            .shadow(color: Color.accent.opacity(isEnabled ? 0.30 : 0), radius: 10, x: 0, y: 5)
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.6),
                        value: configuration.isPressed)

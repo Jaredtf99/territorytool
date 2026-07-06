@@ -58,5 +58,9 @@ class DIContainer {
     func makeActionLogsViewModel() -> ActionLogsViewModel {
         return ActionLogsViewModel(apiService: apiService)
     }
+
+    func makeTerritoryReportViewModel() -> TerritoryReportViewModel {
+        return TerritoryReportViewModel(apiService: apiService)
+    }
 }
 

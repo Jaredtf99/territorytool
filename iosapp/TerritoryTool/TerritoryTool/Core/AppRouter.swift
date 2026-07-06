@@ -38,6 +38,7 @@ final class AppRouter: ObservableObject {
     @Published var settingsPath = NavigationPath()
     @Published var territoriesLaunchContext: TerritoriesLaunchContext?
     @Published var isQuickActionPresented = false
+    @Published var quickActionInitialResolution: QuickActionResolution?
 
     private init() {}
 
@@ -56,6 +57,16 @@ final class AppRouter: ObservableObject {
         territoriesLaunchContext = context
         territoriesPath = NavigationPath()
         selectedTab = .territories
+    }
+
+    func openQuickAction(_ resolution: QuickActionResolution? = nil) {
+        quickActionInitialResolution = resolution
+        isQuickActionPresented = true
+    }
+
+    func closeQuickAction() {
+        quickActionInitialResolution = nil
+        isQuickActionPresented = false
     }
 
     func consumeTerritoriesLaunchContext() -> TerritoriesLaunchContext? {

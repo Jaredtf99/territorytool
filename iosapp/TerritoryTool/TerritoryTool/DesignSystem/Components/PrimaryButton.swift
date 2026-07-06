@@ -5,6 +5,7 @@ struct PrimaryButton: View {
     let title: LocalizedStringKey
     var isLoading: Bool = false
     var isDisabled: Bool = false
+    var systemImage: String?
     /// Tinte del CTA. Verde por defecto; usar `.accentTertiary` para acciones de
     /// devolución, `.accentDeep` para entregas, etc.
     var tint: Color = .accent
@@ -17,6 +18,9 @@ struct PrimaryButton: View {
                     ProgressView()
                         .tint(.white)
                 } else {
+                    if let systemImage {
+                        Image(systemName: systemImage)
+                    }
                     Text(title)
                         .fontWeight(.semibold)
                 }

@@ -1,145 +1,97 @@
 import SwiftUI
 
+/// Detalle de territorio, tema "Cartográfico cálido": cabecera con la silueta
+/// del territorio, tarjeta del ciclo actual con dial, acciones en cristal,
+/// trayectoria de ciclos y estadísticas comparadas con la congregación.
 struct TerritoryDetailView: View {
     @StateObject private var viewModel: TerritoryDetailViewModel
     @ObservedObject private var permissionManager = PermissionManager.shared
     @Environment(\.dismiss) private var dismiss
+
     @State private var showDeleteAlert = false
     @State private var showEditSheet = false
-    @State private var editingTransaction: Transaction? // For history edit
+    @State private var editingTransaction: Transaction?
     @State private var transactionToDelete: Transaction?
     @State private var showDeleteTransactionAlert = false
-    
-    // Animation states
-    @State private var isHeaderVisible = false
-    @State private var areStatsVisible = false
-    @State private var isTimelineVisible = false
-    
+
     private let territoryName: String
-    
-    init(territoryId: Int, territoryName: String) {
+
+    init(territoryId: Int, territoryName: String, apiService: APIService = NetworkManager.shared) {
         self.territoryName = territoryName
-        _viewModel = StateObject(wrappedValue: TerritoryDetailViewModel(territoryId: territoryId, apiService: NetworkManager.shared))
+        _viewModel = StateObject(wrappedValue: TerritoryDetailViewModel(territoryId: territoryId, apiService: apiService))
     }
-    
+
     var body: some View {
+        // GeometryReader externo para conocer el inset superior (status bar +
+        // toolbar) y poder extender el mapa de la cabecera por detrás de ambos.
+        GeometryReader { proxy in
+            content(topInset: proxy.safeAreaInsets.top)
+        }
+    }
+
+    private func content(topInset: CGFloat) -> some View {
         ZStack {
             LiquidBackgroundView()
                 .ignoresSafeArea()
-            
-            if viewModel.isLoading {
-                ProgressView()
-                    .scaleEffect(1.5)
-                    .tint(.accent)
-            } else if let errorMessage = viewModel.errorMessage {
-                VStack(spacing: 16) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 50))
-                        .foregroundColor(.warning)
-                    Text("territory.detail.error")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    Text(errorMessage)
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.secondary)
-                    Button("territory.detail.retry") {
-                        Task { await viewModel.loadData() }
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
-                .padding()
+
+            if viewModel.isLoading && viewModel.territory == nil {
+                loadingState
+            } else if let errorMessage = viewModel.errorMessage, viewModel.territory == nil {
+                errorState(errorMessage)
             } else if let territory = viewModel.territory {
                 ScrollView {
-                    VStack(spacing: 24) {
-                        // Header Section
-                        headerSection(territory: territory)
-                            .opacity(isHeaderVisible ? 1 : 0)
-                            .offset(y: isHeaderVisible ? 0 : 20)
-                        
-                        // Actions
-                        actionButtons(territory: territory)
-                            .opacity(isHeaderVisible ? 1 : 0)
-                            .offset(y: isHeaderVisible ? 0 : 20)
-                        
-                        // Timeline
-                        timelineSection(transactions: viewModel.transactions)
-                            .opacity(isTimelineVisible ? 1 : 0)
-                            .offset(y: isTimelineVisible ? 0 : 40)
-                        
-                        // Stats Grid
-                        if let stats = viewModel.stats {
-                            statsGrid(stats: stats)
-                                .opacity(areStatsVisible ? 1 : 0)
-                                .offset(y: areStatsVisible ? 0 : 30)
+                    VStack(alignment: .leading, spacing: AppSpacing.lg) {
+                        // La cabecera va sin margen lateral: el mapa sangra
+                        // hasta los bordes de la pantalla y por detrás de la
+                        // toolbar.
+                        heroHeader(territory: territory, topInset: topInset)
+                            .appear(index: 0)
+
+                        VStack(alignment: .leading, spacing: AppSpacing.lg) {
+                            TrajectorySection(
+                                transactions: viewModel.transactions,
+                                stats: viewModel.stats,
+                                canManage: permissionManager.canManageTerritories,
+                                onEdit: { editingTransaction = $0 },
+                                onDelete: {
+                                    transactionToDelete = $0
+                                    showDeleteTransactionAlert = true
+                                }
+                            )
+                            .appear(index: 1)
+
+                            if let stats = viewModel.stats {
+                                TerritoryStatsSection(stats: stats, transactions: viewModel.transactions)
+                                    .appear(index: 2)
+                            }
                         }
+                        .padding(.horizontal, AppSpacing.md)
                     }
-                    .padding()
-                    .padding(.bottom, 80) // Space for bottom safe area
+                    .padding(.bottom, AppSpacing.xl)
                 }
+                .scrollIndicators(.hidden)
+                .coordinateSpace(name: Self.scrollSpace)
                 .refreshable {
                     await viewModel.loadData()
                 }
+                .safeAreaInset(edge: .bottom) {
+                    bottomAction(territory: territory)
+                }
             }
         }
-        .navigationTitle(viewModel.territory?.name ?? territoryName)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar)
+        .toolbarVisibility(.hidden, for: .tabBar)
         .toolbar {
-            // Only show management buttons (refresh, edit, delete) for ADMIN+ roles
             if permissionManager.canManageTerritories {
-                ToolbarItem() {
-                    Button {
-                        HapticManager.shared.selection()
-                        Task { 
-                            if await viewModel.refreshImage() {
-                                HapticManager.shared.notification(type: .success)
-                                ToastManager.shared.show(NSLocalizedString("territory.detail.refresh_image_success", comment: ""), style: .success)
-                            } else {
-                                HapticManager.shared.notification(type: .error)
-                            }
-                        }
-                    } label: {
-                        if viewModel.isRefreshingImage {
-                            ProgressView()
-                        } else {
-                            Image(systemName: "arrow.clockwise")
-                        }
-                    }
-                    .disabled(viewModel.isRefreshingImage)
-                }
-                
-                ToolbarSpacer(.flexible)
-                
-                ToolbarItem() {
-                    Button {
-                        showEditSheet = true
-                    } label: {
-                        Image(systemName: "pencil")
-                    }
-                }
-                
-                ToolbarSpacer(.flexible)
-                
-                ToolbarItem(placement: .destructiveAction) {
-                    Button(role: .destructive) {
-                        showDeleteAlert = true
-                    } label: {
-                        Image(systemName: "trash")
-                            .foregroundColor(.danger)
-                    }
+                ToolbarItem(placement: .topBarTrailing) {
+                    adminMenu
                 }
             }
         }
         .task {
             await viewModel.loadData()
-            withAnimation(.easeOut(duration: 0.6)) {
-                isHeaderVisible = true
-            }
-            withAnimation(.easeOut(duration: 0.6).delay(0.2)) {
-                areStatsVisible = true
-            }
-            withAnimation(.easeOut(duration: 0.6).delay(0.4)) {
-                isTimelineVisible = true
-            }
         }
         .alert("territory.detail.delete_confirmation_title", isPresented: $showDeleteAlert) {
             Button("cancel", role: .cancel) { }
@@ -206,191 +158,388 @@ struct TerritoryDetailView: View {
             )
         }
     }
-    
-    private func headerSection(territory: TerritoryDetail) -> some View {
-        VStack(spacing: 20) {
-            // Interactive territory map, with the legacy image as a fallback
-            Color.clear
-                .frame(height: 250)
-                .overlay(
-                    territoryMap(territory: territory)
-                )
-                .clipped()
-                .cornerRadius(12)
-            .overlay(
-                TerritoryCodeBadge(code: territory.code)
-                    .padding()
-                , alignment: .topLeading
-            )
-            .overlay(
-                Group {
-                    if let person = territory.personName {
-                        PersonBadge(personName: person)
-                    } else {
-                        StatusBadge(isAssigned: false)
-                    }
+
+    // MARK: Estados de carga y error
+
+    /// Esqueleto con la misma silueta que la pantalla real: cabecera hero
+    /// (código, nombre, días y responsable), anillos de trayectoria, banner
+    /// comparativo y ranking.
+    private var loadingState: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.lg) {
+            VStack(alignment: .leading, spacing: AppSpacing.xs) {
+                RoundedRectangle(cornerRadius: AppRadius.sm)
+                    .fill(Color.surface)
+                    .frame(width: 150, height: 44)
+                RoundedRectangle(cornerRadius: AppRadius.sm)
+                    .fill(Color.surface)
+                    .frame(width: 190, height: 24)
+                Capsule()
+                    .fill(Color.surface)
+                    .frame(width: 96, height: 28)
+                RoundedRectangle(cornerRadius: AppRadius.sm)
+                    .fill(Color.surface)
+                    .frame(width: 130, height: 58)
+                    .padding(.top, AppSpacing.md)
+                RoundedRectangle(cornerRadius: AppRadius.lg)
+                    .fill(Color.surface)
+                    .frame(height: 64)
+                    .padding(.top, AppSpacing.xs)
+            }
+            .overlay(ProgressView().tint(.accent))
+
+            HStack(spacing: AppSpacing.md) {
+                ForEach(0..<4, id: \.self) { _ in
+                    Circle()
+                        .fill(Color.surface)
+                        .frame(width: 68, height: 68)
                 }
-                .padding()
-                , alignment: .topTrailing
-            )
-            
+            }
+            .padding(.top, AppSpacing.md)
+
+            RoundedRectangle(cornerRadius: AppRadius.lg)
+                .fill(Color.surface)
+                .frame(height: 72)
+
+            RoundedRectangle(cornerRadius: AppRadius.lg)
+                .fill(Color.surface)
+                .frame(height: 96)
+
+            Spacer()
+        }
+        .padding(AppSpacing.md)
+    }
+
+    private func errorState(_ message: String) -> some View {
+        VStack(spacing: AppSpacing.md) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 50))
+                .foregroundStyle(Color.warning)
+            Text("territory.detail.error")
+                .font(.appTitle())
+                .foregroundStyle(Color.textPrimary)
+            Text(message)
+                .multilineTextAlignment(.center)
+                .font(.appSubheadline())
+                .foregroundStyle(Color.textSecondary)
+            Button("territory.detail.retry") {
+                Task { await viewModel.loadData() }
+            }
+            .buttonStyle(.glassProminent)
+            .controlSize(.large)
+            .tint(.accentDeep)
+        }
+        .padding(AppSpacing.lg)
+    }
+
+    // MARK: Cabecera
+
+    private static let scrollSpace = "territory-detail-scroll"
+
+    /// Cabecera hero: el mapa real (cámara inclinada, como en las tarjetas
+    /// del listado) sangra a todo el ancho y por detrás de la toolbar, con
+    /// efecto stretchy al tirar del scroll. Sobre él viven el código, el
+    /// estado, los días del ciclo y el responsable actual.
+    private func heroHeader(territory: TerritoryDetail, topInset: CGFloat) -> some View {
+        let isAssigned = territory.personName != nil
+        let referenceDate = isAssigned ? territory.givenDateUtc : territory.lastPickedDateUtc
+        let status = TerritoryStatusPresentation(territory.toTerritory().operationalStatus())
+        let days = referenceDate.map {
+            max(Calendar.current.dateComponents([.day], from: $0, to: Date()).day ?? 0, 0)
+        }
+
+        return VStack(alignment: .leading, spacing: AppSpacing.xs) {
+            Text(territory.code)
+                .font(.system(size: 48, weight: .heavy, design: .rounded))
+                .foregroundStyle(Color.accentDeep)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+
+            Text(territory.name)
+                .font(.system(.title2, design: .rounded).weight(.semibold))
+                .foregroundStyle(Color.textPrimary)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.trailing, 150)
+
+            statusChip(territory: territory)
+                .padding(.top, AppSpacing.xxs)
+
+            daysBlock(days: days, isAssigned: isAssigned, referenceDate: referenceDate)
+                .padding(.top, AppSpacing.md)
+
+            if let person = territory.personName {
+                responsibleRow(person: person)
+                    .padding(.top, AppSpacing.xs)
+            }
+
+            // Aviso cuando el ciclo supera la media de la congregación.
+            if isAssigned, let days,
+               let average = viewModel.stats.map({ Int($0.globalAverageHoldingTime.rounded()) }),
+               average > 0, days > average {
+                reviewBanner(averageDays: average)
+                    .padding(.top, AppSpacing.xs)
+            }
+        }
+        .padding(.horizontal, AppSpacing.md)
+        .padding(.top, AppSpacing.sm)
+        .padding(.bottom, AppSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .background {
+            if let geometry = territory.mapGeometry {
+                stretchyMapBackdrop(geometry: geometry, topInset: topInset, tint: status.color)
+            }
         }
     }
 
-    @ViewBuilder
-    private func territoryMap(territory: TerritoryDetail) -> some View {
-        if let geometry = territory.mapGeometry {
-            TerritoryMapView(geometry: geometry)
-        } else {
-            CachedAsyncImage(
-                url: URL(string: territory.imgUrl ?? ""),
-                content: { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                },
-                placeholder: {
-                    ProgressView()
-                        .tint(.accent)
-                },
-                errorView: {
-                    VStack {
-                        Image(systemName: "map.fill")
-                            .font(.largeTitle)
-                            .foregroundColor(.secondary)
-                        Text("territory.detail.map_unavailable")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-            )
-        }
-    }
-    
-    private func actionButtons(territory: TerritoryDetail) -> some View {
-        HStack(spacing: 16) {
-            if territory.personName == nil {
-                NavigationLink {
-                    TerritoryAssignmentView(territory: territory.toTerritory())
-                } label: {
-                    Label("territory.detail.assign", systemImage: "person.badge.plus")
-                        .fontWeight(.semibold)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.accent, in: .rect(cornerRadius: AppRadius.md, style: .continuous))
-                        .foregroundColor(.white)
-                        .shadow(color: .accent.opacity(0.3), radius: 8, x: 0, y: 4)
-                }
-                .simultaneousGesture(TapGesture().onEnded {
-                    HapticManager.shared.selection()
-                })
+    /// Bloque de días del ciclo (o de descanso si está libre).
+    private func daysBlock(days: Int?, isAssigned: Bool, referenceDate: Date?) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(isAssigned ? "territory.detail.cycle.started_label" : "territory.detail.available_label")
+                .font(.appSubheadline())
+                .foregroundStyle(Color.textSecondary)
+
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                CountUpText(value: days ?? 0, font: .system(size: 44, weight: .heavy, design: .rounded))
+                Text("common.days")
+                    .font(.appHeadline())
+                    .foregroundStyle(Color.textSecondary)
+            }
+
+            if let referenceDate {
+                Text(String(
+                    format: String.localized("territory.detail.cycle.since_date"),
+                    referenceDate.formatted(date: .abbreviated, time: .omitted)
+                ))
+                .font(.appCaption())
+                .foregroundStyle(Color.textSecondary)
             } else {
-                NavigationLink {
-                    TerritoryReturnView(territory: territory.toTerritory())
-                } label: {
-                    Label("territory.detail.return", systemImage: "arrow.uturn.backward")
-                        .fontWeight(.semibold)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.success, in: .rect(cornerRadius: AppRadius.md, style: .continuous))
-                        .foregroundColor(.white)
-                        .shadow(color: .success.opacity(0.3), radius: 8, x: 0, y: 4)
-                }
-                .simultaneousGesture(TapGesture().onEnded {
-                    HapticManager.shared.selection()
-                })
+                Text("territory.detail.available_never")
+                    .font(.appCaption())
+                    .foregroundStyle(Color.textSecondary)
             }
         }
+        .accessibilityElement(children: .combine)
     }
-    
-    private func statsGrid(stats: TerritoryStatistics) -> some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-            // Usage Rank
-            TerritoryStatCard(
-                title: "territory.stats.rank_label",
-                value: String(format: String.localized("territory.stats.rank_value"), stats.usageRank, stats.totalTerritories),
-                description: "territory.stats.rank_desc",
-                icon: "trophy.fill",
-                color: .accentSecondary
+
+    /// Fila del responsable en cristal, integrada en el hero sobre el mapa.
+    private func responsibleRow(person: String) -> some View {
+        HStack(spacing: AppSpacing.sm) {
+            InitialsAvatar(name: person, size: 40, tint: .accentDeep)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(person)
+                    .font(.appHeadline())
+                    .foregroundStyle(Color.textPrimary)
+                    .lineLimit(1)
+                Text("territory.detail.cycle.responsible")
+                    .font(.appCaption())
+                    .foregroundStyle(Color.textSecondary)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(AppSpacing.sm)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: AppRadius.lg, style: .continuous))
+    }
+
+    /// Aviso "conviene revisar": lleva directamente al flujo de devolución.
+    private func reviewBanner(averageDays: Int) -> some View {
+        Button {
+            HapticManager.shared.selection()
+            if let territory = viewModel.territory {
+                AppRouter.shared.openQuickAction(.territory(territory.toTerritory()))
+            }
+        } label: {
+            HStack(spacing: AppSpacing.sm) {
+                Image(systemName: "exclamationmark")
+                    .font(.caption.weight(.heavy))
+                    .foregroundStyle(.white)
+                    .frame(width: 30, height: 30)
+                    .background(
+                        LinearGradient(
+                            colors: [Color.accentTertiary, Color.accentTertiary.opacity(0.8)],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        ),
+                        in: Circle()
+                    )
+                    .shadow(color: Color.accentTertiary.opacity(0.35), radius: 4, x: 0, y: 2)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("territory.detail.cycle.review_title")
+                        .font(.appSubheadline().weight(.semibold))
+                        .foregroundStyle(Color.accentTertiary)
+                    Text(String(format: String.localized("territory.detail.cycle.review_avg"), averageDays))
+                        .font(.appCaption())
+                        .foregroundStyle(Color.textSecondary)
+                }
+                .multilineTextAlignment(.leading)
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.textSecondary)
+            }
+            .padding(AppSpacing.sm)
+            .glassEffect(
+                .regular.tint(Color.accentTertiary.opacity(0.14)),
+                in: RoundedRectangle(cornerRadius: AppRadius.lg, style: .continuous)
             )
-            
-            // Active Time
-            TerritoryStatCard(
-                title: "territory.stats.active_time",
-                value: String(format: String.localized("territory.stats.percentage"), stats.assignedTimePercentage),
-                comparisonValue: String(format: String.localized("territory.stats.global_avg"), String(format: String.localized("territory.stats.percentage"), stats.globalAverageAssignedTimePercentage)),
-                description: "territory.stats.active_time_desc",
-                trend: stats.assignedTimePercentage > stats.globalAverageAssignedTimePercentage ? .up : (stats.assignedTimePercentage < stats.globalAverageAssignedTimePercentage ? .down : .neutral),
-                trendColor: stats.assignedTimePercentage > stats.globalAverageAssignedTimePercentage ? .success : (stats.assignedTimePercentage < stats.globalAverageAssignedTimePercentage ? .danger : .secondary),
-                icon: "chart.pie.fill",
-                color: .accent
+            .contentShape(RoundedRectangle(cornerRadius: AppRadius.lg, style: .continuous))
+        }
+        .buttonStyle(ScaleButtonStyle())
+    }
+
+    /// Mapa de fondo del hero: cubre también la toolbar/status bar; al tirar
+    /// del scroll más allá del límite se estira con un zoom anclado abajo
+    /// (stretchy) y, al hacer scroll normal, se desplaza más despacio que el
+    /// contenido (parallax).
+    private func stretchyMapBackdrop(geometry: TerritoryMapGeometry, topInset: CGFloat, tint: Color) -> some View {
+        GeometryReader { proxy in
+            let minY = proxy.frame(in: .named(Self.scrollSpace)).minY
+            let stretch = max(minY, 0)
+            let height = proxy.size.height + topInset
+
+            // Más distancia de cámara y menos desplazamiento que en las
+            // tarjetas: el polígono cabe entero en la mitad derecha del hero.
+            TerritorySnapshotBackdrop(
+                geometry: geometry,
+                stroke: tint,
+                fill: tint,
+                verticalBias: 0.16,
+                distanceMultiplier: 4.2,
+                horizontalShift: 0.28
             )
-            
-            // Idle Time
-            TerritoryStatCard(
-                title: "territory.stats.idle_time",
-                value: String(format: String.localized("territory.stats.days"), stats.averageReassignmentTime),
-                comparisonValue: String(format: String.localized("territory.stats.global_avg"), String(format: String.localized("territory.stats.days"), stats.globalAverageReassignmentTime)),
-                description: "territory.stats.idle_time_desc",
-                trend: stats.averageReassignmentTime > stats.globalAverageReassignmentTime ? .up : (stats.averageReassignmentTime < stats.globalAverageReassignmentTime ? .down : .neutral),
-                trendColor: stats.averageReassignmentTime > stats.globalAverageReassignmentTime ? .success : (stats.averageReassignmentTime < stats.globalAverageReassignmentTime ? .danger : .secondary),
-                icon: "hourglass",
-                color: .info
-            )
-            
-            // Avg Duration
-            TerritoryStatCard(
-                title: "territory.stats.avg_duration",
-                value: String(format: String.localized("territory.stats.days"), stats.averageHoldingTime),
-                comparisonValue: String(format: String.localized("territory.stats.global_avg"), String(format: String.localized("territory.stats.days"), stats.globalAverageHoldingTime)),
-                description: "territory.stats.avg_duration_desc",
-                trend: stats.averageHoldingTime > stats.globalAverageHoldingTime ? .up : (stats.averageHoldingTime < stats.globalAverageHoldingTime ? .down : .neutral),
-                trendColor: stats.averageHoldingTime > stats.globalAverageHoldingTime ? .success : (stats.averageHoldingTime < stats.globalAverageHoldingTime ? .danger : .secondary),
-                icon: "clock.fill",
-                color: .accentSecondary
-            )
-            
-            // Unique Users
-            TerritoryStatCard(
-                title: "territory.stats.unique_users",
-                value: "\(stats.uniqueUsersCount)",
-                comparisonValue: String(format: String.localized("territory.stats.global_avg"), String(format: "%.1f", stats.globalAverageUniqueUsersCount)),
-                description: "territory.stats.unique_users_desc",
-                trend: Double(stats.uniqueUsersCount) > stats.globalAverageUniqueUsersCount ? .up : (Double(stats.uniqueUsersCount) < stats.globalAverageUniqueUsersCount ? .down : .neutral),
-                trendColor: Double(stats.uniqueUsersCount) > stats.globalAverageUniqueUsersCount ? .success : (Double(stats.uniqueUsersCount) < stats.globalAverageUniqueUsersCount ? .danger : .secondary),
-                icon: "person.2.fill",
-                color: .info
-            )
+                .mask(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .black.opacity(0), location: 0),
+                            .init(color: .black.opacity(0.45), location: 0.30),
+                            .init(color: .black, location: 0.55),
+                            .init(color: .black, location: 1)
+                        ],
+                        startPoint: .leading, endPoint: .trailing
+                    )
+                )
+                .mask(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .black, location: 0),
+                            .init(color: .black, location: 0.75),
+                            .init(color: .black.opacity(0), location: 1)
+                        ],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                )
+                .frame(width: proxy.size.width, height: height)
+                // El zoom compensa exactamente el arrastre: el borde superior
+                // queda clavado a la pantalla mientras el mapa crece.
+                .scaleEffect(1 + stretch / height, anchor: .bottom)
+                // Parallax: al hacer scroll, el mapa acompaña al contenido a
+                // un 60 % de su velocidad (con factor < 1 nunca asoma el
+                // borde superior del mapa por debajo de la toolbar).
+                .offset(y: -topInset + (minY < 0 ? -minY * 0.4 : 0))
         }
     }
-    
-    private func timelineSection(transactions: [Transaction]) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("territory.history.title")
-                .font(.title2)
-                .fontWeight(.bold)
-                .padding(.leading, 4)
-            
-            GlassCard {
-                LazyVStack(spacing: 0) {
-                    ForEach(transactions.reversed()) { transaction in
-                        TimelineItemRow(
-                            transaction: transaction,
-                            onEdit: permissionManager.canManageTerritories ? {
-                                editingTransaction = transaction
-                            } : nil,
-                            onDelete: permissionManager.canManageTerritories ? {
-                                transactionToDelete = transaction
-                                showDeleteTransactionAlert = true
-                            } : nil
-                        )
-                        .padding(.horizontal)
-                        .padding(.top, 16)
+
+    private func statusChip(territory: TerritoryDetail) -> some View {
+        let presentation = TerritoryStatusPresentation(territory.toTerritory().operationalStatus())
+
+        return HStack(spacing: AppSpacing.xxs) {
+            Circle()
+                .fill(presentation.color)
+                .frame(width: 7, height: 7)
+            Text(presentation.title)
+                .font(.appCaption().weight(.bold))
+                .foregroundStyle(presentation.color)
+        }
+        .padding(.horizontal, AppSpacing.sm)
+        .padding(.vertical, 6)
+        .background(
+            Capsule()
+                .fill(presentation.color.opacity(0.10))
+        )
+        .overlay(
+            Capsule()
+                .strokeBorder(presentation.color.opacity(0.35), lineWidth: 1)
+        )
+    }
+
+    // MARK: Acción principal fija (sustituye a la tab bar)
+
+    private func bottomAction(territory: TerritoryDetail) -> some View {
+        Group {
+            if territory.personName == nil {
+                Button {
+                    HapticManager.shared.selection()
+                    AppRouter.shared.openQuickAction(.territory(territory.toTerritory()))
+                } label: {
+                    Label("territory.detail.assign", systemImage: "paperplane.fill")
+                        .font(.appHeadline())
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, AppSpacing.xxs)
+                }
+                .buttonStyle(.glassProminent)
+                .tint(.accent)
+            } else {
+                Button {
+                    HapticManager.shared.selection()
+                    AppRouter.shared.openQuickAction(.territory(territory.toTerritory()))
+                } label: {
+                    Label("territory.detail.return", systemImage: "tray.and.arrow.down.fill")
+                        .font(.appHeadline())
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, AppSpacing.xxs)
+                }
+                .buttonStyle(.glassProminent)
+                .tint(.accentSecondary)
+            }
+        }
+        .controlSize(.large)
+        .padding(.horizontal, AppSpacing.md)
+        .padding(.top, AppSpacing.xs)
+    }
+
+    // MARK: Menú de administración
+
+    private var adminMenu: some View {
+        Menu {
+            Button {
+                HapticManager.shared.selection()
+                Task {
+                    if await viewModel.refreshImage() {
+                        HapticManager.shared.notification(type: .success)
+                        ToastManager.shared.show(NSLocalizedString("territory.detail.refresh_image_success", comment: ""), style: .success)
+                    } else {
+                        HapticManager.shared.notification(type: .error)
                     }
                 }
-                .padding(.bottom, 16)
+            } label: {
+                Label("territory.detail.menu.refresh_map", systemImage: "arrow.clockwise")
+            }
+            .disabled(viewModel.isRefreshingImage)
+
+            Button {
+                showEditSheet = true
+            } label: {
+                Label("territory.detail.edit", systemImage: "pencil")
+            }
+
+            Divider()
+
+            Button(role: .destructive) {
+                showDeleteAlert = true
+            } label: {
+                Label("territory.detail.delete", systemImage: "trash")
+            }
+        } label: {
+            if viewModel.isRefreshingImage {
+                ProgressView()
+            } else {
+                Image(systemName: "ellipsis")
             }
         }
+        .accessibilityLabel(Text("territory.detail.menu.accessibility"))
     }
 }
 

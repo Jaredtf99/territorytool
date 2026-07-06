@@ -22,7 +22,6 @@ enum TerritoryFilter: String, CaseIterable, Identifiable {
 }
 
 enum TerritorySortOption: Int, CaseIterable, Identifiable {
-    case relevance = 0
     case name = 1
     case code = 2
     case givenDate = 3
@@ -32,7 +31,6 @@ enum TerritorySortOption: Int, CaseIterable, Identifiable {
 
     var localizedName: String {
         switch self {
-        case .relevance: NSLocalizedString("territories.sort.relevance", comment: "")
         case .name: NSLocalizedString("territories.sort.name", comment: "")
         case .code: NSLocalizedString("territories.sort.code", comment: "")
         case .givenDate: NSLocalizedString("territories.sort.given_date", comment: "")
@@ -242,13 +240,6 @@ final class TerritoriesViewModel: ObservableObject {
 
     private func comesBefore(_ lhs: Territory, _ rhs: Territory) -> Bool {
         switch sortOption {
-        case .relevance:
-            let leftRank = relevanceRank(lhs)
-            let rightRank = relevanceRank(rhs)
-            if leftRank != rightRank { return leftRank < rightRank }
-            let leftDate = relevanceDate(lhs)
-            let rightDate = relevanceDate(rhs)
-            return leftDate == rightDate ? lhs.id < rhs.id : leftDate < rightDate
         case .name:
             let comparison = lhs.name.localizedStandardCompare(rhs.name)
             return comparison == .orderedSame ? lhs.id < rhs.id : comparison == .orderedAscending
@@ -261,21 +252,8 @@ final class TerritoriesViewModel: ObservableObject {
             return leftDate == rightDate ? lhs.id < rhs.id : leftDate < rightDate
         case .nearest:
             // Location-aware ordering is applied by the view once distances are available.
-            let leftRank = relevanceRank(lhs)
-            let rightRank = relevanceRank(rhs)
-            return leftRank == rightRank ? lhs.id < rhs.id : leftRank < rightRank
+            let comparison = lhs.code.localizedStandardCompare(rhs.code)
+            return comparison == .orderedSame ? lhs.id < rhs.id : comparison == .orderedAscending
         }
-    }
-
-    private func relevanceRank(_ territory: Territory) -> Int {
-        switch status(for: territory) {
-        case .attention: 0
-        case .available: 1
-        case .assigned: 2
-        }
-    }
-
-    private func relevanceDate(_ territory: Territory) -> Date {
-        territory.givenDateUtc ?? territory.lastPickedDateUtc ?? .distantPast
     }
 }

@@ -76,6 +76,9 @@ struct CartoSectionHeader: View {
             Text(title)
                 .font(.system(.headline, design: .rounded).weight(.bold))
                 .foregroundStyle(Color.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+                .layoutPriority(1)
 
             // Línea de ruta punteada
             Line()

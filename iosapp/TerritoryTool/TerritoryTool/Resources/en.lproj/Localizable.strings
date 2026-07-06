@@ -94,7 +94,7 @@
 "territory.detail.map_unavailable" = "Map not available";
 "territory.detail.map" = "Territory map";
 "territory.detail.assigned_to" = "Assigned to";
-"territory.detail.assign" = "Assign Territory";
+"territory.detail.assign" = "Give territory";
 "territory.detail.return" = "Return Territory";
 "territory.detail.edit" = "Edit";
 "territory.detail.refresh_image" = "Refresh Image";
@@ -125,8 +125,53 @@
 "territory.stats.avg_duration_desc" = "Average number of days each assignment of the territory lasts.";
 "territory.stats.unique_users_desc" = "Number of different people who have used this territory.";
 
+// Territory detail (redesign)
+"territory.detail.menu.refresh_map" = "Refresh map";
+"territory.detail.menu.accessibility" = "Territory options";
+"territory.detail.cycle.title" = "Current cycle";
+"territory.detail.cycle.started_label" = "In use for";
+"territory.detail.cycle.since_date" = "since %@";
+"territory.detail.cycle.responsible" = "Current holder";
+"territory.detail.cycle.review_title" = "Worth reviewing this assignment";
+"territory.detail.cycle.review_avg" = "The congregation average is %d days";
+"territory.detail.available_label" = "Available for";
+"territory.detail.available_never" = "No assignments yet";
+"territory.detail.trajectory.title" = "Journey";
+"territory.detail.trajectory.empty" = "No assignment cycles yet";
+"territory.detail.trajectory.ongoing" = "In use";
+"territory.detail.trajectory.slower" = "This territory takes %d more days than average to become available again";
+"territory.detail.trajectory.faster" = "This territory becomes available %d days sooner than average";
+"territory.detail.trajectory.on_track" = "This territory rotates in line with the congregation average";
+"territory.detail.stats.title" = "Statistics";
+"territory.detail.stats.rank_position" = "No. %d";
+"territory.detail.stats.rank_of" = "of %d territories";
+"territory.detail.stats.rank_high" = "Among the most used in the congregation";
+"territory.detail.stats.rank_low" = "Among the least used in the congregation";
+"territory.detail.stats.rank_mid" = "Balanced usage within the congregation";
+"territory.detail.stats.avg_short" = "avg %@";
+"territory.detail.stats.rotation" = "Usage";
+"territory.detail.stats.rotation_high" = "high usage";
+"territory.detail.stats.rotation_low" = "low usage";
+"territory.detail.stats.rotation_balanced" = "balanced";
+"territory.detail.stats.more_rotated" = "more used";
+"territory.detail.stats.less_rotated" = "less used";
+"territory.detail.stats.usage" = "Usage";
+"territory.detail.stats.activity" = "Activity";
+"territory.detail.stats.avg_value" = "avg %@";
+"territory.detail.stats.average_marker" = "Avg";
+"territory.detail.stats.on_average" = "on average";
+"territory.detail.stats.cycle_rhythm" = "Cycle rhythm";
+"territory.detail.stats.cycle_rhythm_subtitle" = "Assignment and wait";
+"territory.detail.stats.cycle_rhythm_desc" = "Compares how long the territory stays assigned and how long it waits between assignments against the congregation average.";
+"territory.detail.stats.assigned_segment" = "Assigned";
+"territory.detail.stats.wait_segment" = "Wait";
+"territory.detail.stats.reach" = "Reach";
+"territory.detail.stats.users_count" = "%d users";
+"territory.detail.stats.users_label" = "users";
+"territory.detail.stats.users_average" = "%.1f users";
+
 // Assignment
-"assignment.title" = "Assign";
+"assignment.title" = "Give";
 "assignment.section.territory" = "Select Territory";
 "assignment.section.publisher" = "Select Publisher";
 "assignment.search_territory" = "Search territory...";
@@ -164,6 +209,25 @@
 "brothers.add_success" = "Brother added successfully";
 "brothers.update_success" = "Brother updated successfully";
 "brothers.delete_success" = "Brother deleted successfully";
+
+// Brothers — redesigned explorer
+"brothers.filter.all" = "All";
+"brothers.filter.available" = "Available";
+"brothers.filter.with_territories" = "With territories";
+"brothers.filter.inactive" = "Inactive";
+"brothers.give" = "Give";
+"brothers.give_to %@" = "Give a territory to %@";
+"brothers.days_format" = "%d d";
+"brothers.summary.have" = "%d brothers have";
+"brothers.summary.territories" = "%d territories";
+"brothers.summary.accessibility" = "%d brothers have %d territories";
+"brothers.territory.open_hint" = "Opens the territory detail";
+"brothers.sort.title" = "Sort";
+"brothers.sort.name" = "Name";
+"brothers.sort.territories" = "Territory count";
+"brothers.sort.days" = "Days held";
+"brothers.empty_filtered" = "No brothers match your search";
+"brothers.clear_filters" = "Clear filters";
 
 // Action Logs
 "actionlogs.title" = "Action Logs";
@@ -331,7 +395,7 @@
 "quick_action.suggestions.attention" = "Need attention";
 "quick_action.suggestions.free" = "Available for a while";
 "quick_action.action.return" = "Return";
-"quick_action.action.deliver" = "Assign";
+"quick_action.action.deliver" = "Give";
 "quick_action.action.manage" = "Manage";
 "quick_action.free_status" = "Available";
 "quick_action.free_since" = "Available for %d days";
@@ -353,7 +417,7 @@
 "quick_action.in_use_since" = "In use for";
 "quick_action.free_since_label" = "Not taken for";
 "quick_action.return_deliver" = "Return and assign another";
-"quick_action.return_deliver_short" = "Assign another";
+"quick_action.return_deliver_short" = "Return + assign";
 "quick_action.return_deliver_hint" = "Close this assignment and start a new one";
 
 // Clear errors (backend codes)
@@ -394,7 +458,6 @@
 "territories.summary" = "%d territories · %d need attention";
 "territories.summary_short" = "%d territories";
 "territories.sort.title" = "Sort territories";
-"territories.sort.relevance" = "Relevance";
 "territories.sort.nearest" = "Nearest";
 "territories.section.results" = "Results";
 "territories.section.attention" = "Need attention";
@@ -439,3 +502,34 @@
 "undo.success" = "Action undone";
 "undo.expired" = "Undo is no longer available";
 "undo.failed" = "Could not undo";
+
+/* Reports */
+"settings.reports" = "Reports";
+"reports.title" = "Territory report";
+"reports.date_range" = "Date range";
+"reports.description" = "Generates a PDF with territory assignments and returns between the selected dates, grouped by territory with a visual overview of each territory's usage.";
+"reports.start_date" = "From";
+"reports.end_date" = "To";
+"reports.generate" = "Generate PDF";
+"reports.generating" = "Generating report…";
+"reports.share" = "Share";
+"reports.error.invalid_range" = "The start date must be before the end date.";
+"reports.error.empty" = "There are no movements in the selected range.";
+"reports.pdf.generated_on" = "Generated on %@";
+"reports.pdf.movements" = "Movements";
+"reports.pdf.territories" = "Territories";
+"reports.pdf.given" = "Assigned";
+"reports.pdf.picked" = "Returned";
+"reports.pdf.persons" = "Brothers";
+"reports.pdf.person" = "Brother";
+"reports.pdf.given_date" = "Given";
+"reports.pdf.picked_date" = "Returned";
+"reports.pdf.days" = "Days";
+"reports.pdf.usage" = "Usage in period";
+"reports.pdf.legend.completed" = "Completed assignment";
+"reports.pdf.legend.in_progress" = "Still assigned";
+"reports.pdf.in_progress" = "Ongoing";
+"reports.pdf.continued" = "(continued)";
+"reports.pdf.assignments_count" = "%d assignments";
+"reports.pdf.page" = "Page %d";
+"reports.pdf.assignments_one" = "1 assignment";

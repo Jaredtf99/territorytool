@@ -190,7 +190,7 @@ struct ActionLogGlassRow: View {
         case .addTerritory: return "map.fill"
         case .editTerritory: return "map.fill"
         case .deleteTerritory: return "map.fill"
-        case .giveTerritory: return "person.badge.plus"
+        case .giveTerritory: return "paperplane.fill"
         case .pickTerritory: return "tray.and.arrow.down.fill"
         case .refreshTerritoryImage: return "arrow.clockwise"
         

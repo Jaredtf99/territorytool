@@ -11,11 +11,13 @@ struct TerritoryMapView: View {
     var showsMarkers = true
     /// Suaviza los picos del polígono con corner-cutting (Chaikin).
     var smoothCorners = false
+    /// Permite pan/zoom (mapa a pantalla completa); por defecto es estático.
+    var interactive = false
 
     var body: some View {
         Map(
             initialPosition: .camera(geometry.camera(compact: compact)),
-            interactionModes: []
+            interactionModes: interactive ? [.pan, .zoom, .rotate] : []
         ) {
             ForEach(geometry.polygons) { polygon in
                 MapPolygon(
@@ -62,7 +64,7 @@ struct TerritoryMapView: View {
             }
         }
         .mapStyle(.standard(elevation: .realistic))
-        .allowsHitTesting(false)
+        .allowsHitTesting(interactive)
         .accessibilityLabel(Text("territory.detail.map"))
     }
 }
@@ -80,6 +82,13 @@ struct TerritorySnapshotBackdrop: View {
     /// Sube (>0) o baja (<0) el territorio dentro del encuadre, en fracción del
     /// alto del bounding box. 0 = centrado verticalmente.
     var verticalBias: Double = 0
+    /// Multiplicador de distancia de cámara (más = territorio más pequeño).
+    /// `nil` usa el valor histórico (2.4, o 2.0 centrado).
+    var distanceMultiplier: Double? = nil
+    /// Desplazamiento del centro de cámara hacia el oeste, en fracción del
+    /// ancho del bounding box (el territorio se va a la derecha). `nil` usa
+    /// el histórico (0.5, o 0 centrado).
+    var horizontalShift: Double? = nil
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.displayScale) private var displayScale
@@ -202,14 +211,16 @@ struct TerritorySnapshotBackdrop: View {
 
         // En tarjetas grandes se desplaza al oeste para dejar espacio al texto.
         // En miniaturas se centra para aprovechar todo el encuadre.
+        let shift = horizontalShift ?? (centersTerritory ? 0 : 0.5)
+        let multiplier = distanceMultiplier ?? (centersTerritory ? 2.0 : 2.4)
         let center = CLLocationCoordinate2D(
             latitude: centerLat,
-            longitude: (bounds.east + bounds.west) / 2 - (centersTerritory ? 0 : lonSpan * 0.5)
+            longitude: (bounds.east + bounds.west) / 2 - lonSpan * shift
         )
 
         return MKMapCamera(
             lookingAtCenter: center,
-            fromDistance: max(footprintMeters * (centersTerritory ? 2.0 : 2.4), centersTerritory ? 180 : 260),
+            fromDistance: max(footprintMeters * multiplier, centersTerritory ? 180 : 260),
             pitch: centersTerritory ? 48 : 45,
             heading: 0
         )
@@ -230,6 +241,8 @@ struct TerritorySnapshotBackdrop: View {
             dark ? "dark" : "light",
             centersTerritory ? "center" : "trailing",
             String(format: "%.2f", verticalBias),
+            String(format: "%.2f", distanceMultiplier ?? -1),
+            String(format: "%.2f", horizontalShift ?? -1),
             String(format: "%.1f", strokeLineWidth),
             stroke.snapshotColorKey(using: traitCollection),
             fill.snapshotColorKey(using: traitCollection)

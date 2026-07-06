@@ -188,7 +188,7 @@ struct TerritoryMapDrawer: View {
                         } label: {
                             Label(
                                 territory.personName == nil ? "assignment.title" : "return.title",
-                                systemImage: territory.personName == nil ? "person.badge.plus" : "tray.and.arrow.down"
+                                systemImage: territory.personName == nil ? "paperplane.fill" : "tray.and.arrow.down"
                             )
                             .font(.caption.weight(.semibold))
                             .lineLimit(1)

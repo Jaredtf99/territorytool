@@ -17,7 +17,10 @@ struct TerritoryExplorerControls: View {
                 searchField
                 PresentationToggle(viewModel: viewModel)
             }
+            .padding(.horizontal, AppSpacing.md)
 
+            // El scroll ocupa todo el ancho (el margen va en el contenido):
+            // así los chips no se clipean en el contenedor y llegan al borde.
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AppSpacing.xs) {
                     sortMenu
@@ -25,11 +28,10 @@ struct TerritoryExplorerControls: View {
                         filterChip(filter)
                     }
                 }
-                .padding(.horizontal, 2)
+                .padding(.horizontal, AppSpacing.md)
                 .padding(.vertical, 2)
             }
         }
-        .padding(.horizontal, AppSpacing.md)
         .padding(.bottom, AppSpacing.xs)
     }
 
@@ -221,7 +223,7 @@ struct TerritoryExplorerList: View {
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             if territory.personName == nil {
                 Button { onAssign(territory) } label: {
-                    Label("assignment.title", systemImage: "person.badge.plus")
+                    Label("assignment.title", systemImage: "paperplane.fill")
                 }
                 .tint(.accent)
             } else {
@@ -246,7 +248,7 @@ struct TerritoryExplorerList: View {
             Button { territory.personName == nil ? onAssign(territory) : onReturn(territory) } label: {
                 Label(
                     territory.personName == nil ? "assignment.title" : "return.title",
-                    systemImage: territory.personName == nil ? "person.badge.plus" : "tray.and.arrow.down"
+                    systemImage: territory.personName == nil ? "paperplane.fill" : "tray.and.arrow.down"
                 )
             }
             if permissionManager.canManageTerritories {

@@ -42,7 +42,7 @@ struct TerritoryReturnView: View {
                                 .font(.system(size: 24))
                                 .foregroundStyle(.white)
                                 .frame(width: 50, height: 50)
-                                .background(Color.success, in: .rect(cornerRadius: AppRadius.md))
+                                .background(Color.accentSecondary, in: .rect(cornerRadius: AppRadius.md))
                         }
                         .accessibilityLabel(Text("return.search_territory"))
                     }
@@ -89,7 +89,7 @@ struct TerritoryReturnView: View {
                     .padding(.vertical, AppSpacing.xs)
                 }
                 .buttonStyle(.glassProminent)
-                .tint(.success)
+                .tint(.accentSecondary)
                 .controlSize(.large)
                 .disabled(viewModel.selectedTerritory == nil || viewModel.isSubmitting)
                 .padding(.horizontal)

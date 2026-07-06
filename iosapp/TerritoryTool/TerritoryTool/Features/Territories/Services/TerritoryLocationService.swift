@@ -45,7 +45,7 @@ final class TerritoryLocationService: NSObject, ObservableObject, CLLocationMana
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        // Location is optional; the explorer keeps its relevance ordering.
+        // Location is optional; the explorer keeps its current ordering.
     }
 }
 

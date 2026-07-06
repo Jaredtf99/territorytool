@@ -1,25 +1,5 @@
 import SwiftUI
 
-private enum TerritoryExplorerFlow: Identifiable, Hashable {
-    case assign(Territory)
-    case returnTerritory(Territory)
-
-    var id: String {
-        switch self {
-        case .assign(let territory): "assign-\(territory.id)"
-        case .returnTerritory(let territory): "return-\(territory.id)"
-        }
-    }
-
-    static func == (lhs: TerritoryExplorerFlow, rhs: TerritoryExplorerFlow) -> Bool {
-        lhs.id == rhs.id
-    }
-
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-    }
-}
-
 struct TerritoriesView: View {
     @StateObject private var viewModel = DIContainer.shared.makeTerritoriesViewModel()
     @StateObject private var locationService = TerritoryLocationService()
@@ -31,7 +11,6 @@ struct TerritoriesView: View {
     @State private var territoryToEdit: Territory?
     @State private var territoryToDelete: Territory?
     @State private var showDeleteConfirmation = false
-    @State private var flow: TerritoryExplorerFlow?
     @State private var controlsHeight: CGFloat = 0
     @State private var isMapFullscreen = false
 
@@ -51,7 +30,7 @@ struct TerritoriesView: View {
         // Toolbar nativa siempre visible, salvo en pantalla completa del mapa, donde la
         // ocultamos junto con la tab bar y la barra de estado para una vista inmersiva.
         .toolbar(isMapFullscreen ? .hidden : .visible, for: .navigationBar)
-        .toolbar(isMapFullscreen ? .hidden : .visible, for: .tabBar)
+        .toolbar(isMapFullscreen ? .hidden : .automatic, for: .tabBar)
         .statusBarHidden(isMapFullscreen)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -73,20 +52,6 @@ struct TerritoriesView: View {
                         Image(systemName: "plus")
                     }
                     .accessibilityLabel(Text("territory.add.title"))
-                }
-            }
-        }
-        .navigationDestination(item: $flow) { destination in
-            switch destination {
-            case .assign(let territory):
-                TerritoryAssignmentView(territory: territory) {
-                    flow = nil
-                    viewModel.reload()
-                }
-            case .returnTerritory(let territory):
-                TerritoryReturnView(territory: territory) {
-                    flow = nil
-                    viewModel.reload()
                 }
             }
         }
@@ -192,8 +157,8 @@ struct TerritoriesView: View {
                         locationService: locationService,
                         topInset: isMapFullscreen ? 0 : controlsHeight,
                         isFullscreen: $isMapFullscreen,
-                        onAssign: { flow = .assign($0) },
-                        onReturn: { flow = .returnTerritory($0) },
+                        onAssign: openQuickAction,
+                        onReturn: openQuickAction,
                         onEdit: { territoryToEdit = $0 },
                         onDelete: confirmDelete
                     )
@@ -202,8 +167,8 @@ struct TerritoriesView: View {
                         viewModel: viewModel,
                         locationService: locationService,
                         topInset: controlsHeight,
-                        onAssign: { flow = .assign($0) },
-                        onReturn: { flow = .returnTerritory($0) },
+                        onAssign: openQuickAction,
+                        onReturn: openQuickAction,
                         onEdit: { territoryToEdit = $0 },
                         onDelete: confirmDelete
                     )
@@ -226,6 +191,11 @@ struct TerritoriesView: View {
         HapticManager.shared.selection()
         territoryToDelete = territory
         showDeleteConfirmation = true
+    }
+
+    private func openQuickAction(_ territory: Territory) {
+        HapticManager.shared.selection()
+        router.openQuickAction(.territory(territory))
     }
 }
 
