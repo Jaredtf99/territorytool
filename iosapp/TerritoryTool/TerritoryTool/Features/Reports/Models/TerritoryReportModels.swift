@@ -14,6 +14,13 @@ struct TerritoryReportEntry: Codable, Identifiable, Equatable {
     }
 }
 
+/// Respuesta del endpoint del informe: los movimientos del rango más el
+/// total de territorios de la congregación (para calcular los no trabajados).
+struct TerritoryReportResponse: Codable {
+    let totalTerritories: Int
+    let entries: [TerritoryReportEntry]
+}
+
 /// Datos ya agrupados y resumidos, listos para pintar el PDF.
 struct TerritoryReportData {
     struct TerritoryGroup {
@@ -25,30 +32,17 @@ struct TerritoryReportData {
     let startDate: Date
     let endDate: Date
     let congregationName: String?
+    let totalTerritories: Int
     let groups: [TerritoryGroup]
 
-    var totalMovements: Int { groups.reduce(0) { $0 + $1.entries.count } }
-    var totalTerritories: Int { groups.count }
-    var totalPersons: Int {
-        Set(groups.flatMap { $0.entries.compactMap(\.personName) }).count
-    }
-    var totalGiven: Int {
-        groups.flatMap(\.entries).filter { entry in
-            guard let given = entry.givenAt else { return false }
-            return given >= startDate && given <= endDate
-        }.count
-    }
-    var totalPicked: Int {
-        groups.flatMap(\.entries).filter { entry in
-            guard let picked = entry.pickedAt else { return false }
-            return picked >= startDate && picked <= endDate
-        }.count
-    }
+    var territoriesWorked: Int { groups.count }
+    var territoriesNotWorked: Int { max(0, totalTerritories - groups.count) }
 
-    init(entries: [TerritoryReportEntry], startDate: Date, endDate: Date, congregationName: String?) {
+    init(entries: [TerritoryReportEntry], totalTerritories: Int, startDate: Date, endDate: Date, congregationName: String?) {
         self.startDate = startDate
         self.endDate = endDate
         self.congregationName = congregationName
+        self.totalTerritories = totalTerritories
 
         var order: [String] = []
         var byTerritory: [String: (name: String, entries: [TerritoryReportEntry])] = [:]

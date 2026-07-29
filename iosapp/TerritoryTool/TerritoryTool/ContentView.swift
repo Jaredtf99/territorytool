@@ -14,9 +14,7 @@ struct ContentView: View {
     
     var body: some View {
         Group {
-            if ProcessInfo.processInfo.arguments.contains("PREVIEW_REPORT") {
-                ReportPreviewHarness()
-            } else if appViewModel.isAuthenticated {
+            if appViewModel.isAuthenticated {
                 MainTabView()
             } else {
                 NavigationStack {
@@ -40,19 +38,6 @@ struct ContentView: View {
                 .transition(.opacity)
             }
         }
-    }
-}
-
-// Temporary scaffolding: renders the report screen with mock data and
-// auto-generates the PDF so it can be screenshotted headlessly.
-private struct ReportPreviewHarness: View {
-    @StateObject private var viewModel = TerritoryReportViewModel(apiService: MockAPIService())
-
-    var body: some View {
-        NavigationStack {
-            TerritoryReportView(viewModel: viewModel)
-        }
-        .task { await viewModel.generate() }
     }
 }
 

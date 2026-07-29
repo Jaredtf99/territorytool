@@ -44,16 +44,17 @@ final class TerritoryReportViewModel: ObservableObject {
         let end = calendar.date(byAdding: DateComponents(day: 1, second: -1), to: calendar.startOfDay(for: endDate)) ?? endDate
 
         do {
-            let entries: [TerritoryReportEntry] = try await apiService.request(
+            let response: TerritoryReportResponse = try await apiService.request(
                 endpoint: TerritoryEndpoint.getTerritoryReport(start: start, end: end)
             )
-            guard !entries.isEmpty else {
+            guard !response.entries.isEmpty else {
                 errorMessage = NSLocalizedString("reports.error.empty", comment: "")
                 return
             }
 
             let reportData = TerritoryReportData(
-                entries: entries,
+                entries: response.entries,
+                totalTerritories: response.totalTerritories,
                 startDate: start,
                 endDate: end,
                 congregationName: activeCongregationName()

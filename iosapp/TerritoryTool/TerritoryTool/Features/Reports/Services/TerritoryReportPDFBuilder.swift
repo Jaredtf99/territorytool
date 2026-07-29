@@ -23,12 +23,9 @@ final class TerritoryReportPDFBuilder {
     private var bottomLimit: CGFloat { pageSize.height - margin - 24 }
 
     // Columnas de la tabla de movimientos.
-    private let colPerson: CGFloat = 148
-    private let colDate: CGFloat = 66
-    private let colDays: CGFloat = 42
-    private let colGap: CGFloat = 10
-    private var timelineX: CGFloat { margin + colPerson + colDate * 2 + colDays + colGap * 4 }
-    private var timelineWidth: CGFloat { pageSize.width - margin - timelineX }
+    private let colPerson: CGFloat = 230
+    private let colDate: CGFloat = 90
+    private let colGap: CGFloat = 12
 
     // MARK: - Paleta (valores claros de Color+Extensions)
 
@@ -64,7 +61,6 @@ final class TerritoryReportPDFBuilder {
             beginPage()
             drawHeader()
             drawSummary()
-            drawLegend()
             for group in data.groups {
                 drawGroup(group)
             }
@@ -93,10 +89,10 @@ final class TerritoryReportPDFBuilder {
 
     private func drawFooter() {
         let periodText = "\(L("reports.title")) · \(formattedRange())"
-        draw(periodText, font: .systemFont(ofSize: 8.5), color: inkSoft,
+        draw(periodText, font: roundedFont(size: 8.5, weight: .regular), color: inkSoft,
              at: CGPoint(x: margin, y: pageSize.height - margin + 14))
         let pageText = String(format: L("reports.pdf.page"), pageNumber)
-        drawRightAligned(pageText, font: .systemFont(ofSize: 8.5), color: inkSoft,
+        drawRightAligned(pageText, font: roundedFont(size: 8.5, weight: .regular), color: inkSoft,
                          rightEdge: pageSize.width - margin, y: pageSize.height - margin + 14)
     }
 
@@ -110,11 +106,7 @@ final class TerritoryReportPDFBuilder {
     // MARK: - Cabecera
 
     private func drawHeader() {
-        draw("TERRITORY TOOL", font: .systemFont(ofSize: 10, weight: .bold), color: amber,
-             at: CGPoint(x: margin, y: cursorY), kern: 3)
-        cursorY += 18
-
-        draw(L("reports.title"), font: serifFont(size: 30, weight: .bold), color: forestDeep,
+        draw(L("reports.title"), font: roundedFont(size: 30, weight: .bold), color: forestDeep,
              at: CGPoint(x: margin, y: cursorY))
         cursorY += 42
 
@@ -122,11 +114,11 @@ final class TerritoryReportPDFBuilder {
         if let congregation = data.congregationName, !congregation.isEmpty {
             subtitle = "\(congregation) · \(subtitle)"
         }
-        draw(subtitle, font: .systemFont(ofSize: 12, weight: .semibold), color: ink,
+        draw(subtitle, font: roundedFont(size: 12, weight: .semibold), color: ink,
              at: CGPoint(x: margin, y: cursorY))
 
         let generated = String(format: L("reports.pdf.generated_on"), formattedDate(Date()))
-        drawRightAligned(generated, font: .systemFont(ofSize: 9), color: inkSoft,
+        drawRightAligned(generated, font: roundedFont(size: 9, weight: .regular), color: inkSoft,
                          rightEdge: pageSize.width - margin, y: cursorY + 3)
         cursorY += 24
 
@@ -138,11 +130,8 @@ final class TerritoryReportPDFBuilder {
 
     private func drawSummary() {
         let stats: [(String, String, UIColor)] = [
-            ("\(data.totalMovements)", L("reports.pdf.movements"), forest),
-            ("\(data.totalTerritories)", L("reports.pdf.territories"), forest),
-            ("\(data.totalGiven)", L("reports.pdf.given"), amber),
-            ("\(data.totalPicked)", L("reports.pdf.picked"), terracotta),
-            ("\(data.totalPersons)", L("reports.pdf.persons"), forest)
+            ("\(data.territoriesWorked)", L("reports.pdf.worked"), forest),
+            ("\(data.territoriesNotWorked)", L("reports.pdf.not_worked"), terracotta)
         ]
 
         let gap: CGFloat = 10
@@ -160,37 +149,12 @@ final class TerritoryReportPDFBuilder {
             path.lineWidth = 1
             path.stroke()
 
-            drawCentered(stat.0, font: serifFont(size: 22, weight: .bold), color: stat.2,
+            drawCentered(stat.0, font: roundedFont(size: 22, weight: .bold), color: stat.2,
                          centerX: box.midX, y: box.minY + 8)
-            drawCentered(stat.1.uppercased(), font: .systemFont(ofSize: 6.8, weight: .semibold),
+            drawCentered(stat.1.uppercased(), font: roundedFont(size: 7.5, weight: .semibold),
                          color: inkSoft, centerX: box.midX, y: box.minY + 38, kern: 0.6)
         }
         cursorY += boxHeight + 22
-    }
-
-    // MARK: - Leyenda de la barra de uso
-
-    private func drawLegend() {
-        ensureSpace(20)
-        var x = margin
-
-        func legendItem(color: UIColor, text: String) {
-            let swatch = CGRect(x: x, y: cursorY + 2, width: 18, height: 6)
-            let path = UIBezierPath(roundedRect: swatch, cornerRadius: 3)
-            color.setFill()
-            path.fill()
-            x += 24
-            let width = draw(text, font: .systemFont(ofSize: 8.5), color: inkSoft, at: CGPoint(x: x, y: cursorY))
-            x += width + 18
-        }
-
-        let title = L("reports.pdf.usage") + ":"
-        let titleWidth = draw(title, font: .systemFont(ofSize: 8.5, weight: .semibold), color: ink, at: CGPoint(x: x, y: cursorY))
-        x += titleWidth + 10
-        legendItem(color: forest, text: L("reports.pdf.legend.completed"))
-        legendItem(color: amber, text: L("reports.pdf.legend.in_progress"))
-
-        cursorY += 24
     }
 
     // MARK: - Grupos por territorio
@@ -212,7 +176,7 @@ final class TerritoryReportPDFBuilder {
     }
 
     private func drawGroupHeader(_ group: TerritoryReportData.TerritoryGroup, continued: Bool) {
-        let badgeFont = UIFont.monospacedSystemFont(ofSize: 10, weight: .bold)
+        let badgeFont = roundedFont(size: 10, weight: .bold)
         let badgeText = attributed(group.code, font: badgeFont, color: .white)
         let badgeSize = badgeText.size()
         let badge = CGRect(x: margin, y: cursorY, width: badgeSize.width + 14, height: 20)
@@ -225,19 +189,19 @@ final class TerritoryReportPDFBuilder {
         if continued {
             name += " " + L("reports.pdf.continued")
         }
-        draw(name, font: .systemFont(ofSize: 12, weight: .bold), color: ink,
+        draw(name, font: roundedFont(size: 12, weight: .bold), color: ink,
              at: CGPoint(x: badge.maxX + 8, y: cursorY + 3))
 
         let count = group.entries.count == 1
             ? L("reports.pdf.assignments_one")
             : String(format: L("reports.pdf.assignments_count"), group.entries.count)
-        drawRightAligned(count, font: .systemFont(ofSize: 9), color: inkSoft,
+        drawRightAligned(count, font: roundedFont(size: 9, weight: .regular), color: inkSoft,
                          rightEdge: pageSize.width - margin, y: cursorY + 5)
         cursorY += 28
     }
 
     private func drawColumnHeaders() {
-        let font = UIFont.systemFont(ofSize: 7.5, weight: .semibold)
+        let font = roundedFont(size: 7.5, weight: .semibold)
         let y = cursorY
         var x = margin
         draw(L("reports.pdf.person").uppercased(), font: font, color: inkSoft, at: CGPoint(x: x, y: y), kern: 0.5)
@@ -247,7 +211,6 @@ final class TerritoryReportPDFBuilder {
         draw(L("reports.pdf.picked_date").uppercased(), font: font, color: inkSoft, at: CGPoint(x: x, y: y), kern: 0.5)
         x += colDate + colGap
         draw(L("reports.pdf.days").uppercased(), font: font, color: inkSoft, at: CGPoint(x: x, y: y), kern: 0.5)
-        draw(L("reports.pdf.usage").uppercased(), font: font, color: inkSoft, at: CGPoint(x: timelineX, y: y), kern: 0.5)
         cursorY += 14
 
         guard let cg = rendererContext?.cgContext else { return }
@@ -270,52 +233,22 @@ final class TerritoryReportPDFBuilder {
         let textY = cursorY + 3
         var x = margin
         let person = entry.personName ?? "—"
-        draw(truncated(person, maxWidth: colPerson, font: .systemFont(ofSize: 9.5, weight: .medium)),
-             font: .systemFont(ofSize: 9.5, weight: .medium), color: ink, at: CGPoint(x: x, y: textY))
+        draw(truncated(person, maxWidth: colPerson, font: roundedFont(size: 9.5, weight: .medium)),
+             font: roundedFont(size: 9.5, weight: .medium), color: ink, at: CGPoint(x: x, y: textY))
         x += colPerson + colGap
 
-        draw(entry.givenAt.map(formattedShortDate) ?? "—", font: .systemFont(ofSize: 9), color: ink,
+        draw(entry.givenAt.map(formattedShortDate) ?? "—", font: roundedFont(size: 9, weight: .regular), color: ink,
              at: CGPoint(x: x, y: textY))
         x += colDate + colGap
 
         let isOpen = entry.pickedAt == nil
         draw(entry.pickedAt.map(formattedShortDate) ?? L("reports.pdf.in_progress"),
-             font: .systemFont(ofSize: 9, weight: isOpen ? .semibold : .regular),
+             font: roundedFont(size: 9, weight: isOpen ? .semibold : .regular),
              color: isOpen ? amber : ink, at: CGPoint(x: x, y: textY))
         x += colDate + colGap
 
-        draw(durationDays(entry), font: .systemFont(ofSize: 9), color: inkSoft, at: CGPoint(x: x, y: textY))
-
-        drawTimelineBar(entry, y: cursorY + 6)
+        draw(durationDays(entry), font: roundedFont(size: 9, weight: .regular), color: inkSoft, at: CGPoint(x: x, y: textY))
         cursorY += rowHeight
-    }
-
-    /// Barra horizontal que sitúa la asignación dentro del rango del informe:
-    /// el carril gris es el período completo; el tramo relleno, el tiempo que
-    /// el territorio estuvo entregado.
-    private func drawTimelineBar(_ entry: TerritoryReportEntry, y: CGFloat) {
-        let track = CGRect(x: timelineX, y: y, width: timelineWidth, height: 6)
-        hairline.withAlphaComponent(0.7).setFill()
-        UIBezierPath(roundedRect: track, cornerRadius: 3).fill()
-
-        let total = data.endDate.timeIntervalSince(data.startDate)
-        guard total > 0, let given = entry.givenAt else { return }
-
-        let rawEnd = entry.pickedAt ?? data.endDate
-        let clampedStart = max(given, data.startDate)
-        let clampedEnd = min(rawEnd, data.endDate)
-        guard clampedEnd > clampedStart else { return }
-
-        let startRatio = CGFloat(clampedStart.timeIntervalSince(data.startDate) / total)
-        let endRatio = CGFloat(clampedEnd.timeIntervalSince(data.startDate) / total)
-        let fill = CGRect(
-            x: track.minX + startRatio * track.width,
-            y: track.minY,
-            width: max(3, (endRatio - startRatio) * track.width),
-            height: track.height
-        )
-        (entry.pickedAt == nil ? amber : forest).setFill()
-        UIBezierPath(roundedRect: fill, cornerRadius: 3).fill()
     }
 
     // MARK: - Utilidades de dibujo
@@ -354,9 +287,10 @@ final class TerritoryReportPDFBuilder {
         attributedText.draw(at: CGPoint(x: centerX - attributedText.size().width / 2, y: y))
     }
 
-    private func serifFont(size: CGFloat, weight: UIFont.Weight) -> UIFont {
+    /// SF Rounded, la misma tipografía que los tokens de la app (Font+Extensions).
+    private func roundedFont(size: CGFloat, weight: UIFont.Weight) -> UIFont {
         let base = UIFont.systemFont(ofSize: size, weight: weight)
-        guard let descriptor = base.fontDescriptor.withDesign(.serif) else { return base }
+        guard let descriptor = base.fontDescriptor.withDesign(.rounded) else { return base }
         return UIFont(descriptor: descriptor, size: size)
     }
 

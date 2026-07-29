@@ -168,16 +168,22 @@ final class NetworkManager: APIService {
                 URLQueryItem(name: "or", value: "(and(given_at.gte.\(startStr),given_at.lte.\(endStr)),and(picked_at.gte.\(startStr),picked_at.lte.\(endStr)))"),
                 URLQueryItem(name: "order", value: "code.asc,given_at.asc")
             ])
-            return rows.map { row in
-                [
-                    "territoryId": row["territory_id"] ?? 0,
-                    "code": row["code"] ?? "",
-                    "territoryName": row["name"] ?? "",
-                    "personName": row["person_name"] ?? NSNull(),
-                    "givenAt": row["given_at"] ?? NSNull(),
-                    "pickedAt": row["picked_at"] ?? NSNull()
-                ]
-            }
+            let allTerritories = try await restRows("/rest/v1/territories", queryItems: [
+                URLQueryItem(name: "select", value: "id")
+            ])
+            return [
+                "totalTerritories": allTerritories.count,
+                "entries": rows.map { row in
+                    [
+                        "territoryId": row["territory_id"] ?? 0,
+                        "code": row["code"] ?? "",
+                        "territoryName": row["name"] ?? "",
+                        "personName": row["person_name"] ?? NSNull(),
+                        "givenAt": row["given_at"] ?? NSNull(),
+                        "pickedAt": row["picked_at"] ?? NSNull()
+                    ]
+                }
+            ]
 
         case .getMovementHistory(let page, let pageSize, let search, let filter, let sort):
             return try await rpcObject("get_movement_history", body: [
