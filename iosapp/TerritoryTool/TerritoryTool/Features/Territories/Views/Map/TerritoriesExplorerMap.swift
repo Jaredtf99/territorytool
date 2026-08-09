@@ -74,12 +74,15 @@ struct TerritoriesExplorerMap: View {
         // El buscador está arriba; sin esto, el teclado encoge el GeometryReader y
         // empuja el drawer (anclado abajo) hacia arriba.
         .ignoresSafeArea(.keyboard, edges: .bottom)
+        // `.task(id:)` cancela sola la pasada anterior cuando cambia el conjunto de
+        // geometrías, que es justo lo que hace falta al teclear en el buscador.
+        .task(id: viewModel.geometryRevision) {
+            await updateMapCaches()
+        }
         .onAppear {
-            updateMapCaches()
             focusOnPrimary(animated: false)
         }
-        .onChange(of: viewModel.territoriesWithGeometry) { _, _ in
-            updateMapCaches()
+        .onChange(of: viewModel.geometryRevision) { _, _ in
             // Solo encuadramos en la primera carga. Las búsquedas no mueven la cámara;
             // el mapa solo se desplaza al seleccionar un territorio en el drawer.
             if !didFitInitialResults {
@@ -428,16 +431,17 @@ struct TerritoriesExplorerMap: View {
 
         // Comprueba la caja real que ocupa el texto, no un círculo basado en su
         // dimensión mayor. Esto conserva las etiquetas en territorios alargados.
+        typealias Point = TerritoryMapGeometryPreprocessor.Point
         let samples = [
-            MKMapPoint(x: center.x - halfWidth, y: center.y - halfHeight),
-            MKMapPoint(x: center.x, y: center.y - halfHeight),
-            MKMapPoint(x: center.x + halfWidth, y: center.y - halfHeight),
-            MKMapPoint(x: center.x - halfWidth, y: center.y),
-            center,
-            MKMapPoint(x: center.x + halfWidth, y: center.y),
-            MKMapPoint(x: center.x - halfWidth, y: center.y + halfHeight),
-            MKMapPoint(x: center.x, y: center.y + halfHeight),
-            MKMapPoint(x: center.x + halfWidth, y: center.y + halfHeight)
+            Point(x: center.x - halfWidth, y: center.y - halfHeight),
+            Point(x: center.x, y: center.y - halfHeight),
+            Point(x: center.x + halfWidth, y: center.y - halfHeight),
+            Point(x: center.x - halfWidth, y: center.y),
+            Point(x: center.x, y: center.y),
+            Point(x: center.x + halfWidth, y: center.y),
+            Point(x: center.x - halfWidth, y: center.y + halfHeight),
+            Point(x: center.x, y: center.y + halfHeight),
+            Point(x: center.x + halfWidth, y: center.y + halfHeight)
         ]
 
         // Un pequeño margen negativo evita parpadeos por redondeo justo en el borde.
@@ -447,44 +451,80 @@ struct TerritoriesExplorerMap: View {
         }
     }
 
-    private func updateMapCaches() {
-        var placements: [Int: TerritoryLabelPlacement] = [:]
-        var polylinesByTerritory: [Int: [TerritoryPreparedMapFeature]] = [:]
-        var sourcePolygons: [TerritoryPreparedSourcePolygon] = []
+    /// Prepara la geometría del mapa **fuera del actor principal**.
+    ///
+    /// Es el trabajo síncrono más pesado de la pantalla: ajusta las fronteras entre
+    /// territorios vecinos y busca el punto interior de cada etiqueta. Antes corría entero
+    /// en main desde `onAppear` y desde el `onChange` del conjunto de territorios.
+    ///
+    /// La proyección a espacio de mapa se hace aquí (es barata) para que lo único que cruce
+    /// la frontera sean valores `Sendable`; el cálculo va en una tarea aparte.
+    private func updateMapCaches() async {
+        let territories = viewModel.territoriesWithGeometry
 
-        for territory in viewModel.territoriesWithGeometry {
+        var polygonFeatures: [TerritoryMapGeometryPreprocessor.Feature] = []
+        var polylineFeatures: [TerritoryMapGeometryPreprocessor.Feature] = []
+        var textSizes: [Int: CGSize] = [:]
+
+        for territory in territories {
             guard let geometry = territory.mapGeometry else { continue }
-            sourcePolygons.append(
-                contentsOf: geometry.polygons.compactMap { polygon in
-                    let points = polygon.coordinates.map { MKMapPoint($0.clCoordinate) }
-                    guard points.count >= 3 else { return nil }
-                    return TerritoryPreparedSourcePolygon(
-                        territoryID: territory.id,
-                        id: polygon.id,
-                        points: points
-                    )
-                }
-            )
-            polylinesByTerritory[territory.id] = geometry.polylines.map {
-                TerritoryPreparedMapFeature(
-                    id: $0.id,
-                    coordinates: $0.coordinates.map(\.clCoordinate)
+            textSizes[territory.id] = labelTextSize(for: territory.name)
+
+            for polygon in geometry.polygons {
+                let points = polygon.coordinates.map(Self.preprocessorPoint)
+                guard points.count >= 3 else { continue }
+                polygonFeatures.append(
+                    .init(territoryID: territory.id, id: polygon.id, points: points)
                 )
             }
-            if let placement = geometry.labelPlacement {
-                placements[territory.id] = placement.withTextSize(labelTextSize(for: territory.name))
+            for polyline in geometry.polylines {
+                polylineFeatures.append(
+                    .init(
+                        territoryID: territory.id,
+                        id: polyline.id,
+                        points: polyline.coordinates.map(Self.preprocessorPoint)
+                    )
+                )
             }
         }
 
-        let adjustedPolygons = adjustedDisplayPolygons(from: sourcePolygons)
-        var geometries: [Int: TerritoryPreparedMapGeometry] = [:]
-        for territory in viewModel.territoriesWithGeometry {
-            let polygons = adjustedPolygons[territory.id] ?? []
-            let polylines = polylinesByTerritory[territory.id] ?? []
-            geometries[territory.id] = TerritoryPreparedMapGeometry(
-                polygons: polygons,
-                polylines: polylines
+        let work = Task.detached(priority: .userInitiated) {
+            TerritoryMapGeometryPreprocessor.process(
+                polygons: polygonFeatures,
+                polylines: polylineFeatures
             )
+        }
+        // `Task.detached` no hereda la cancelación del `.task(id:)`, así que se propaga a mano.
+        let output = await withTaskCancellationHandler {
+            await work.value
+        } onCancel: {
+            work.cancel()
+        }
+
+        guard let output, !Task.isCancelled else { return }
+
+        var geometries: [Int: TerritoryPreparedMapGeometry] = [:]
+        var placements: [Int: TerritoryLabelPlacement] = [:]
+
+        for territory in territories {
+            geometries[territory.id] = TerritoryPreparedMapGeometry(
+                polygons: (output.polygonsByTerritory[territory.id] ?? []).map(Self.preparedFeature),
+                polylines: (output.polylinesByTerritory[territory.id] ?? []).map(Self.preparedFeature)
+            )
+
+            if let placement = output.labelPlacements[territory.id] {
+                placements[territory.id] = TerritoryLabelPlacement(
+                    coordinate: MKMapPoint(x: placement.point.x, y: placement.point.y).coordinate,
+                    polygon: placement.polygon,
+                    bounds: MKMapRect(
+                        x: placement.bounds.minX,
+                        y: placement.bounds.minY,
+                        width: placement.bounds.maxX - placement.bounds.minX,
+                        height: placement.bounds.maxY - placement.bounds.minY
+                    ),
+                    textSize: textSizes[territory.id] ?? .zero
+                )
+            }
         }
 
         preparedGeometries = geometries
@@ -492,74 +532,22 @@ struct TerritoriesExplorerMap: View {
         visibleLabelIDs = calculateVisibleLabelIDs(in: visibleMapRect, placements: placements)
     }
 
-    /// Ajuste visual local: cuando un vértice de un territorio cae dentro de otro,
-    /// se mueve a medio camino hacia el borde del vecino. En el caso habitual de dos
-    /// fronteras casi paralelas que se solapan, ambos lados convergen hacia la línea
-    /// media sin modificar la geometría guardada en Supabase.
-    private func adjustedDisplayPolygons(
-        from polygons: [TerritoryPreparedSourcePolygon]
-    ) -> [Int: [TerritoryPreparedMapFeature]] {
-        guard polygons.count > 1 else {
-            var result: [Int: [TerritoryPreparedMapFeature]] = [:]
-            for polygon in polygons {
-                result[polygon.territoryID, default: []].append(polygon.preparedFeature)
-            }
-            return result
-        }
-
-        var result: [Int: [TerritoryPreparedMapFeature]] = [:]
-        for polygon in polygons {
-            let adjustedPoints = polygon.points.enumerated().map { index, point in
-                adjustedPoint(
-                    point,
-                    pointIndex: index,
-                    in: polygon,
-                    comparedWith: polygons
-                )
-            }
-            let closedPoints = polygon.isClosed ? adjustedPoints.closedWithFirstPoint() : adjustedPoints
-            result[polygon.territoryID, default: []].append(
-                TerritoryPreparedMapFeature(
-                    id: polygon.id,
-                    coordinates: closedPoints.map(\.coordinate)
-                )
-            )
-        }
-        return result
+    private static func preprocessorPoint(
+        _ coordinate: TerritoryMapCoordinate
+    ) -> TerritoryMapGeometryPreprocessor.Point {
+        let mapPoint = MKMapPoint(
+            CLLocationCoordinate2D(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        )
+        return .init(x: mapPoint.x, y: mapPoint.y)
     }
 
-    private func adjustedPoint(
-        _ point: MKMapPoint,
-        pointIndex: Int,
-        in polygon: TerritoryPreparedSourcePolygon,
-        comparedWith polygons: [TerritoryPreparedSourcePolygon]
-    ) -> MKMapPoint {
-        if polygon.isClosed, pointIndex == polygon.points.count - 1 {
-            return adjustedPoint(
-                polygon.points[0],
-                pointIndex: 0,
-                in: polygon,
-                comparedWith: polygons
-            )
-        }
-
-        var nearestBoundary: (point: MKMapPoint, distanceSquared: Double)?
-        let pointRect = MKMapRect(x: point.x, y: point.y, width: 1, height: 1)
-
-        for other in polygons where other.territoryID != polygon.territoryID {
-            guard other.expandedBounds.intersects(pointRect),
-                  signedDistance(from: point, to: other.points) > 0,
-                  let boundary = closestBoundaryPoint(to: point, in: other.points) else {
-                continue
-            }
-
-            if nearestBoundary == nil || boundary.distanceSquared < nearestBoundary!.distanceSquared {
-                nearestBoundary = boundary
-            }
-        }
-
-        guard let nearestBoundary else { return point }
-        return midpoint(point, nearestBoundary.point)
+    private static func preparedFeature(
+        _ feature: TerritoryMapGeometryPreprocessor.Feature
+    ) -> TerritoryPreparedMapFeature {
+        TerritoryPreparedMapFeature(
+            id: feature.id,
+            coordinates: feature.points.map { MKMapPoint(x: $0.x, y: $0.y).coordinate }
+        )
     }
 
     private func labelTextSize(for name: String) -> CGSize {
@@ -656,7 +644,7 @@ private extension TerritoryMapCoordinate {
 
 private struct TerritoryLabelPlacement {
     let coordinate: CLLocationCoordinate2D
-    let polygon: [MKMapPoint]
+    let polygon: [TerritoryMapGeometryPreprocessor.Point]
     let bounds: MKMapRect
     let textSize: CGSize
 
@@ -678,236 +666,6 @@ private struct TerritoryPreparedMapGeometry {
 private struct TerritoryPreparedMapFeature: Identifiable {
     let id: String
     let coordinates: [CLLocationCoordinate2D]
-}
-
-private struct TerritoryPreparedSourcePolygon {
-    let territoryID: Int
-    let id: String
-    let points: [MKMapPoint]
-    let bounds: MKMapRect
-
-    init(territoryID: Int, id: String, points: [MKMapPoint]) {
-        self.territoryID = territoryID
-        self.id = id
-        self.points = points
-        self.bounds = points.mapRect
-    }
-
-    var expandedBounds: MKMapRect {
-        bounds.insetBy(dx: -1, dy: -1)
-    }
-
-    var isClosed: Bool {
-        guard let first = points.first, let last = points.last else { return false }
-        return abs(first.x - last.x) < 0.001 && abs(first.y - last.y) < 0.001
-    }
-
-    var preparedFeature: TerritoryPreparedMapFeature {
-        TerritoryPreparedMapFeature(
-            id: id,
-            coordinates: points.map(\.coordinate)
-        )
-    }
-}
-
-private extension TerritoryMapGeometry {
-    var labelPlacement: TerritoryLabelPlacement? {
-        let candidates = polygons.compactMap { polygon -> ([MKMapPoint], Double)? in
-            let points = polygon.coordinates.map { MKMapPoint($0.clCoordinate) }
-            guard points.count >= 3 else { return nil }
-            return (points, abs(projectedArea(points)))
-        }
-        guard let points = candidates.max(by: { $0.1 < $1.1 })?.0 else { return nil }
-        return polylabel(points)
-    }
-
-    func projectedArea(_ points: [MKMapPoint]) -> Double {
-        var area = 0.0
-        for index in points.indices {
-            let next = points[(index + 1) % points.count]
-            area += points[index].x * next.y - next.x * points[index].y
-        }
-        return area / 2
-    }
-
-    func polylabel(_ polygon: [MKMapPoint]) -> TerritoryLabelPlacement? {
-        let minX = polygon.map(\.x).min() ?? 0
-        let minY = polygon.map(\.y).min() ?? 0
-        let maxX = polygon.map(\.x).max() ?? 0
-        let maxY = polygon.map(\.y).max() ?? 0
-        let width = maxX - minX
-        let height = maxY - minY
-        let cellSize = min(width, height)
-        guard cellSize > 0 else { return nil }
-
-        var cells: [LabelCell] = []
-        let half = cellSize / 2
-        var x = minX
-        while x < maxX {
-            var y = minY
-            while y < maxY {
-                cells.append(LabelCell(x: x + half, y: y + half, half: half, polygon: polygon))
-                y += cellSize
-            }
-            x += cellSize
-        }
-
-        var best = centroidCell(polygon)
-        let boundsCell = LabelCell(x: minX + width / 2, y: minY + height / 2, half: 0, polygon: polygon)
-        if boundsCell.distance > best.distance { best = boundsCell }
-
-        let precision = max(cellSize / 100, 0.5)
-        var iterations = 0
-        while let index = cells.indices.max(by: { cells[$0].maximum < cells[$1].maximum }),
-              iterations < 12_000 {
-            let cell = cells.remove(at: index)
-            if cell.distance > best.distance { best = cell }
-            if cell.maximum - best.distance <= precision {
-                iterations += 1
-                continue
-            }
-            let nextHalf = cell.half / 2
-            cells.append(LabelCell(x: cell.x - nextHalf, y: cell.y - nextHalf, half: nextHalf, polygon: polygon))
-            cells.append(LabelCell(x: cell.x + nextHalf, y: cell.y - nextHalf, half: nextHalf, polygon: polygon))
-            cells.append(LabelCell(x: cell.x - nextHalf, y: cell.y + nextHalf, half: nextHalf, polygon: polygon))
-            cells.append(LabelCell(x: cell.x + nextHalf, y: cell.y + nextHalf, half: nextHalf, polygon: polygon))
-            iterations += 1
-        }
-
-        let point = MKMapPoint(x: best.x, y: best.y)
-        return TerritoryLabelPlacement(
-            coordinate: point.coordinate,
-            polygon: polygon,
-            bounds: MKMapRect(
-                x: minX,
-                y: minY,
-                width: width,
-                height: height
-            ),
-            textSize: .zero
-        )
-    }
-
-    func centroidCell(_ polygon: [MKMapPoint]) -> LabelCell {
-        var area = 0.0
-        var x = 0.0
-        var y = 0.0
-        for index in polygon.indices {
-            let next = polygon[(index + 1) % polygon.count]
-            let factor = polygon[index].x * next.y - next.x * polygon[index].y
-            x += (polygon[index].x + next.x) * factor
-            y += (polygon[index].y + next.y) * factor
-            area += factor
-        }
-        guard abs(area) > .ulpOfOne else {
-            return LabelCell(x: polygon[0].x, y: polygon[0].y, half: 0, polygon: polygon)
-        }
-        return LabelCell(x: x / (3 * area), y: y / (3 * area), half: 0, polygon: polygon)
-    }
-}
-
-private struct LabelCell {
-    let x: Double
-    let y: Double
-    let half: Double
-    let distance: Double
-    let maximum: Double
-
-    init(x: Double, y: Double, half: Double, polygon: [MKMapPoint]) {
-        self.x = x
-        self.y = y
-        self.half = half
-        distance = signedDistance(from: MKMapPoint(x: x, y: y), to: polygon)
-        maximum = distance + half * squareRootOfTwo
-    }
-}
-
-private let squareRootOfTwo = 2.0.squareRoot()
-
-private func signedDistance(from point: MKMapPoint, to polygon: [MKMapPoint]) -> Double {
-    var inside = false
-    var minimumSquaredDistance = Double.greatestFiniteMagnitude
-    var previous = polygon.count - 1
-
-    for current in polygon.indices {
-        let a = polygon[current]
-        let b = polygon[previous]
-        if (a.y > point.y) != (b.y > point.y),
-           point.x < (b.x - a.x) * (point.y - a.y) / (b.y - a.y) + a.x {
-            inside.toggle()
-        }
-        minimumSquaredDistance = min(minimumSquaredDistance, squaredSegmentDistance(point, a, b))
-        previous = current
-    }
-
-    let distance = minimumSquaredDistance.squareRoot()
-    return inside ? distance : -distance
-}
-
-private func squaredSegmentDistance(_ point: MKMapPoint, _ start: MKMapPoint, _ end: MKMapPoint) -> Double {
-    var x = start.x
-    var y = start.y
-    let dx = end.x - x
-    let dy = end.y - y
-
-    if dx != 0 || dy != 0 {
-        let t = ((point.x - x) * dx + (point.y - y) * dy) / (dx * dx + dy * dy)
-        if t > 1 {
-            x = end.x
-            y = end.y
-        } else if t > 0 {
-            x += dx * t
-            y += dy * t
-        }
-    }
-
-    let pointDX = point.x - x
-    let pointDY = point.y - y
-    return pointDX * pointDX + pointDY * pointDY
-}
-
-private func closestBoundaryPoint(
-    to point: MKMapPoint,
-    in polygon: [MKMapPoint]
-) -> (point: MKMapPoint, distanceSquared: Double)? {
-    guard polygon.count > 1 else { return nil }
-
-    var closest: (point: MKMapPoint, distanceSquared: Double)?
-    var previous = polygon.count - 1
-    for current in polygon.indices {
-        let candidate = closestPointOnSegment(point, polygon[current], polygon[previous])
-        if closest == nil || candidate.distanceSquared < closest!.distanceSquared {
-            closest = candidate
-        }
-        previous = current
-    }
-    return closest
-}
-
-private func closestPointOnSegment(
-    _ point: MKMapPoint,
-    _ start: MKMapPoint,
-    _ end: MKMapPoint
-) -> (point: MKMapPoint, distanceSquared: Double) {
-    let dx = end.x - start.x
-    let dy = end.y - start.y
-    let candidate: MKMapPoint
-
-    if dx == 0 && dy == 0 {
-        candidate = start
-    } else {
-        let rawT = ((point.x - start.x) * dx + (point.y - start.y) * dy) / (dx * dx + dy * dy)
-        let t = min(1, max(0, rawT))
-        candidate = MKMapPoint(x: start.x + dx * t, y: start.y + dy * t)
-    }
-
-    let pointDX = point.x - candidate.x
-    let pointDY = point.y - candidate.y
-    return (candidate, pointDX * pointDX + pointDY * pointDY)
-}
-
-private func midpoint(_ lhs: MKMapPoint, _ rhs: MKMapPoint) -> MKMapPoint {
-    MKMapPoint(x: (lhs.x + rhs.x) / 2, y: (lhs.y + rhs.y) / 2)
 }
 
 private extension Array where Element == MKMapPoint {

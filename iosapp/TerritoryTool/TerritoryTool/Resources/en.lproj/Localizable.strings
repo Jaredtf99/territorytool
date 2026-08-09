@@ -69,7 +69,7 @@
 "territories.empty_list" = "No territories found";
 "territories.sort.name" = "Name";
 "territories.sort.code" = "Code";
-"territories.sort.given_date" = "Given Date";
+"territories.sort.given_date" = "Assigned / unused time";
 "territories.sort.ascending" = "Ascending";
 "territories.sort.descending" = "Descending";
 
@@ -100,8 +100,9 @@
 "territory.detail.refresh_image" = "Refresh Image";
 "territory.detail.delete" = "Delete";
 "territory.detail.delete_confirmation_title" = "Delete Territory";
-"territory.detail.delete_confirmation_message" = "Are you sure you want to delete this territory? This action cannot be undone.";
+"territory.detail.delete_confirmation_message" = "Are you sure you want to delete this territory? You can undo it for a few seconds.";
 "territory.delete.success" = "Territory deleted successfully";
+"territory.delete.error" = "The territory could not be deleted";
 "territory.stats.times_picked" = "Times Picked";
 "territory.stats.avg_holding" = "Avg. Holding";
 "territory.stats.unique_users" = "Unique Users";

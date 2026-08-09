@@ -67,19 +67,40 @@ struct TerritoriesView: View {
             Button("territory.detail.delete", role: .destructive) {
                 guard let territoryToDelete else { return }
                 Task {
-                    await viewModel.deleteTerritory(territoryToDelete)
-                    HapticManager.shared.notification(type: .success)
-                    ToastManager.shared.show(
-                        NSLocalizedString("territory.delete.success", comment: ""),
-                        style: .success,
-                        undoHandle: viewModel.lastDeleteUndoHandle,
-                        duration: viewModel.lastDeleteUndoHandle?.toastDuration ?? 3
-                    )
+                    if await viewModel.deleteTerritory(territoryToDelete) {
+                        HapticManager.shared.notification(type: .success)
+                        ToastManager.shared.show(
+                            NSLocalizedString("territory.delete.success", comment: ""),
+                            style: .success,
+                            undoHandle: viewModel.lastDeleteUndoHandle,
+                            duration: viewModel.lastDeleteUndoHandle?.toastDuration ?? 3
+                        )
+                    } else {
+                        HapticManager.shared.notification(type: .error)
+                        ToastManager.shared.show(
+                            viewModel.errorMessage
+                                ?? NSLocalizedString("territory.delete.error", comment: ""),
+                            style: .error
+                        )
+                    }
+                    self.territoryToDelete = nil
                 }
             }
-            Button("common.cancel", role: .cancel) {}
+            Button("common.cancel", role: .cancel) {
+                territoryToDelete = nil
+            }
         } message: {
             Text("territory.detail.delete_confirmation_message")
+        }
+        // El orden por cercanía se materializa aquí, no en el `body` del drawer.
+        .onChange(of: locationService.location) { _, location in
+            viewModel.updateNearestOrder(from: location)
+        }
+        .onChange(of: viewModel.sortOption) { _, _ in
+            viewModel.updateNearestOrder(from: locationService.location)
+        }
+        .onChange(of: viewModel.geometryRevision) { _, _ in
+            viewModel.updateNearestOrder(from: locationService.location)
         }
         .task {
             if let context = router.consumeTerritoriesLaunchContext() {

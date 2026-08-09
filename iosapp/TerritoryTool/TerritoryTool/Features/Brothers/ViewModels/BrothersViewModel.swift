@@ -39,13 +39,29 @@ enum BrotherSortOption: String, CaseIterable, Identifiable {
     }
 }
 
+/// Derivados de `brothers`, materializados juntos.
+///
+/// Antes eran propiedades computadas sobre `@Published`: `filteredBrothers`,
+/// `displayBrothers`, `count(for:)` (una por cada uno de los cuatro chips) y
+/// `summaryAssignmentDays` sumaban ~9 pasadas completas sobre el array **en cada evaluación
+/// de body**, y escribir en el buscador las repetía por pulsación.
+struct BrothersDerivedState {
+    var display: [Person] = []
+    var filterCounts: [BrotherFilter: Int] = [:]
+    var holderCount = 0
+    var enabledCount = 0
+    var assignmentDays: [Int] = []
+    /// Clave de animación: comparar contra `[Person]` obliga a recorrer el array entero.
+    var revision = 0
+}
+
 @MainActor
 class BrothersViewModel: ObservableObject {
-    @Published var brothers: [Person] = []
-    @Published var searchText: String = ""
-    @Published var filter: BrotherFilter = .all
-    @Published var sortOption: BrotherSortOption = .name
-    @Published var sortAscending: Bool = true
+    @Published var brothers: [Person] = [] { didSet { recompute() } }
+    @Published var searchText: String = "" { didSet { recompute() } }
+    @Published var filter: BrotherFilter = .all { didSet { recompute() } }
+    @Published var sortOption: BrotherSortOption = .name { didSet { recompute() } }
+    @Published var sortAscending: Bool = true { didSet { recompute() } }
     @Published var isLoading: Bool = true
     @Published var errorMessage: String?
     @Published var showAddSheet: Bool = false
@@ -53,25 +69,43 @@ class BrothersViewModel: ObservableObject {
     @Published var selectedBrother: Person?
     @Published var expandedBrotherIds: Set<Int> = []
 
-    /// Lista filtrada derivada de `brothers` + `searchText`. Al ser una propiedad
-    /// computada sobre @Published, SwiftUI la reevalúa sola sin estado duplicado.
-    var filteredBrothers: [Person] {
+    /// Todo lo derivado en una sola propiedad publicada.
+    @Published private(set) var derived = BrothersDerivedState()
+
+    // Accesores: las vistas siguen leyendo lo mismo, pero ya no recalculan por render.
+    var filteredBrothers: [Person] { searchFiltered() }
+    var displayBrothers: [Person] { derived.display }
+    var summaryHolderCount: Int { derived.holderCount }
+    var enabledCount: Int { derived.enabledCount }
+    var summaryAssignmentDays: [Int] { derived.assignmentDays }
+    var revision: Int { derived.revision }
+
+    /// Contador del chip de cada filtro (refleja la búsqueda activa).
+    func count(for filter: BrotherFilter) -> Int {
+        derived.filterCounts[filter] ?? 0
+    }
+
+    private func searchFiltered() -> [Person] {
         guard !searchText.isEmpty else { return brothers }
         return brothers.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
     }
 
-    // MARK: Lista visible (filtro + búsqueda + orden, sin agrupar)
+    /// Recalcula lista visible, contadores y resumen en una sola pasada.
+    private func recompute() {
+        let searched = searchFiltered()
 
-    /// Lista plana que pinta la pantalla: chip de filtro y búsqueda aplicados,
-    /// ordenada por `sortOption`/`sortAscending` con todos los estados mezclados.
-    var displayBrothers: [Person] {
+        let available = searched.filter { $0.enabled && !$0.hasActiveTerritory }
+        let withTerritories = searched.filter { $0.enabled && $0.hasActiveTerritory }
+        let inactive = searched.filter { !$0.enabled }
+
         let base: [Person]
         switch filter {
-        case .all: base = filteredBrothers
-        case .available: base = filteredBrothers.filter { $0.enabled && !$0.hasActiveTerritory }
-        case .withTerritories: base = filteredBrothers.filter { $0.enabled && $0.hasActiveTerritory }
-        case .inactive: base = filteredBrothers.filter { !$0.enabled }
+        case .all: base = searched
+        case .available: base = available
+        case .withTerritories: base = withTerritories
+        case .inactive: base = inactive
         }
+
         let sorted: [Person]
         switch sortOption {
         case .name:
@@ -81,36 +115,26 @@ class BrothersViewModel: ObservableObject {
         case .seniority:
             sorted = base.sorted { ($0.maxDaysHeld ?? -1) < ($1.maxDaysHeld ?? -1) }
         }
-        return sortAscending ? sorted : sorted.reversed()
-    }
 
-    /// Contador del chip de cada filtro (refleja la búsqueda activa).
-    func count(for filter: BrotherFilter) -> Int {
-        switch filter {
-        case .all: filteredBrothers.count
-        case .available: filteredBrothers.filter { $0.enabled && !$0.hasActiveTerritory }.count
-        case .withTerritories: filteredBrothers.filter { $0.enabled && $0.hasActiveTerritory }.count
-        case .inactive: filteredBrothers.filter { !$0.enabled }.count
-        }
-    }
+        let enabled = brothers.filter(\.enabled)
 
-    // MARK: Resumen global (independiente de búsqueda y filtro)
-
-    var summaryHolderCount: Int {
-        brothers.filter { $0.enabled && $0.hasActiveTerritory }.count
-    }
-
-    var enabledCount: Int {
-        brothers.filter(\.enabled).count
-    }
-
-    /// Días de cada asignación activa, de más antigua a más reciente.
-    /// Alimenta el número y la rejilla de puntos del resumen.
-    var summaryAssignmentDays: [Int] {
-        brothers.filter(\.enabled)
-            .flatMap { $0.territoriesInUse ?? [] }
-            .map { $0.daysHeld() }
-            .sorted(by: >)
+        derived = BrothersDerivedState(
+            display: sortAscending ? sorted : sorted.reversed(),
+            filterCounts: [
+                .all: searched.count,
+                .available: available.count,
+                .withTerritories: withTerritories.count,
+                .inactive: inactive.count
+            ],
+            // El resumen es global: no depende de búsqueda ni de filtro.
+            holderCount: enabled.filter(\.hasActiveTerritory).count,
+            enabledCount: enabled.count,
+            assignmentDays: enabled
+                .flatMap { $0.territoriesInUse ?? [] }
+                .map { $0.daysHeld() }
+                .sorted(by: >),
+            revision: derived.revision &+ 1
+        )
     }
 
     func isExpanded(_ brotherId: Int) -> Bool {

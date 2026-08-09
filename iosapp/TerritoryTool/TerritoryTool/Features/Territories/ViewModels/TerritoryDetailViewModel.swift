@@ -25,14 +25,16 @@ class TerritoryDetailViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            // Use sequential await instead of async let to avoid main actor isolation warnings
-            let detail: TerritoryDetail = try await apiService.request(endpoint: TerritoryEndpoint.getTerritoryDetail(id: territoryId))
-            let statistics: TerritoryStatistics = try await apiService.request(endpoint: TerritoryEndpoint.getTerritoryStats(id: territoryId))
-            let txs: [Transaction] = try await apiService.request(endpoint: TerritoryEndpoint.getTerritoryTransactions(id: territoryId))
-            
+            // Una sola petición: dentro, detalle/estadísticas/historial van en paralelo y el
+            // historial se descarga una única vez (antes alimentaba dos endpoints distintos).
+            let bundle: TerritoryDetailBundle = try await apiService.request(
+                endpoint: TerritoryEndpoint.getTerritoryDetailBundle(id: territoryId)
+            )
+            let detail = bundle.territory
+
             self.territory = detail
-            self.stats = statistics
-            self.transactions = txs
+            self.stats = bundle.stats
+            self.transactions = bundle.transactions
 
             if detail.mapGeometry == nil {
                 await syncMapGeometry()

@@ -1,6 +1,4 @@
-import CryptoKit
-import ImageIO
-import MapKit
+@preconcurrency import MapKit
 import SwiftUI
 import UIKit
 
@@ -93,11 +91,14 @@ struct TerritorySnapshotBackdrop: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.displayScale) private var displayScale
     @State private var snapshotImage: UIImage?
+    @State private var displayedCacheKey: String?
 
     var body: some View {
         GeometryReader { proxy in
+            let cacheKey = snapshotCacheKey(size: proxy.size, dark: colorScheme == .dark)
+
             ZStack {
-                if let snapshotImage {
+                if let snapshotImage, displayedCacheKey == cacheKey {
                     Image(uiImage: snapshotImage)
                         .resizable()
                         .frame(width: proxy.size.width, height: proxy.size.height)
@@ -105,7 +106,7 @@ struct TerritorySnapshotBackdrop: View {
                     Color.accent.opacity(0.06)
                 }
             }
-            .task(id: snapshotCacheKey(size: proxy.size, dark: colorScheme == .dark)) {
+            .task(id: cacheKey) {
                 await loadSnapshotImage(size: proxy.size, dark: colorScheme == .dark)
             }
         }
@@ -115,10 +116,14 @@ struct TerritorySnapshotBackdrop: View {
     private func loadSnapshotImage(size: CGSize, dark: Bool) async {
         guard size.width > 1, size.height > 1 else { return }
         let cacheKey = snapshotCacheKey(size: size, dark: dark)
-        if let cached = TerritorySnapshotCache.shared.image(for: cacheKey) {
+        // La lectura de disco y la descompresión ocurren en el worker; aquí sólo se espera.
+        if let cached = await TerritorySnapshotCache.shared.image(for: cacheKey) {
+            guard !Task.isCancelled else { return }
             snapshotImage = cached
+            displayedCacheKey = cacheKey
             return
         }
+        guard !Task.isCancelled else { return }
 
         let traitCollection = snapshotTraitCollection(dark: dark)
         let options = MKMapSnapshotter.Options()
@@ -131,20 +136,19 @@ struct TerritorySnapshotBackdrop: View {
         options.preferredConfiguration = configuration
 
         let snapshotter = MKMapSnapshotter(options: options)
-        let result = try? await withCheckedThrowingContinuation { (continuation: CheckedContinuation<MKMapSnapshotter.Snapshot, Error>) in
-            snapshotter.start(with: .global(qos: .userInitiated)) { snap, error in
-                if let snap {
-                    continuation.resume(returning: snap)
-                } else {
-                    continuation.resume(throwing: error ?? CocoaError(.featureUnsupported))
-                }
-            }
+        let result = try? await withTaskCancellationHandler {
+            try await snapshotter.start()
+        } onCancel: {
+            snapshotter.cancel()
         }
-        if let result {
-            let image = renderedSnapshotImage(from: result, size: size, traitCollection: traitCollection)
-            TerritorySnapshotCache.shared.insert(image, for: cacheKey)
-            snapshotImage = image
-        }
+        guard let result,
+              !Task.isCancelled,
+              snapshotCacheKey(size: size, dark: colorScheme == .dark) == cacheKey else { return }
+
+        let image = renderedSnapshotImage(from: result, size: size, traitCollection: traitCollection)
+        TerritorySnapshotCache.shared.insert(image, for: cacheKey)
+        snapshotImage = image
+        displayedCacheKey = cacheKey
     }
 
     private func renderedSnapshotImage(
@@ -230,7 +234,9 @@ struct TerritorySnapshotBackdrop: View {
         let bounds = geometry.bounds
         let traitCollection = snapshotTraitCollection(dark: dark)
         return [
-            "v2",
+            // v3: cambió el algoritmo de `snapshotFingerprint`, así que las entradas
+            // antiguas del disco ya no se pueden alcanzar y las retira la poda por edad.
+            "v3",
             geometry.snapshotFingerprint,
             String(format: "%.6f", bounds.south),
             String(format: "%.6f", bounds.west),
@@ -257,225 +263,9 @@ struct TerritorySnapshotBackdrop: View {
     }
 }
 
-@MainActor
-final class TerritorySnapshotCache {
-    static let shared = TerritorySnapshotCache()
-
-    private var images: [String: UIImage] = [:]
-    private var order: [String] = []
-    private let capacity = 80
-    private let diskCapacityBytes = 50 * 1024 * 1024
-    private let maxDiskAge: TimeInterval = 30 * 24 * 60 * 60
-    private let fileManager = FileManager.default
-    private let directory: URL
-
-    private init() {
-        let caches = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first
-            ?? fileManager.temporaryDirectory
-        directory = caches.appendingPathComponent("TerritorySnapshotCache", isDirectory: true)
-        try? fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
-    }
-
-    func image(for key: String) -> UIImage? {
-        if let image = images[key] {
-            markRecentlyUsed(key)
-            return image
-        }
-
-        for url in fileURLs(for: key) {
-            if isExpired(url) {
-                try? fileManager.removeItem(at: url)
-                continue
-            }
-
-            guard let data = try? Data(contentsOf: url),
-                  let image = UIImage(data: data) else {
-                continue
-            }
-
-            insertInMemory(image, for: key)
-            try? fileManager.setAttributes([.modificationDate: Date()], ofItemAtPath: url.path)
-            return image
-        }
-
-        return nil
-    }
-
-    func insert(_ image: UIImage, for key: String) {
-        insertInMemory(image, for: key)
-
-        if let encoded = encodedData(for: image) {
-            try? encoded.data.write(to: fileURL(for: key, extension: encoded.fileExtension), options: [.atomic])
-            removeAlternativeFormats(for: key, keeping: encoded.fileExtension)
-            pruneDiskCacheIfNeeded()
-        }
-    }
-
-    func diskSizeBytes() -> Int64 {
-        guard let urls = try? fileManager.contentsOfDirectory(
-            at: directory,
-            includingPropertiesForKeys: [.fileSizeKey],
-            options: [.skipsHiddenFiles]
-        ) else { return 0 }
-
-        return urls.reduce(into: Int64(0)) { total, url in
-            guard let values = try? url.resourceValues(forKeys: [.fileSizeKey]) else { return }
-            total += Int64(values.fileSize ?? 0)
-        }
-    }
-
-    func clear() {
-        images.removeAll()
-        order.removeAll()
-
-        guard let urls = try? fileManager.contentsOfDirectory(
-            at: directory,
-            includingPropertiesForKeys: nil,
-            options: [.skipsHiddenFiles]
-        ) else { return }
-
-        for url in urls {
-            try? fileManager.removeItem(at: url)
-        }
-    }
-
-    private func insertInMemory(_ image: UIImage, for key: String) {
-        images[key] = image
-        markRecentlyUsed(key)
-        while order.count > capacity, let oldest = order.first {
-            order.removeFirst()
-            images.removeValue(forKey: oldest)
-        }
-    }
-
-    private func markRecentlyUsed(_ key: String) {
-        order.removeAll { $0 == key }
-        order.append(key)
-    }
-
-    private func fileURLs(for key: String) -> [URL] {
-        [
-            fileURL(for: key, extension: "heic"),
-            fileURL(for: key, extension: "jpg"),
-            fileURL(for: key, extension: "png")
-        ]
-    }
-
-    private func fileURL(for key: String, extension fileExtension: String) -> URL {
-        directory.appendingPathComponent(key.sha256Hex).appendingPathExtension(fileExtension)
-    }
-
-    private func removeAlternativeFormats(for key: String, keeping fileExtension: String) {
-        for url in fileURLs(for: key) where url.pathExtension != fileExtension {
-            try? fileManager.removeItem(at: url)
-        }
-    }
-
-    private func encodedData(for image: UIImage) -> (data: Data, fileExtension: String)? {
-        if let heicData = image.heicData(compressionQuality: 0.38) {
-            return (heicData, "heic")
-        }
-
-        if let jpegData = image.jpegData(compressionQuality: 0.88) {
-            return (jpegData, "jpg")
-        }
-
-        return image.pngData().map { ($0, "png") }
-    }
-
-    private func isExpired(_ url: URL, now: Date = Date()) -> Bool {
-        guard let values = try? url.resourceValues(forKeys: [.contentModificationDateKey]),
-              let modified = values.contentModificationDate else {
-            return false
-        }
-        return now.timeIntervalSince(modified) > maxDiskAge
-    }
-
-    private func pruneDiskCacheIfNeeded() {
-        guard let urls = try? fileManager.contentsOfDirectory(
-            at: directory,
-            includingPropertiesForKeys: [.contentModificationDateKey, .fileSizeKey],
-            options: [.skipsHiddenFiles]
-        ) else { return }
-
-        var entries: [(url: URL, modified: Date, size: Int)] = []
-        var totalSize = 0
-        let now = Date()
-
-        for url in urls {
-            guard let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey]) else {
-                continue
-            }
-            let modified = values.contentModificationDate ?? .distantPast
-            if now.timeIntervalSince(modified) > maxDiskAge {
-                try? fileManager.removeItem(at: url)
-                continue
-            }
-            let size = values.fileSize ?? 0
-            totalSize += size
-            entries.append((url, modified, size))
-        }
-
-        guard totalSize > diskCapacityBytes else { return }
-
-        for entry in entries.sorted(by: { $0.modified < $1.modified }) {
-            try? fileManager.removeItem(at: entry.url)
-            totalSize -= entry.size
-            if totalSize <= diskCapacityBytes { break }
-        }
-    }
-}
-
 private extension Color {
     func snapshotColorKey(using traitCollection: UITraitCollection) -> String {
         UIColor(self).resolvedColor(with: traitCollection).snapshotColorKey
-    }
-}
-
-private extension UIImage {
-    func heicData(compressionQuality: CGFloat) -> Data? {
-        guard let cgImage else { return nil }
-        let imageToEncode = opaqueRGBCGImage ?? cgImage
-
-        let data = NSMutableData()
-        guard let destination = CGImageDestinationCreateWithData(data, "public.heic" as CFString, 1, nil) else {
-            return nil
-        }
-
-        let options: CFDictionary = [
-            kCGImageDestinationLossyCompressionQuality: compressionQuality
-        ] as CFDictionary
-
-        CGImageDestinationAddImage(destination, imageToEncode, options)
-        guard CGImageDestinationFinalize(destination) else { return nil }
-
-        return data as Data
-    }
-
-    private var opaqueRGBCGImage: CGImage? {
-        guard let cgImage else { return nil }
-
-        let width = cgImage.width
-        let height = cgImage.height
-        guard width > 0, height > 0 else { return nil }
-
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        let bitmapInfo = CGBitmapInfo.byteOrder32Big.rawValue | CGImageAlphaInfo.noneSkipLast.rawValue
-        guard let context = CGContext(
-            data: nil,
-            width: width,
-            height: height,
-            bitsPerComponent: 8,
-            bytesPerRow: width * 4,
-            space: colorSpace,
-            bitmapInfo: bitmapInfo
-        ) else {
-            return nil
-        }
-
-        context.interpolationQuality = .high
-        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
-        return context.makeImage()
     }
 }
 
@@ -489,31 +279,6 @@ private extension UIColor {
             return String(format: "%.3f,%.3f,%.3f,%.3f", red, green, blue, alpha)
         }
         return cgColor.components?.map { String(format: "%.3f", $0) }.joined(separator: ",") ?? "\(hash)"
-    }
-}
-
-private extension String {
-    var sha256Hex: String {
-        let digest = SHA256.hash(data: Data(utf8))
-        return digest.map { String(format: "%02x", $0) }.joined()
-    }
-}
-
-private extension TerritoryMapGeometry {
-    var snapshotFingerprint: String {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        if let data = try? encoder.encode(self) {
-            return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
-        }
-
-        let boundsKey = [
-            String(format: "%.6f", bounds.south),
-            String(format: "%.6f", bounds.west),
-            String(format: "%.6f", bounds.north),
-            String(format: "%.6f", bounds.east)
-        ].joined(separator: ",")
-        return "\(version)|\(boundsKey)|p:\(polygons.count)|l:\(polylines.count)|m:\(markers.count)"
     }
 }
 

@@ -34,7 +34,3 @@ class AppViewModel: ObservableObject {
         }
     }
 }
-
-extension Notification.Name {
-    static let sessionExpired = Notification.Name("sessionExpired")
-}

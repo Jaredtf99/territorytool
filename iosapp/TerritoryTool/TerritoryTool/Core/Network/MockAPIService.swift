@@ -32,6 +32,80 @@ class MockAPIService: APIService {
         )
     }()
 
+    static func sampleDetail(id: Int) -> TerritoryDetail {
+        TerritoryDetail(
+            id: id,
+            code: "T-04\(id)",
+            name: "Barrio del Río",
+            mapUrl: "https://example.com/map",
+            imgUrl: nil,
+            personName: id % 2 == 0 ? "Andrés Morales" : nil,
+            lastPickedDateUtc: Date().addingTimeInterval(-86400 * 190),
+            givenDateUtc: id % 2 == 0 ? Date().addingTimeInterval(-86400 * 186) : nil,
+            pickedCount: 15,
+            lastUser: "Jane Smith",
+            timelineItems: [
+                TimelineItem(id: 1, description: "Picked by John", type: .picked, date: Date().addingTimeInterval(-86400 * 2)),
+                TimelineItem(id: 2, description: "Returned by Jane", type: .gave, date: Date().addingTimeInterval(-86400 * 5)),
+                TimelineItem(id: 3, description: "Created", type: .added, date: Date().addingTimeInterval(-86400 * 30))
+            ],
+            mapGeometry: Self.sampleGeometry
+        )
+    }
+
+    static let sampleStats = TerritoryStatistics(
+        totalTerritories: 52,
+        usageRank: 4,
+        isHighUsage: true,
+        isLowUsage: false,
+        assignedTimePercentage: 78.0,
+        globalAverageAssignedTimePercentage: 64.0,
+        averageReassignmentTime: 26.0,
+        globalAverageReassignmentTime: 18.0,
+        averageHoldingTime: 131.0,
+        globalAverageHoldingTime: 94.0,
+        currentUnassignedTime: 2.0,
+        uniqueUsersCount: 6,
+        globalAverageUniqueUsersCount: 4.2
+    )
+
+    static let sampleTransactions: [Transaction] = {
+        func cycle(_ id: Int, _ person: String, givenDaysAgo: Int, pickedDaysAgo: Int?) -> Transaction {
+            Transaction(
+                id: id,
+                personId: 100 + id,
+                givenDateUtc: Date().addingTimeInterval(-86400 * Double(givenDaysAgo)),
+                pickedDateUtc: pickedDaysAgo.map { Date().addingTimeInterval(-86400 * Double($0)) },
+                givenBy: "Admin",
+                pickedBy: pickedDaysAgo == nil ? nil : "Admin",
+                territoryId: 1,
+                territoryName: "Barrio del Río",
+                personName: person
+            )
+        }
+        return [
+            cycle(1, "Andrés Morales", givenDaysAgo: 186, pickedDaysAgo: nil),
+            cycle(2, "Lucía García", givenDaysAgo: 302, pickedDaysAgo: 196),
+            cycle(3, "Marcos Ruiz", givenDaysAgo: 391, pickedDaysAgo: 319),
+            cycle(4, "Julia Pérez", givenDaysAgo: 502, pickedDaysAgo: 414),
+            cycle(5, "Sergio Ortega", givenDaysAgo: 640, pickedDaysAgo: 521)
+        ]
+    }()
+
+    func territoryExplorer(
+        term: String?,
+        filter: TerritoryFilter,
+        attentionDays: Int
+    ) async throws -> [Territory] {
+        try await request(
+            endpoint: TerritoryEndpoint.getTerritoryExplorer(
+                term: term,
+                filter: filter,
+                attentionDays: attentionDays
+            )
+        )
+    }
+
     func request<T>(endpoint: APIEndpoint) async throws -> T where T : Decodable {
         // Simulate network delay
         try? await Task.sleep(nanoseconds: 500_000_000)
@@ -40,64 +114,21 @@ class MockAPIService: APIService {
         case let territoryEndpoint as TerritoryEndpoint:
             switch territoryEndpoint {
             case .getTerritoryDetail(let id):
-                return TerritoryDetail(
-                    id: id,
-                    code: "T-04\(id)",
-                    name: "Barrio del Río",
-                    mapUrl: "https://example.com/map",
-                    imgUrl: nil,
-                    personName: id % 2 == 0 ? "Andrés Morales" : nil,
-                    lastPickedDateUtc: Date().addingTimeInterval(-86400 * 190),
-                    givenDateUtc: id % 2 == 0 ? Date().addingTimeInterval(-86400 * 186) : nil,
-                    pickedCount: 15,
-                    lastUser: "Jane Smith",
-                    timelineItems: [
-                        TimelineItem(id: 1, description: "Picked by John", type: .picked, date: Date().addingTimeInterval(-86400 * 2)),
-                        TimelineItem(id: 2, description: "Returned by Jane", type: .gave, date: Date().addingTimeInterval(-86400 * 5)),
-                        TimelineItem(id: 3, description: "Created", type: .added, date: Date().addingTimeInterval(-86400 * 30))
-                    ],
-                    mapGeometry: Self.sampleGeometry
+                return Self.sampleDetail(id: id) as! T
+
+            case .getTerritoryDetailBundle(let id):
+                return TerritoryDetailBundle(
+                    territory: Self.sampleDetail(id: id),
+                    stats: Self.sampleStats,
+                    transactions: Self.sampleTransactions
                 ) as! T
 
             case .getTerritoryStats:
-                return TerritoryStatistics(
-                    totalTerritories: 52,
-                    usageRank: 4,
-                    isHighUsage: true,
-                    isLowUsage: false,
-                    assignedTimePercentage: 78.0,
-                    globalAverageAssignedTimePercentage: 64.0,
-                    averageReassignmentTime: 26.0,
-                    globalAverageReassignmentTime: 18.0,
-                    averageHoldingTime: 131.0,
-                    globalAverageHoldingTime: 94.0,
-                    currentUnassignedTime: 2.0,
-                    uniqueUsersCount: 6,
-                    globalAverageUniqueUsersCount: 4.2
-                ) as! T
+                return Self.sampleStats as! T
 
             case .getTerritoryTransactions:
-                func cycle(_ id: Int, _ person: String, givenDaysAgo: Int, pickedDaysAgo: Int?) -> Transaction {
-                    Transaction(
-                        id: id,
-                        personId: 100 + id,
-                        givenDateUtc: Date().addingTimeInterval(-86400 * Double(givenDaysAgo)),
-                        pickedDateUtc: pickedDaysAgo.map { Date().addingTimeInterval(-86400 * Double($0)) },
-                        givenBy: "Admin",
-                        pickedBy: pickedDaysAgo == nil ? nil : "Admin",
-                        territoryId: 1,
-                        territoryName: "Barrio del Río",
-                        personName: person
-                    )
-                }
-                return [
-                    cycle(1, "Andrés Morales", givenDaysAgo: 186, pickedDaysAgo: nil),
-                    cycle(2, "Lucía García", givenDaysAgo: 302, pickedDaysAgo: 196),
-                    cycle(3, "Marcos Ruiz", givenDaysAgo: 391, pickedDaysAgo: 319),
-                    cycle(4, "Julia Pérez", givenDaysAgo: 502, pickedDaysAgo: 414),
-                    cycle(5, "Sergio Ortega", givenDaysAgo: 640, pickedDaysAgo: 521)
-                ] as! T
-                
+                return Self.sampleTransactions as! T
+
             case .getPersons:
                 return [
                     Person(id: 1, name: "Alice Johnson", enabled: true, territoriesInUse: []),

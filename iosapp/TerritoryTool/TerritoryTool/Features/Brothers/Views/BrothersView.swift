@@ -127,11 +127,9 @@ struct BrothersView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .contentMargins(.bottom, AppSpacing.xl, for: .scrollContent)
-        .animation(.spring(response: 0.35, dampingFraction: 0.82), value: viewModel.filter)
-        .animation(.spring(response: 0.35, dampingFraction: 0.82), value: viewModel.searchText)
-        .animation(.spring(response: 0.35, dampingFraction: 0.82), value: viewModel.sortOption)
-        .animation(.spring(response: 0.35, dampingFraction: 0.82), value: viewModel.sortAscending)
-        .animation(.spring(response: 0.4, dampingFraction: 0.84), value: viewModel.brothers)
+        // Una sola animación sobre el contador de recálculo. Antes eran cinco encadenadas,
+        // y la última comparaba `[Person]` entero en cada evaluación de body.
+        .animation(.spring(response: 0.35, dampingFraction: 0.82), value: viewModel.revision)
         .refreshable {
             await viewModel.fetchBrothers()
             HapticManager.shared.notification(type: .success)

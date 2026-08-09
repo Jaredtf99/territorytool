@@ -93,14 +93,16 @@ struct SettingsView: View {
         .alert("settings.map_cache.clear", isPresented: $showClearMapCacheAlert) {
             Button("cancel", role: .cancel) { }
             Button("settings.map_cache.clear", role: .destructive) {
-                TerritorySnapshotCache.shared.clear()
-                refreshMapSnapshotCacheSize()
+                Task {
+                    await TerritorySnapshotCache.shared.clear()
+                    await refreshMapSnapshotCacheSize()
+                }
             }
         } message: {
             Text("settings.map_cache.clear_confirmation")
         }
         .task {
-            refreshMapSnapshotCacheSize()
+            await refreshMapSnapshotCacheSize()
         }
         .scrollContentBackground(.hidden)
         .background {
@@ -115,11 +117,9 @@ struct SettingsView: View {
         )
     }
 
-    private func refreshMapSnapshotCacheSize() {
-        mapSnapshotCacheSizeBytes = TerritorySnapshotCache.shared.diskSizeBytes()
+    /// Enumerar el directorio de caché también salía del hilo principal: ahora lo hace el
+    /// worker de disco y aquí sólo se espera el resultado.
+    private func refreshMapSnapshotCacheSize() async {
+        mapSnapshotCacheSizeBytes = await TerritorySnapshotCache.shared.diskSizeBytes()
     }
-}
-
-extension Notification.Name {
-    static let userRequestedLogout = Notification.Name("userRequestedLogout")
 }

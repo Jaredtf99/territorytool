@@ -29,13 +29,14 @@ class LoginViewModel: ObservableObject {
         
         do {
             let response = try await authService.login(username: userName, password: password)
-            TokenManager.shared.saveToken(response.token)
-            TokenManager.shared.saveRefreshToken(response.session.refreshToken)
-            TokenManager.shared.saveProfile(userName: response.profile?.username, role: response.profile?.role)
-            TokenManager.shared.saveActiveCongregationId(response.profile?.activeCongregationId)
-            if let congregations = response.congregations {
-                TokenManager.shared.saveCongregations(try? JSONEncoder().encode(congregations))
-            }
+            TokenManager.shared.saveSession(
+                token: response.token,
+                refreshToken: response.session.refreshToken,
+                userName: response.profile?.username,
+                role: response.profile?.role,
+                activeCongregationId: response.profile?.activeCongregationId,
+                congregations: response.congregations.flatMap { try? JSONEncoder().encode($0) }
+            )
             isAuthenticated = true
         } catch {
             errorMessage = "Login failed: \(error.localizedDescription)"

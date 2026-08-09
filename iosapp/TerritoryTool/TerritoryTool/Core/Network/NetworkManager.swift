@@ -29,6 +29,8 @@ enum NetworkError: Error, LocalizedError {
 final class NetworkManager: APIService {
     static let shared = NetworkManager()
 
+    private static let territoryImagesBucket = "territory-images"
+
     private let session: URLSession
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
@@ -56,6 +58,47 @@ final class NetworkManager: APIService {
         _ = try await payload(for: endpoint)
     }
 
+    /// Explorador de territorios sin pasar por diccionarios.
+    ///
+    /// El parseo y la decodificación ocurren dentro de `NetworkTransport`, fuera del actor
+    /// principal; aquí sólo queda construir los modelos, que es trabajo trivial. El camino
+    /// heredado hacía `JSON → [String: Any] → Data → Decodable` **entero en main**, y sobre
+    /// este endpoint en concreto eso significa hasta 1000 territorios con toda su geometría.
+    func territoryExplorer(
+        term: String?,
+        filter: TerritoryFilter,
+        attentionDays: Int
+    ) async throws -> [Territory] {
+        let request = try NetworkTransport.makeRequest(
+            path: "/rest/v1/rpc/search_territory_explorer",
+            method: "POST",
+            body: try JSONSerialization.data(withJSONObject: [
+                "term": term ?? NSNull(),
+                "status": filter.backendValue,
+                "attention_days": attentionDays,
+                "take": 1000
+            ])
+        )
+
+        let rows = try await NetworkTransport.shared.decoded([TerritoryRowDTO].self, for: request)
+
+        let signedURLs = await signedImageURLs(
+            for: rows.compactMap { row in
+                // Sólo los territorios sin geometría llegan a usar `imgUrl`.
+                guard row.mapGeometry == nil,
+                      let path = row.imagePath,
+                      !path.isEmpty else {
+                    return nil
+                }
+                return path
+            }
+        )
+
+        return rows.map { row in
+            row.territory(imageURL: row.imagePath.flatMap { signedURLs[$0] })
+        }
+    }
+
     private func payload(for endpoint: APIEndpoint) async throws -> Any {
         guard let territoryEndpoint = endpoint as? TerritoryEndpoint else {
             throw NetworkError.invalidURL
@@ -64,13 +107,14 @@ final class NetworkManager: APIService {
         switch territoryEndpoint {
         case .login(let credentials):
             let response = try await SupabaseAuthService.shared.login(username: credentials.userName, password: credentials.password)
-            TokenManager.shared.saveToken(response.token)
-            TokenManager.shared.saveRefreshToken(response.session.refreshToken)
-            TokenManager.shared.saveProfile(userName: response.profile?.username, role: response.profile?.role)
-            TokenManager.shared.saveActiveCongregationId(response.profile?.activeCongregationId)
-            if let congregations = response.congregations {
-                TokenManager.shared.saveCongregations(try? JSONEncoder().encode(congregations))
-            }
+            TokenManager.shared.saveSession(
+                token: response.token,
+                refreshToken: response.session.refreshToken,
+                userName: response.profile?.username,
+                role: response.profile?.role,
+                activeCongregationId: response.profile?.activeCongregationId,
+                congregations: response.congregations.flatMap { try? JSONEncoder().encode($0) }
+            )
             return ["token": response.token]
 
         case .getTerritories(let term, let inUse, let orderBy, let ascending, let fromDate, let toDate):
@@ -80,7 +124,7 @@ final class NetworkManager: APIService {
                 "only_given": inUse == true,
                 "take": 1000
             ])
-            var territories = try await mapTerritories(rows)
+            var territories = await mapTerritories(rows)
             if let fromDate {
                 territories = territories.filter { dateValue($0["givenDateUtc"]) >= fromDate }
             }
@@ -96,7 +140,7 @@ final class NetworkManager: APIService {
                 "attention_days": attentionDays,
                 "take": 1000
             ])
-            return try await mapExplorerTerritories(rows)
+            return await mapTerritories(rows)
 
         case .searchQuickAction(let term):
             // Buscador unificado: una sola RPC devuelve territorios y personas mezclados,
@@ -114,7 +158,7 @@ final class NetworkManager: APIService {
                 if kind == "person" {
                     hits.append(["kind": "person", "score": score, "person": data, "territory": NSNull()])
                 } else {
-                    let territory = (try await mapTerritories([data])).first ?? [:]
+                    let territory = (await mapTerritories([data])).first ?? [:]
                     hits.append(["kind": "territory", "score": score, "territory": territory, "person": NSNull()])
                 }
             }
@@ -125,10 +169,13 @@ final class NetworkManager: APIService {
                 URLQueryItem(name: "select", value: "*"),
                 URLQueryItem(name: "id", value: "eq.\(id)")
             ])
-            return (try await mapTerritories([row])).first ?? [:]
+            return (await mapTerritories([row])).first ?? [:]
 
         case .getTerritoryDetail(let id):
             return try await buildTerritoryDetail(id: id)
+
+        case .getTerritoryDetailBundle(let id):
+            return try await buildTerritoryDetailBundle(id: id)
 
         case .getTerritoryStats(let id):
             let stats = try await rpcObject("get_territory_statistics", body: ["territory_id": id])
@@ -270,7 +317,7 @@ final class NetworkManager: APIService {
 
         case .resolveTerritorySelector(let value):
             let rows = try await rpcRows("resolve_territory_selector", body: ["value": value])
-            guard let territory = try await mapTerritories(rows).first else {
+            guard let territory = await mapTerritories(rows).first else {
                 throw NetworkError.serverError(
                     NSLocalizedString(
                         "quick_action.territory_not_found",
@@ -480,53 +527,17 @@ final class NetworkManager: APIService {
         return try await requestJSON(path: "/functions/v1/\(name)", method: "POST", body: body)
     }
 
-    private func requestJSON(path: String, method: String, queryItems: [URLQueryItem] = [], body: Any? = nil, allowRefresh: Bool = true) async throws -> Any {
-        guard var components = URLComponents(string: AppConfig.supabaseURL + path) else {
-            throw NetworkError.invalidURL
-        }
-        if !queryItems.isEmpty {
-            components.queryItems = queryItems
-        }
-        guard let url = components.url else {
-            throw NetworkError.invalidURL
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = method
-        request.addValue(AppConfig.supabasePublishableKey, forHTTPHeaderField: "apikey")
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue("application/json", forHTTPHeaderField: "Accept")
-
-        let bearer = TokenManager.shared.getToken() ?? AppConfig.supabasePublishableKey
-        request.addValue("Bearer \(bearer)", forHTTPHeaderField: "Authorization")
-
-        if let body {
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        }
-
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw NetworkError.invalidResponse
-        }
-
-        guard (200...299).contains(httpResponse.statusCode) else {
-            if httpResponse.statusCode == 401 {
-                // The access token likely expired. Try to exchange the refresh
-                // token for a fresh one and replay the request once. Only give
-                // up (and surface "session expired") if the refresh itself fails.
-                if allowRefresh, TokenManager.shared.getRefreshToken() != nil {
-                    do {
-                        _ = try await SessionRefresher.shared.refresh()
-                        return try await requestJSON(path: path, method: method, queryItems: queryItems, body: body, allowRefresh: false)
-                    } catch {
-                        // Refresh token revoked/expired — fall through to logout.
-                    }
-                }
-                NotificationCenter.default.post(name: .sessionExpired, object: nil)
-                throw NetworkError.unauthorized
-            }
-            throw NetworkError.serverError(errorMessage(from: data) ?? "Status code: \(httpResponse.statusCode)")
-        }
+    /// Camino heredado: la respuesta se parsea a diccionarios y se remapea aquí, en main.
+    /// Los endpoints que mueven volumen usan `decoded(_:for:)` del transporte y se saltan
+    /// este viaje entero.
+    private func requestJSON(path: String, method: String, queryItems: [URLQueryItem] = [], body: Any? = nil) async throws -> Any {
+        let request = try NetworkTransport.makeRequest(
+            path: path,
+            method: method,
+            queryItems: queryItems,
+            body: try body.map { try JSONSerialization.data(withJSONObject: $0) }
+        )
+        let data = try await NetworkTransport.shared.data(for: request)
 
         if data.isEmpty {
             return [:]
@@ -535,17 +546,55 @@ final class NetworkManager: APIService {
     }
 
     private func buildTerritoryDetail(id: Int) async throws -> [String: Any] {
-        let state = try await singleRow("/rest/v1/territory_current_state", queryItems: [
+        async let stateRow = territoryStateRow(id: id)
+        async let historyRows = territoryHistoryRows(id: id)
+        return try await territoryDetailPayload(state: stateRow, history: historyRows, id: id)
+    }
+
+    /// Detalle, estadísticas y transacciones en una sola llamada del ViewModel.
+    ///
+    /// Antes la pantalla encadenaba `getTerritoryDetail` + `getTerritoryStats` +
+    /// `getTerritoryTransactions`, y `getTerritoryDetail` pedía a su vez dos recursos: eran
+    /// cuatro viajes en serie **y** `territory_details` se descargaba dos veces, una para la
+    /// línea de tiempo y otra para las transacciones. Aquí el historial se pide una sola vez
+    /// y las tres consultas se solapan.
+    private func buildTerritoryDetailBundle(id: Int) async throws -> [String: Any] {
+        async let stateRow = territoryStateRow(id: id)
+        async let historyRows = territoryHistoryRows(id: id)
+        async let statsRow = rpcObject("get_territory_statistics", body: ["territory_id": id])
+
+        let state = try await stateRow
+        let history = try await historyRows
+        let stats = try await statsRow
+
+        return [
+            "territory": await territoryDetailPayload(state: state, history: history, id: id),
+            "stats": mapStatistics(stats),
+            "transactions": mapTransactions(history)
+        ]
+    }
+
+    private func territoryStateRow(id: Int) async throws -> [String: Any] {
+        try await singleRow("/rest/v1/territory_current_state", queryItems: [
             URLQueryItem(name: "select", value: "*"),
             URLQueryItem(name: "id", value: "eq.\(id)")
         ])
-        let history = try await restRows("/rest/v1/territory_details", queryItems: [
+    }
+
+    private func territoryHistoryRows(id: Int) async throws -> [[String: Any]] {
+        try await restRows("/rest/v1/territory_details", queryItems: [
             URLQueryItem(name: "select", value: "*"),
             URLQueryItem(name: "territory_id", value: "eq.\(id)"),
             URLQueryItem(name: "order", value: "given_at.desc")
         ])
+    }
 
-        let territory = (try await mapTerritories([state])).first ?? [:]
+    private func territoryDetailPayload(
+        state: [String: Any],
+        history: [[String: Any]],
+        id: Int
+    ) async -> [String: Any] {
+        let territory = (await mapTerritories([state])).first ?? [:]
         let timeline = history.flatMap { row -> [[String: Any]] in
             guard let transactionId = row["transaction_id"] as? Int else { return [] }
             var items: [[String: Any]] = [[
@@ -581,42 +630,41 @@ final class NetworkManager: APIService {
         ]
     }
 
-    private func mapTerritories(_ rows: [[String: Any]]) async throws -> [[String: Any]] {
-        var territories: [[String: Any]] = []
-        for row in rows {
+    private func mapTerritories(_ rows: [[String: Any]]) async -> [[String: Any]] {
+        let signedURLs = await signedImageURLs(for: imagePathsNeedingSignature(in: rows))
+
+        return rows.map { row in
             let imagePath = row["image_path"] as? String
-            territories.append([
+            return [
                 "id": row["id"] ?? 0,
                 "code": row["code"] ?? "",
                 "name": row["name"] ?? "",
                 "mapUrl": row["map_url"] ?? "",
-                "imgUrl": try await signedImageURL(for: imagePath) ?? NSNull(),
+                "imgUrl": imagePath.flatMap { signedURLs[$0] } ?? NSNull(),
                 "personName": row["person_name"] ?? NSNull(),
                 "givenDateUtc": row["given_at"] ?? NSNull(),
                 "lastPickedDateUtc": row["last_picked_at"] ?? NSNull(),
                 "mapGeometry": row["map_geometry"] ?? NSNull()
-            ])
+            ]
         }
-        return territories
     }
 
-    private func mapExplorerTerritories(_ rows: [[String: Any]]) async throws -> [[String: Any]] {
-        var territories: [[String: Any]] = []
-        for row in rows {
-            let imagePath = row["image_path"] as? String
-            territories.append([
-                "id": row["id"] ?? 0,
-                "code": row["code"] ?? "",
-                "name": row["name"] ?? "",
-                "mapUrl": row["map_url"] ?? "",
-                "imgUrl": try await signedImageURL(for: imagePath) ?? NSNull(),
-                "personName": row["person_name"] ?? NSNull(),
-                "givenDateUtc": row["given_at"] ?? NSNull(),
-                "lastPickedDateUtc": row["last_picked_at"] ?? NSNull(),
-                "mapGeometry": row["map_geometry"] ?? NSNull()
-            ])
+    /// Rutas de imagen que merece la pena firmar.
+    ///
+    /// Sólo las de territorios **sin** geometría: cuando hay geometría, las vistas dibujan
+    /// el snapshot del polígono y nunca llegan a mirar `imgUrl` (es la rama `else` de
+    /// `TerritoryExplorerRow.mapBackdrop`, `TerritoryCard` y `QuickActionConfirmView`).
+    /// Antes se firmaba una por una, en serie y con `await`, también las que se descartaban:
+    /// con 60 territorios eran 60 viajes de ida y vuelta antes de poder pintar la lista.
+    private func imagePathsNeedingSignature(in rows: [[String: Any]]) -> [String] {
+        rows.compactMap { row in
+            guard isNull(row["map_geometry"]),
+                  let path = row["image_path"] as? String,
+                  !path.isEmpty else {
+                return nil
+            }
+            return path
         }
-        return territories
     }
 
     private func mapTransactions(_ rows: [[String: Any]]) -> [[String: Any]] {
@@ -662,24 +710,51 @@ final class NetworkManager: APIService {
         return 0
     }
 
-    private func signedImageURL(for imagePath: String?) async throws -> Any? {
-        guard let imagePath, !imagePath.isEmpty else { return nil }
-        let encodedPath = imagePath
-            .split(separator: "/")
-            .map { String($0).addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? String($0) }
-            .joined(separator: "/")
-        let result = try await requestJSON(
-            path: "/storage/v1/object/sign/territory-images/\(encodedPath)",
-            method: "POST",
-            body: ["expiresIn": 3600]
-        )
-        guard let object = result as? [String: Any],
-              let signed = object["signedURL"] as? String ?? object["signedUrl"] as? String else {
-            return nil
+    /// Firma en una sola petición todas las rutas que no estén ya en caché.
+    ///
+    /// El endpoint de lote responde con un array de `{path, signedURL, error}` y **puede
+    /// devolver HTTP 200 con entradas fallidas dentro**, así que cada una se comprueba por
+    /// separado. Un fallo de firma deja esa imagen sin URL en lugar de tumbar la carga
+    /// entera de la lista, que es lo que ocurría cuando se firmaban de una en una.
+    private func signedImageURLs(for paths: [String]) async -> [String: String] {
+        var result: [String: String] = [:]
+        var pending: [String] = []
+
+        for path in Set(paths) {
+            if let cached = SignedImageURLCache.shared.url(forPath: path, bucket: Self.territoryImagesBucket) {
+                result[path] = cached
+            } else {
+                pending.append(path)
+            }
         }
-        // The sign endpoint returns a path relative to the Storage API root
-        // (e.g. "/object/sign/territory-images/...?token=..."), so it needs the
-        // "/storage/v1" prefix to form a reachable URL.
+
+        guard !pending.isEmpty else { return result }
+
+        let response = try? await requestJSON(
+            path: "/storage/v1/object/sign/\(Self.territoryImagesBucket)",
+            method: "POST",
+            body: ["expiresIn": 3600, "paths": pending]
+        )
+        guard let entries = response as? [[String: Any]] else { return result }
+
+        for entry in entries {
+            guard isNull(entry["error"]),
+                  let path = entry["path"] as? String,
+                  let signed = entry["signedURL"] as? String ?? entry["signedUrl"] as? String else {
+                continue
+            }
+            let absolute = absoluteStorageURL(signed)
+            result[path] = absolute
+            SignedImageURLCache.shared.store(absolute, forPath: path, bucket: Self.territoryImagesBucket)
+        }
+
+        return result
+    }
+
+    /// El endpoint de firma devuelve una ruta relativa a la raíz de la API de Storage
+    /// (p. ej. "/object/sign/territory-images/...?token=..."), así que necesita el prefijo
+    /// "/storage/v1" para formar una URL alcanzable.
+    private func absoluteStorageURL(_ signed: String) -> String {
         if signed.hasPrefix("http") { return signed }
         let relative = signed.hasPrefix("/storage/v1") ? signed : "/storage/v1" + signed
         return AppConfig.supabaseURL + relative

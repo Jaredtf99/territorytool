@@ -60,7 +60,17 @@ struct TerritoryDetail: Codable, Identifiable {
     let mapGeometry: TerritoryMapGeometry?
 }
 
-struct TerritoryMapGeometry: Codable, Equatable {
+/// Todo lo que necesita la pantalla de detalle, en una sola respuesta.
+///
+/// Existe para que el ViewModel no encadene tres peticiones que, además, hacían que el
+/// historial (`territory_details`) se descargara dos veces.
+struct TerritoryDetailBundle: Codable {
+    let territory: TerritoryDetail
+    let stats: TerritoryStatistics
+    let transactions: [Transaction]
+}
+
+nonisolated struct TerritoryMapGeometry: Codable, Equatable, Sendable {
     let version: Int
     let bounds: TerritoryMapBounds
     let polygons: [TerritoryMapFeature]
@@ -68,26 +78,26 @@ struct TerritoryMapGeometry: Codable, Equatable {
     let markers: [TerritoryMapMarker]
 }
 
-struct TerritoryMapBounds: Codable, Equatable {
+nonisolated struct TerritoryMapBounds: Codable, Equatable, Sendable {
     let south: Double
     let west: Double
     let north: Double
     let east: Double
 }
 
-struct TerritoryMapCoordinate: Codable, Equatable {
+nonisolated struct TerritoryMapCoordinate: Codable, Equatable, Sendable {
     let latitude: Double
     let longitude: Double
 }
 
-struct TerritoryMapFeature: Codable, Identifiable, Equatable {
+nonisolated struct TerritoryMapFeature: Codable, Identifiable, Equatable, Sendable {
     let id: String
     let name: String?
     let description: String?
     let coordinates: [TerritoryMapCoordinate]
 }
 
-struct TerritoryMapMarker: Codable, Identifiable, Equatable {
+nonisolated struct TerritoryMapMarker: Codable, Identifiable, Equatable, Sendable {
     let id: String
     let title: String?
     let description: String?

@@ -43,6 +43,8 @@ private func roleStringToInt(_ role: String) -> Int {
 enum TerritoryEndpoint: APIEndpoint {
     case getTerritory(id: Int)
     case getTerritoryDetail(id: Int)
+    /// Detalle + estadísticas + transacciones en una sola respuesta.
+    case getTerritoryDetailBundle(id: Int)
     case getTerritoryStats(id: Int)
     case getTerritoryTransactions(id: Int)
     case giveTerritory(code: String, personName: String, date: Date?)
@@ -97,7 +99,7 @@ enum TerritoryEndpoint: APIEndpoint {
     
     var method: HTTPMethod {
         switch self {
-        case .getTerritory, .getTerritoryDetail, .getTerritoryStats, .getTerritoryTransactions,
+        case .getTerritory, .getTerritoryDetail, .getTerritoryDetailBundle, .getTerritoryStats, .getTerritoryTransactions,
              .getPersons, .getPersonsWithAssignments, .searchQuickAction, .resolveTerritorySelector,
              .getDashboardSnapshot, .getMovementHistory, .getTerritories, .getTerritoryExplorer,
              .getTerritoryReport:

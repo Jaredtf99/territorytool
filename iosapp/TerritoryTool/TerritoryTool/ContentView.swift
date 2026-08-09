@@ -41,10 +41,6 @@ struct ContentView: View {
     }
 }
 
-extension Notification.Name {
-    static let authChanged = Notification.Name("authChanged")
-    // userRequestedLogout is defined in SettingsView.swift or should be moved to a shared extension file
-}
 
 #Preview {
     ContentView()

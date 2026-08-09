@@ -74,7 +74,3 @@ final class CongregationStore: ObservableObject {
         TokenManager.shared.saveCongregations(try? JSONEncoder().encode(list))
     }
 }
-
-extension Notification.Name {
-    static let congregationChanged = Notification.Name("congregationChanged")
-}

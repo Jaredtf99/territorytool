@@ -69,7 +69,7 @@
 "territories.empty_list" = "No se encontraron territorios";
 "territories.sort.name" = "Nombre";
 "territories.sort.code" = "Código";
-"territories.sort.given_date" = "Fecha de Entrega";
+"territories.sort.given_date" = "Tiempo entregado / sin uso";
 "territories.sort.ascending" = "Ascendente";
 "territories.sort.descending" = "Descendente";
 
@@ -100,8 +100,9 @@
 "territory.detail.refresh_image" = "Actualizar Imagen";
 "territory.detail.delete" = "Eliminar";
 "territory.detail.delete_confirmation_title" = "Eliminar Territorio";
-"territory.detail.delete_confirmation_message" = "¿Estás seguro de que quieres eliminar este territorio? Esta acción no se puede deshacer.";
+"territory.detail.delete_confirmation_message" = "¿Estás seguro de que quieres eliminar este territorio? Podrás deshacerlo durante unos segundos.";
 "territory.delete.success" = "Territorio eliminado correctamente";
+"territory.delete.error" = "No se pudo eliminar el territorio";
 "territory.stats.times_picked" = "Veces Entregado";
 "territory.stats.avg_holding" = "Tiempo Promedio";
 "territory.stats.unique_users" = "Usuarios Únicos";

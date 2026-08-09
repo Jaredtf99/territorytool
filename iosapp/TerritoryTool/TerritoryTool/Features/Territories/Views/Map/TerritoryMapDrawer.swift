@@ -358,13 +358,9 @@ struct TerritoryMapDrawer: View {
         max(Calendar.current.dateComponents([.day], from: start, to: end).day ?? 0, 0)
     }
 
-    private var relevantTerritories: [Territory] {
-        // Sin agrupar por estado: respeta la ordenación elegida (código ascendente por
-        // defecto). Solo cuando se ordena por cercanía y hay ubicación, ordena por distancia.
-        let base = viewModel.territoriesWithGeometry
-        guard viewModel.sortOption == .nearest, let location = locationService.location else { return base }
-        return base.sorted { distance(from: location, to: $0) < distance(from: location, to: $1) }
-    }
+    /// Ya viene ordenada del ViewModel. Antes esto ordenaba por distancia dentro del `body`,
+    /// que el gesto de arrastre reevalúa en cada frame.
+    private var relevantTerritories: [Territory] { viewModel.drawerTerritories }
 
     private func distance(to territory: Territory) -> String? {
         guard let location = locationService.location else { return nil }

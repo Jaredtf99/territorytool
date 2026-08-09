@@ -167,7 +167,7 @@ struct TerritoryExplorerList: View {
                 .listRowInsets(EdgeInsets(top: 0, leading: AppSpacing.md, bottom: AppSpacing.xxs, trailing: AppSpacing.md))
 
             // Lista plana ordenada (por defecto, código ascendente). Sin agrupar por estado.
-            ForEach(ordered(viewModel.displayedTerritories)) { territory in
+            ForEach(viewModel.displayedTerritories) { territory in
                 row(territory)
             }
         }
@@ -175,7 +175,7 @@ struct TerritoryExplorerList: View {
         .scrollContentBackground(.hidden)
         .contentMargins(.top, topInset, for: .scrollContent)
         .contentMargins(.bottom, AppSpacing.xl)
-        .animation(.spring(response: 0.3, dampingFraction: 0.86), value: viewModel.sortedTerritories)
+        .animation(.spring(response: 0.3, dampingFraction: 0.86), value: viewModel.displayRevision)
         .refreshable {
             await viewModel.loadTerritories()
             HapticManager.shared.notification(type: .success)
@@ -235,9 +235,13 @@ struct TerritoryExplorerList: View {
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             if permissionManager.canManageTerritories {
-                Button(role: .destructive) { onDelete(territory) } label: {
+                // No usamos `role: .destructive` aquí: dentro de un swipe SwiftUI lo
+                // interpreta como borrado inmediato y retira la fila antes del alert. La
+                // confirmación sí conserva el rol destructivo; aquí el rojo es explícito.
+                Button { onDelete(territory) } label: {
                     Label("territory.detail.delete", systemImage: "trash")
                 }
+                .tint(.red)
                 Button { onEdit(territory) } label: {
                     Label("territory.detail.edit", systemImage: "pencil")
                 }
@@ -264,17 +268,6 @@ struct TerritoryExplorerList: View {
         }
     }
 
-    private func ordered(_ territories: [Territory]) -> [Territory] {
-        guard viewModel.sortOption == .nearest, let location = locationService.location else { return territories }
-        return territories.sorted {
-            distance(from: location, to: $0) < distance(from: location, to: $1)
-        }
-    }
-
-    private func distance(from location: CLLocation, to territory: Territory) -> CLLocationDistance {
-        guard let coordinate = territory.mapGeometry?.representativeCoordinate else { return .greatestFiniteMagnitude }
-        return location.distance(from: CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude))
-    }
 }
 
 struct TerritoryExplorerRow: View {

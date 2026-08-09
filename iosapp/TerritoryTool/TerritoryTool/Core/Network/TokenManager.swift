@@ -1,7 +1,12 @@
 import Foundation
 import Security
 
-class TokenManager {
+/// `nonisolated` a propósito: el target compila con
+/// `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, así que sin esto quedaría aislado al actor
+/// principal y el transporte de red no podría leer el token sin saltar a main en cada
+/// petición. Es seguro porque todo el estado vive en `UserDefaults`, que es thread-safe;
+/// la clase no tiene estado mutable propio.
+nonisolated final class TokenManager: Sendable {
     static let shared = TokenManager()
     private let key = "authToken"
     private let refreshKey = "authRefreshToken"
@@ -13,9 +18,51 @@ class TokenManager {
     // For simplicity in this demo, we use UserDefaults.
     // In production, Keychain is recommended.
 
+    /// Persiste la sesión completa y **después** publica un único `.authChanged`.
+    ///
+    /// Antes el login guardaba token, refresh, perfil y congregación por separado, y
+    /// `saveToken` publicaba la notificación en el primer paso: un observador podía
+    /// despertar, leer el token nuevo y encontrarse el nombre de usuario o la congregación
+    /// activa todavía sin escribir.
+    func saveSession(
+        token: String,
+        refreshToken: String?,
+        userName: String?,
+        role: String?,
+        activeCongregationId: String?,
+        congregations: Data?
+    ) {
+        let defaults = UserDefaults.standard
+        defaults.set(token, forKey: key)
+        if let refreshToken { defaults.set(refreshToken, forKey: refreshKey) }
+        if let userName { defaults.set(userName, forKey: userNameKey) }
+        if let role { defaults.set(role, forKey: roleKey) }
+        if let activeCongregationId {
+            defaults.set(activeCongregationId, forKey: activeCongregationKey)
+        } else {
+            defaults.removeObject(forKey: activeCongregationKey)
+        }
+        if let congregations { defaults.set(congregations, forKey: congregationsKey) }
+
+        postAuthChanged()
+    }
+
     func saveToken(_ token: String) {
         UserDefaults.standard.set(token, forKey: key)
-        NotificationCenter.default.post(name: .authChanged, object: nil)
+        postAuthChanged()
+    }
+
+    /// Los observadores de `.authChanged` son de UI (`ContentView`, cachés), así que la
+    /// notificación siempre sale en el actor principal aunque el token se refresque desde
+    /// una tarea de red en segundo plano.
+    private func postAuthChanged() {
+        if Thread.isMainThread {
+            NotificationCenter.default.post(name: .authChanged, object: nil)
+        } else {
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .authChanged, object: nil)
+            }
+        }
     }
 
     func saveRefreshToken(_ token: String?) {
@@ -70,7 +117,7 @@ class TokenManager {
         UserDefaults.standard.removeObject(forKey: roleKey)
         UserDefaults.standard.removeObject(forKey: activeCongregationKey)
         UserDefaults.standard.removeObject(forKey: congregationsKey)
-        NotificationCenter.default.post(name: .authChanged, object: nil)
+        postAuthChanged()
     }
 
     func getUserName() -> String? {

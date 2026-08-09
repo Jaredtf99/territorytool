@@ -167,20 +167,31 @@ private struct EmbeddedScannerRepresentable: UIViewControllerRepresentable {
     }
 }
 
-final class EmbeddedScannerController: UIViewController, AVCaptureMetadataOutputObjectsDelegate {
+/// Sólo UI: la `AVCaptureSession` la posee `CameraScannerSession`, que la configura,
+/// arranca y para en su propia cola serie. Antes la configuración ocurría en
+/// `viewDidLoad`, es decir en el hilo principal, y bloqueaba al abrir Acción rápida.
+final class EmbeddedScannerController: UIViewController {
     var onScan: ((String) -> Void)?
 
-    private let session = AVCaptureSession()
+    private lazy var scannerSession = CameraScannerSession(
+        onScan: { [weak self] code in
+            self?.onScan?(code)
+        }
+    )
     private var previewLayer: AVCaptureVideoPreviewLayer?
-    private var device: AVCaptureDevice?
-    private let sessionQueue = DispatchQueue(label: "quickaction.scanner.session")
-    private var isConfigured = false
-    private var wantsScanning = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
-        configureSession()
+
+        // La capa de previsualización es UI: se crea aquí y se enlaza a una sesión que
+        // todavía no está configurada. Es seguro; se rellena cuando la cola de la sesión
+        // termina de configurarla.
+        let layer = AVCaptureVideoPreviewLayer(session: scannerSession.session)
+        layer.videoGravity = .resizeAspectFill
+        layer.frame = view.bounds
+        view.layer.insertSublayer(layer, at: 0)
+        previewLayer = layer
     }
 
     override func viewDidLayoutSubviews() {
@@ -188,64 +199,16 @@ final class EmbeddedScannerController: UIViewController, AVCaptureMetadataOutput
         previewLayer?.frame = view.bounds
     }
 
-    private func configureSession() {
-        guard let videoCaptureDevice = AVCaptureDevice.default(for: .video) else { return }
-        device = videoCaptureDevice
-        guard let input = try? AVCaptureDeviceInput(device: videoCaptureDevice),
-              session.canAddInput(input) else { return }
-        session.addInput(input)
-
-        let metadataOutput = AVCaptureMetadataOutput()
-        guard session.canAddOutput(metadataOutput) else { return }
-        session.addOutput(metadataOutput)
-        metadataOutput.setMetadataObjectsDelegate(self, queue: .main)
-        metadataOutput.metadataObjectTypes = [.qr]
-
-        let layer = AVCaptureVideoPreviewLayer(session: session)
-        layer.videoGravity = .resizeAspectFill
-        layer.frame = view.bounds
-        view.layer.insertSublayer(layer, at: 0)
-        previewLayer = layer
-        isConfigured = true
-
-        if wantsScanning { setScanning(true) }
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        scannerSession.stop()
     }
 
     func setScanning(_ on: Bool) {
-        wantsScanning = on
-        guard isConfigured else { return }
-        sessionQueue.async { [weak self] in
-            guard let self else { return }
-            if on, !self.session.isRunning {
-                self.session.startRunning()
-            } else if !on, self.session.isRunning {
-                self.session.stopRunning()
-            }
-        }
+        scannerSession.setRunning(on)
     }
 
     func setTorch(_ on: Bool) {
-        guard let device, device.hasTorch, device.isTorchAvailable else { return }
-        do {
-            try device.lockForConfiguration()
-            device.torchMode = on ? .on : .off
-            device.unlockForConfiguration()
-        } catch {
-            // Linterna no disponible: ignorar en silencio.
-        }
-    }
-
-    func metadataOutput(
-        _ output: AVCaptureMetadataOutput,
-        didOutput metadataObjects: [AVMetadataObject],
-        from connection: AVCaptureConnection
-    ) {
-        guard wantsScanning,
-              let object = metadataObjects.first as? AVMetadataMachineReadableCodeObject,
-              let value = object.stringValue else { return }
-        // Pausar para "congelar" la previsualización tras una lectura.
-        setScanning(false)
-        AudioServicesPlaySystemSound(SystemSoundID(kSystemSoundID_Vibrate))
-        onScan?(value)
+        scannerSession.setTorch(on)
     }
 }

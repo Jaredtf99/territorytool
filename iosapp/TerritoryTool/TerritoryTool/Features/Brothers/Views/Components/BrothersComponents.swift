@@ -220,33 +220,19 @@ struct BrothersSummaryCard: View {
         let maxRows = 4
         let columns = 6
         let maxItems = maxRows * columns
-        let hasOverflow = assignmentDays.count > maxItems
-        let visibleDays = Array(assignmentDays.prefix(hasOverflow ? maxItems - 1 : maxItems))
+        let visibleDays = Array(assignmentDays.prefix(maxItems))
 
-        return HStack(alignment: .center, spacing: AppSpacing.xs) {
-            LazyVGrid(
-                columns: Array(repeating: GridItem(.fixed(9), spacing: 5), count: columns),
-                spacing: 5
-            ) {
-                ForEach(Array(visibleDays.enumerated()), id: \.offset) { _, days in
-                    Circle()
-                        .fill(Color.urgency(forDays: days))
-                        .frame(width: 7, height: 7)
-                }
-            }
-            .fixedSize()
-
-            if hasOverflow {
-                Text("+\(assignmentDays.count - visibleDays.count)")
-                    .font(.caption2.weight(.bold))
-                    .monospacedDigit()
-                    .foregroundStyle(Color.textSecondary)
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 3)
-                    .background(Color.surfaceRaised.opacity(0.78), in: Capsule())
-                    .overlay(Capsule().strokeBorder(Color.hairline, lineWidth: 1))
+        return LazyVGrid(
+            columns: Array(repeating: GridItem(.fixed(9), spacing: 5), count: columns),
+            spacing: 5
+        ) {
+            ForEach(Array(visibleDays.enumerated()), id: \.offset) { _, days in
+                Circle()
+                    .fill(Color.urgency(forDays: days))
+                    .frame(width: 7, height: 7)
             }
         }
+        .fixedSize()
         .appear(index: 2)
         .accessibilityHidden(true)
     }
