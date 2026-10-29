@@ -306,6 +306,14 @@
 "users.add_success" = "User added successfully";
 "users.update_success" = "User updated successfully";
 "users.delete_success" = "User deleted successfully";
+"users.delete_title" = "Delete this user?";
+"users.delete_message" = "The account will lose access to this congregation, but its transactions and history are kept. You can reactivate it later from Deactivated accounts.";
+"users.more_options" = "More options";
+"users.deactivated_title" = "Deactivated accounts";
+"users.deactivated_empty" = "No deactivated accounts";
+"users.deactivated_info" = "Deleted accounts can't access the congregation, but their history is kept. Reactivated accounts get their role back and sign in with the same password.";
+"users.reactivate" = "Reactivate";
+"users.reactivate_success" = "Account reactivated successfully";
 "users.section_info" = "User Information";
 "users.section_security" = "Security";
 "users.confirm_password" = "Confirm Password";

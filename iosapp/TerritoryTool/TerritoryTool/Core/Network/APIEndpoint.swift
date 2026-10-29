@@ -85,6 +85,8 @@ enum TerritoryEndpoint: APIEndpoint {
     case updateUserUndoable(id: String, name: String, role: String)
     case deleteUser(id: String)
     case deleteUserUndoable(id: String)
+    case getDeactivatedUsers
+    case reactivateUser(id: String)
     case changeUserPassword(id: String, newPassword: String)
     case getRecentTransactions(days: Int)
     case getActionLogs(page: Int, pageSize: Int, sortField: String, sortOrder: String)
@@ -112,9 +114,9 @@ enum TerritoryEndpoint: APIEndpoint {
             return .PUT
         case .deleteTerritory, .deleteTerritoryUndoable, .deletePerson, .deletePersonUndoable, .deleteUser, .deleteUserUndoable:
             return .DELETE
-        case .addUser, .addUserUndoable, .updateUser, .updateUserUndoable, .changeUserPassword:
+        case .addUser, .addUserUndoable, .updateUser, .updateUserUndoable, .changeUserPassword, .reactivateUser:
              return .POST
-        case .getUsers, .getRecentTransactions, .getActionLogs:
+        case .getUsers, .getDeactivatedUsers, .getRecentTransactions, .getActionLogs:
             return .GET
         case .deleteTransaction, .deleteTransactionUndoable:
             return .DELETE
@@ -187,7 +189,7 @@ enum TerritoryEndpoint: APIEndpoint {
                 "NewPassword": newPassword
             ]
             return try? JSONSerialization.data(withJSONObject: params)
-        case .getUsers, .deleteUser, .deleteUserUndoable, .deleteTransaction, .deleteTransactionUndoable,
+        case .getUsers, .getDeactivatedUsers, .reactivateUser, .deleteUser, .deleteUserUndoable, .deleteTransaction, .deleteTransactionUndoable,
              .undoAction, .undoUserAction,
              .getPersonsWithAssignments, .resolveTerritorySelector, .getDashboardSnapshot,
              .getMovementHistory:

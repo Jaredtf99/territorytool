@@ -18,7 +18,9 @@ type RequestBody =
   | { action: "delete-undoable"; userId: string }
   | { action: "change-password"; userId: string; newPassword: string }
   | { action: "undo"; undoId: string }
-  | { action: "list" };
+  | { action: "list" }
+  | { action: "list-deactivated" }
+  | { action: "reactivate"; userId: string };
 
 const INTERNAL_DOMAIN = "users.territorytool.invalid";
 
@@ -66,6 +68,11 @@ function canManage(actor: ActorContext, target: TargetInfo): boolean {
   if (actor.isSuperadmin) return true;
   // Congregation ADMIN may only manage USER members of the congregation.
   return target.roleInCongregation === "USER";
+}
+
+// Whether the actor may reactivate a deactivated member with the given former role.
+function canReactivate(actor: ActorContext, role: MemberRole): boolean {
+  return actor.isSuperadmin || role === "USER";
 }
 
 // Whether the actor may assign the given role within the active congregation.
@@ -142,6 +149,76 @@ Deno.serve(async (req) => {
       }).sort((a, b) => a.username.localeCompare(b.username));
 
       return jsonResponse(users);
+    }
+
+    // Deactivated members of the active congregation the actor may reactivate.
+    if (body.action === "list-deactivated") {
+      const { data, error } = await supabase
+        .from("congregation_deactivated_members")
+        .select("role, deactivated_at, profiles!congregation_deactivated_members_user_id_fkey!inner(id, username, is_superadmin)")
+        .eq("congregation_id", congregationId);
+      if (error) throw error;
+
+      const users = (data ?? []).flatMap((row) => {
+        const profile = row.profiles as unknown as {
+          id: string;
+          username: string;
+          is_superadmin: boolean;
+        };
+        const role = row.role as MemberRole;
+        if (profile.is_superadmin || !canReactivate(actor, role)) return [];
+        return [{
+          id: profile.id,
+          username: profile.username,
+          role,
+          deactivated_at: row.deactivated_at,
+        }];
+      }).sort((a, b) => a.username.localeCompare(b.username));
+
+      return jsonResponse(users);
+    }
+
+    if (body.action === "reactivate") {
+      if (!body.userId) return jsonResponse({ error: "INVALID_PARAMETERS" }, 400);
+
+      const { data: deactivated, error: deactivatedError } = await supabase
+        .from("congregation_deactivated_members")
+        .select("role")
+        .eq("user_id", body.userId)
+        .eq("congregation_id", congregationId)
+        .maybeSingle();
+      if (deactivatedError) throw deactivatedError;
+      if (!deactivated) return jsonResponse({ error: "USER_NOT_FOUND" }, 404);
+
+      const role = deactivated.role as MemberRole;
+      const target = await getTarget(body.userId, congregationId);
+      if (!target.exists) return jsonResponse({ error: "USER_NOT_FOUND" }, 404);
+      if (target.isSuperadmin || !canReactivate(actor, role)) {
+        return jsonResponse({ error: "FORBIDDEN" }, 403);
+      }
+
+      const { error: memberError } = await supabase
+        .from("congregation_members")
+        .upsert(
+          { user_id: body.userId, congregation_id: congregationId, role },
+          { onConflict: "user_id,congregation_id" },
+        );
+      if (memberError) return jsonResponse({ error: memberError.message }, 400);
+
+      await supabase
+        .from("congregation_deactivated_members")
+        .delete()
+        .eq("user_id", body.userId)
+        .eq("congregation_id", congregationId);
+
+      // Give the account a congregation to work in if it no longer had one.
+      await supabase
+        .from("profiles")
+        .update({ active_congregation_id: congregationId })
+        .eq("id", body.userId)
+        .is("active_congregation_id", null);
+
+      return jsonResponse({ ok: true });
     }
 
     if (body.action === "undo") {
@@ -238,6 +315,12 @@ Deno.serve(async (req) => {
             { onConflict: "user_id,congregation_id" },
           );
         if (memberError) return jsonResponse({ error: memberError.message }, 400);
+
+        await supabase
+          .from("congregation_deactivated_members")
+          .delete()
+          .eq("user_id", userId)
+          .eq("congregation_id", congregationId);
 
         if (previousActiveCongregationId === congregationId) {
           const { error: activeError } = await supabase
@@ -342,6 +425,12 @@ Deno.serve(async (req) => {
         );
       if (error) return jsonResponse({ error: error.message }, 400);
 
+      await supabase
+        .from("congregation_deactivated_members")
+        .delete()
+        .eq("user_id", profile.id)
+        .eq("congregation_id", congregationId);
+
       return jsonResponse({ userId: profile.id });
     }
 
@@ -394,7 +483,8 @@ Deno.serve(async (req) => {
       return jsonResponse({ ok: true });
     }
 
-    // Remove a member from the active congregation (does not delete the account).
+    // Deactivate a member of the active congregation: removes the membership but
+    // keeps the account and its history, so it can be reactivated later.
     if (body.action === "delete" || body.action === "delete-undoable") {
       if (!body.userId) return jsonResponse({ error: "INVALID_PARAMETERS" }, 400);
 
@@ -416,6 +506,20 @@ Deno.serve(async (req) => {
         .eq("user_id", body.userId)
         .eq("congregation_id", congregationId);
       if (error) return jsonResponse({ error: error.message }, 400);
+
+      const { error: deactivateError } = await supabase
+        .from("congregation_deactivated_members")
+        .upsert(
+          {
+            user_id: body.userId,
+            congregation_id: congregationId,
+            role: target.roleInCongregation,
+            deactivated_at: new Date().toISOString(),
+            deactivated_by: actor.userId,
+          },
+          { onConflict: "user_id,congregation_id" },
+        );
+      if (deactivateError) return jsonResponse({ error: deactivateError.message }, 400);
 
       // If the removed user had this congregation active, clear/reassign it.
       const { data: remaining } = await supabase

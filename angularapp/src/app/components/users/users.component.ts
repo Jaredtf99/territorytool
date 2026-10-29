@@ -24,6 +24,10 @@ export class UsersComponent implements OnInit {
   public defaultRoleIndex = 0;
   public editForm: FormGroup;
   public canChangePassword = false;
+  public deactivatedUsers: User[] = [];
+  public loadingDeactivated = false;
+  public deactivatedError = false;
+  public reactivatingUserId: string | null = null;
 
   constructor(public userService: UserService, private toastr: ToastrService, private spinner: NgxSpinnerService, private fb: FormBuilder) {
 
@@ -198,6 +202,46 @@ export class UsersComponent implements OnInit {
 
   }
 
+
+  openDeactivatedModal() {
+    $('#deactivatedUsers').modal('show');
+    this.loadDeactivatedUsers();
+  }
+
+  loadDeactivatedUsers() {
+    this.loadingDeactivated = true;
+    this.deactivatedError = false;
+
+    this.userService.getDeactivatedUsers().subscribe({
+      next: res => {
+        this.deactivatedUsers = res;
+        this.loadingDeactivated = false;
+      },
+      error: err => {
+        this.deactivatedError = true;
+        this.loadingDeactivated = false;
+        console.error(err);
+      }
+    });
+  }
+
+  reactivateUser(user: User) {
+    this.reactivatingUserId = user.UserID!;
+
+    this.userService.reactivateUser(user.UserID!).subscribe({
+      next: () => {
+        this.toastr.success('Cuenta reactivada');
+        this.deactivatedUsers = this.deactivatedUsers.filter(u => u.UserID !== user.UserID);
+        this.reactivatingUserId = null;
+        this.getUsersData();
+      },
+      error: err => {
+        this.reactivatingUserId = null;
+        this.toastr.error('Error al reactivar la cuenta');
+        console.error(err);
+      }
+    });
+  }
 
   ngOnInit() {
   }

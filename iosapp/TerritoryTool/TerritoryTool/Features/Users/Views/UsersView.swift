@@ -57,6 +57,20 @@ struct UsersView: View {
         .searchable(text: $viewModel.searchText, placement: .automatic, prompt: "users.search_placeholder")
         .toolbar {
             ToolbarItem() {
+                Menu {
+                    Button {
+                        HapticManager.shared.selection()
+                        viewModel.showDeactivatedSheet = true
+                    } label: {
+                        Label("users.deactivated_title", systemImage: "person.crop.circle.badge.xmark")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                }
+                .accessibilityLabel(Text("users.more_options"))
+            }
+
+            ToolbarItem() {
                 Button {
                     viewModel.showAddSheet = true
                 } label: {
@@ -81,7 +95,10 @@ struct UsersView: View {
                 AddEditUserView(viewModel: viewModel, mode: .edit(user))
             }
         }
-        .alert("common.delete_confirmation", isPresented: $showingDeleteConfirmation) {
+        .sheet(isPresented: $viewModel.showDeactivatedSheet) {
+            DeactivatedUsersView(viewModel: viewModel)
+        }
+        .alert("users.delete_title", isPresented: $showingDeleteConfirmation) {
             Button("common.delete", role: .destructive) {
                 if let user = userToDelete {
                     Task {
@@ -90,6 +107,8 @@ struct UsersView: View {
                 }
             }
             Button("common.cancel", role: .cancel) {}
+        } message: {
+            Text("users.delete_message")
         }
         .task {
             await viewModel.fetchUsers()

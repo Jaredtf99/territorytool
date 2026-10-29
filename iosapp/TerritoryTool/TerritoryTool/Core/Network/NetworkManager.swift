@@ -468,6 +468,19 @@ final class NetworkManager: APIService {
         case .undoUserAction(let id):
             return try await edgeFunction("admin-users", body: ["action": "undo", "undoId": id])
 
+        case .getDeactivatedUsers:
+            let rows = try await edgeRows("admin-users", body: ["action": "list-deactivated"])
+            return rows.map { row in
+                [
+                    "UserID": row["id"] ?? "",
+                    "UserName": row["username"] ?? "",
+                    "Role": row["role"] ?? "USER"
+                ]
+            }
+
+        case .reactivateUser(let id):
+            return try await edgeFunction("admin-users", body: ["action": "reactivate", "userId": id])
+
         case .changeUserPassword(let id, let newPassword):
             return try await edgeFunction("admin-users", body: [
                 "action": "change-password",

@@ -308,6 +308,14 @@
 "users.add_success" = "Usuario añadido correctamente";
 "users.update_success" = "Usuario actualizado correctamente";
 "users.delete_success" = "Usuario eliminado correctamente";
+"users.delete_title" = "¿Eliminar este usuario?";
+"users.delete_message" = "La cuenta dejará de tener acceso a esta congregación, pero sus transacciones y su historial se conservan. Podrás reactivarla más adelante desde Cuentas desactivadas.";
+"users.more_options" = "Más opciones";
+"users.deactivated_title" = "Cuentas desactivadas";
+"users.deactivated_empty" = "No hay cuentas desactivadas";
+"users.deactivated_info" = "Las cuentas eliminadas no tienen acceso a la congregación, pero conservan su historial. Al reactivarlas recuperan su rol y entran con la misma contraseña.";
+"users.reactivate" = "Reactivar";
+"users.reactivate_success" = "Cuenta reactivada correctamente";
 "users.change_password_success" = "Contraseña cambiada correctamente";
 "users.section_info" = "Información del Usuario";
 "users.section_security" = "Seguridad";

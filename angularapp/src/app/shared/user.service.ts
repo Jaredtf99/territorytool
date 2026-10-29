@@ -178,6 +178,22 @@ export class UserService {
     return from(this.supabase.invoke('admin-users', { action: 'delete', userId: id }))
   }
 
+  // Deactivated accounts of the active congregation the current user may reactivate
+  // (the backend filters them: congregation admins only get USER accounts).
+  getDeactivatedUsers(): Observable<User[]> {
+    return from(this.supabase.invoke<any[]>('admin-users', { action: 'list-deactivated' })).pipe(
+      map(users => users.map(user => ({
+        UserID: user.id,
+        UserName: user.username,
+        Role: user.role
+      })))
+    );
+  }
+
+  reactivateUser(id: string): Observable<any> {
+    return from(this.supabase.invoke('admin-users', { action: 'reactivate', userId: id }));
+  }
+
   public changeUserPassword(userId: string, newPassword: string): Observable<any> {
     return from(this.supabase.invoke('admin-users', {
       action: 'change-password',

@@ -1,3 +1,9 @@
+<div class="d-flex justify-content-end mb-2">
+  <button type="button" class="btn btn-outline-secondary btn-sm" (click)="openDeactivatedModal()">
+    <i class="fa fa-user-slash me-1"></i>Cuentas desactivadas
+  </button>
+</div>
+
 <div id="users_table"></div>
 
 
@@ -52,10 +58,58 @@
     <div class="modal-content">
       <div class="modal-body text-center">
         <h4>¿Seguro que quieres eliminar este usuario?</h4>
+        <p class="text-muted mt-3 mb-0">
+          La cuenta dejará de tener acceso a esta congregación, pero sus transacciones y su historial se conservan.
+          Podrás reactivarla más adelante desde Cuentas desactivadas.
+        </p>
         <div class="mt-3">
           <button type="button" class="btn btn-secondary me-3" data-bs-dismiss="modal">Cancelar</button>
           <button type="button" class="btn btn-danger" (click)="deleteUser()">Eliminar</button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="deactivatedUsers" tabindex="-1" aria-labelledby="deactivatedUsersLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deactivatedUsersLabel">Cuentas desactivadas</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="loadingDeactivated && deactivatedUsers.length === 0" class="text-center py-4">
+          <div class="spinner-border text-secondary" role="status"></div>
+        </div>
+
+        <div *ngIf="!loadingDeactivated && deactivatedError" class="text-center py-3">
+          <p class="text-danger mb-2">No se han podido cargar las cuentas desactivadas</p>
+          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="loadDeactivatedUsers()">Reintentar</button>
+        </div>
+
+        <p *ngIf="!loadingDeactivated && !deactivatedError && deactivatedUsers.length === 0" class="text-center text-muted py-3 mb-0">
+          No hay cuentas desactivadas
+        </p>
+
+        <ul *ngIf="deactivatedUsers.length > 0" class="list-group">
+          <li *ngFor="let user of deactivatedUsers" class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <div class="fw-semibold">{{ user.UserName }}</div>
+              <span class="badge bg-secondary">{{ user.Role }}</span>
+            </div>
+            <button type="button" class="btn btn-outline-primary btn-sm" (click)="reactivateUser(user)"
+                    [disabled]="reactivatingUserId !== null">
+              <span *ngIf="reactivatingUserId === user.UserID" class="spinner-border spinner-border-sm me-1" role="status"></span>
+              Reactivar
+            </button>
+          </li>
+        </ul>
+
+        <p class="small text-muted mt-3 mb-0">
+          Las cuentas eliminadas no tienen acceso a la congregación, pero conservan su historial.
+          Al reactivarlas recuperan su rol y entran con la misma contraseña.
+        </p>
       </div>
     </div>
   </div>

@@ -11,6 +11,10 @@ class UsersViewModel: ObservableObject {
     @Published var showAddSheet: Bool = false
     @Published var showEditSheet: Bool = false
     @Published var selectedUser: User?
+    @Published var deactivatedUsers: [User] = []
+    @Published var isLoadingDeactivated: Bool = false
+    @Published var deactivatedErrorMessage: String?
+    @Published var showDeactivatedSheet: Bool = false
 
     /// Lista filtrada derivada de `users` + `searchText` (computada, sin estado duplicado).
     var filteredUsers: [User] {
@@ -157,6 +161,40 @@ class UsersViewModel: ObservableObject {
         }
     }
     
+    // MARK: - Deactivated Accounts
+
+    /// Cuentas desactivadas de la congregación que el usuario actual puede reactivar
+    /// (el backend ya filtra: el admin solo recibe las de rol USER).
+    func fetchDeactivatedUsers() async {
+        isLoadingDeactivated = true
+        deactivatedErrorMessage = nil
+
+        do {
+            let fetchedUsers: [User] = try await networkManager.request(endpoint: TerritoryEndpoint.getDeactivatedUsers)
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                self.deactivatedUsers = fetchedUsers.sorted { $0.userName < $1.userName }
+            }
+        } catch {
+            if !error.isCancellation {
+                self.deactivatedErrorMessage = error.localizedDescription
+            }
+        }
+        isLoadingDeactivated = false
+    }
+
+    func reactivateUser(user: User) async {
+        do {
+            try await networkManager.request(endpoint: TerritoryEndpoint.reactivateUser(id: user.id))
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                deactivatedUsers.removeAll { $0.id == user.id }
+            }
+            ToastManager.shared.show("users.reactivate_success", style: .success)
+            await fetchUsers()
+        } catch {
+            ToastManager.shared.show(error.localizedDescription, style: .error)
+        }
+    }
+
     // MARK: - Permission Logic
     
     func canEdit(user: User) -> Bool {
