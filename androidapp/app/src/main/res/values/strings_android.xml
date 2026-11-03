@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Textos propios de Android que no existen en iOS. -->
+<resources>
+    <string name="common_back">Back</string>
+    <string name="camera_permission_needed">Camera access is needed to scan QR codes.</string>
+    <string name="camera_permission_grant">Allow camera</string>
+    <string name="location_permission_needed">Location access is needed to find nearby territories.</string>
+    <string name="share_report">Share report</string>
+    <string name="open_settings">Open settings</string>
+    <string name="common_search">Search</string>
+    <string name="scanner_torch">Flashlight</string>
+    <string name="date_pick">Choose date</string>
+    <string name="time_pick">Choose time</string>
+    <string name="error_invalid_url">Invalid URL</string>
+    <string name="error_invalid_response">Invalid response from server</string>
+    <string name="error_decoding">Error decoding data</string>
+    <string name="error_unauthorized">Session expired</string>
+    <string name="error_unknown">Unknown error occurred</string>
+    <string name="common_unknown">Unknown</string>
+    <string name="error_territory_already_exists">A territory with this code, name or map URL already exists</string>
+    <string name="error_offline">No internet connection. Check your connection and try again.</string>
+    <string name="error_wrong_credentials">Incorrect username or password</string>
+</resources>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_back">Atrás</string>
+    <string name="camera_permission_needed">Se necesita acceso a la cámara para escanear códigos QR.</string>
+    <string name="camera_permission_grant">Permitir cámara</string>
+    <string name="location_permission_needed">Se necesita acceso a la ubicación para encontrar territorios cercanos.</string>
+    <string name="share_report">Compartir informe</string>
+    <string name="open_settings">Abrir ajustes</string>
+    <string name="common_search">Buscar</string>
+    <string name="scanner_torch">Linterna</string>
+    <string name="date_pick">Elegir fecha</string>
+    <string name="time_pick">Elegir hora</string>
+    <string name="error_invalid_url">URL no válida</string>
+    <string name="error_invalid_response">Respuesta no válida del servidor</string>
+    <string name="error_decoding">Error al leer los datos</string>
+    <string name="error_unauthorized">Sesión caducada</string>
+    <string name="error_unknown">Se produjo un error desconocido</string>
+    <string name="common_unknown">Desconocido</string>
+    <string name="error_territory_already_exists">Ya existe un territorio con ese código, nombre o URL de mapa</string>
+    <string name="error_offline">No hay conexión a internet. Revisa la conexión e inténtalo de nuevo.</string>
+    <string name="error_wrong_credentials">Usuario o contraseña incorrectos</string>
+</resources>
