@@ -9,6 +9,7 @@
         <th>Fecha de Devolución</th>
         <th>Devuelto Por</th>
         <th>Publicador</th>
+        <th>Formato</th>
         <th>Acciones</th>
       </tr>
     </thead>
@@ -19,6 +20,7 @@
         <td>{{transaction.pickedDateUtc | date:'medium'}}</td>
         <td>{{transaction.pickedBy}}</td>
         <td>{{transaction.personName}}</td>
+        <td>{{deliveryFormatLabels[transaction.deliveryFormat]}}</td>
         <td>
           <button class="btn btn-sm btn-info me-2" (click)="openEditTransactionModal(transaction.transactionId)">
             Editar

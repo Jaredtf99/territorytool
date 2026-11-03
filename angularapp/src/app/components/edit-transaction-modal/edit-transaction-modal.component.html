@@ -24,6 +24,20 @@
           </div>
 
           <div class="form-group mb-3">
+            <label class="d-block">Formato de entrega</label>
+            <div class="btn-group w-100" role="group" aria-label="Formato de entrega">
+              <ng-container *ngFor="let format of deliveryFormats">
+                <input type="radio" class="btn-check" formControlName="deliveryFormat" [value]="format"
+                       [id]="'deliveryFormat-' + format" autocomplete="off">
+                <label class="btn btn-outline-primary" [for]="'deliveryFormat-' + format">
+                  <i [class]="deliveryFormatIcons[format]"></i>
+                  <span class="ms-2">{{ deliveryFormatLabels[format] }}</span>
+                </label>
+              </ng-container>
+            </div>
+          </div>
+
+          <div class="form-group mb-3">
             <label>Fecha entregado</label>
             <input type="datetime-local" class="form-control" formControlName="givenDate"
                   [ngClass]="{ 'is-invalid': f['givenDate'].invalid && (f['givenDate'].dirty || f['givenDate'].touched) }">

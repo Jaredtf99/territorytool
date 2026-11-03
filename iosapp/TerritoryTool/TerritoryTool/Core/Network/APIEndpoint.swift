@@ -92,8 +92,8 @@ enum TerritoryEndpoint: APIEndpoint {
     case getActionLogs(page: Int, pageSize: Int, sortField: String, sortOrder: String)
     case deleteTransaction(id: Int)
     case deleteTransactionUndoable(id: Int)
-    case updateTransaction(id: Int, territoryId: Int, personId: Int?, date: Date, pickedDate: Date?)
-    case updateTransactionUndoable(id: Int, territoryId: Int, personId: Int?, date: Date, pickedDate: Date?)
+    case updateTransaction(id: Int, territoryId: Int, personId: Int?, date: Date, pickedDate: Date?, deliveryFormat: DeliveryFormat? = nil)
+    case updateTransactionUndoable(id: Int, territoryId: Int, personId: Int?, date: Date, pickedDate: Date?, deliveryFormat: DeliveryFormat? = nil)
     
     var path: String {
         return ""
@@ -194,8 +194,8 @@ enum TerritoryEndpoint: APIEndpoint {
              .getPersonsWithAssignments, .resolveTerritorySelector, .getDashboardSnapshot,
              .getMovementHistory:
             return nil
-        case .updateTransaction(_, let territoryId, let personId, let date, let pickedDate),
-             .updateTransactionUndoable(_, let territoryId, let personId, let date, let pickedDate):
+        case .updateTransaction(_, let territoryId, let personId, let date, let pickedDate, _),
+             .updateTransactionUndoable(_, let territoryId, let personId, let date, let pickedDate, _):
             // Use a properly configured date formatter
             let dateFormatter = ISO8601DateFormatter()
             dateFormatter.formatOptions = [.withInternetDateTime]

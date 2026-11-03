@@ -11,6 +11,8 @@ struct EditTransactionSheet: View {
     @State private var selectedTerritory: Territory?
     @State private var givenDate: Date
     @State private var returnedDate: Date?
+    @State private var deliveryFormat: DeliveryFormat
+    @State private var didChangeDeliveryFormat = false
     @State private var hasInitialized = false
     @State private var isSaving = false
     
@@ -50,6 +52,7 @@ struct EditTransactionSheet: View {
         // Initialize State with current values
         self._givenDate = State(initialValue: transactionEvent.transaction.givenDateUtc)
         self._returnedDate = State(initialValue: transactionEvent.transaction.pickedDateUtc)
+        self._deliveryFormat = State(initialValue: transactionEvent.transaction.deliveryFormat ?? .physical)
     }
     
     private func initializeStubData() {
@@ -114,6 +117,29 @@ struct EditTransactionSheet: View {
                             }
                         }
                         
+                        // Delivery Format
+                        GlassCard(cornerRadius: 16) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Label("delivery_format.title", systemImage: deliveryFormat.systemImage)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+
+                                Picker("delivery_format.title", selection: Binding(
+                                    get: { deliveryFormat },
+                                    set: {
+                                        deliveryFormat = $0
+                                        didChangeDeliveryFormat = true
+                                        HapticManager.shared.selection()
+                                    }
+                                )) {
+                                    ForEach(DeliveryFormat.allCases) { format in
+                                        Label(format.title, systemImage: format.systemImage).tag(format)
+                                    }
+                                }
+                                .pickerStyle(.segmented)
+                            }
+                        }
+
                         // Given Date
                         GlassCard(cornerRadius: 16) {
                             VStack(alignment: .leading, spacing: 8) {
@@ -371,7 +397,12 @@ struct EditTransactionSheet: View {
                     territoryId: territory.id,
                     personId: person.id,
                     date: givenDate,
-                    pickedDate: returnedDate
+                    pickedDate: returnedDate,
+                    // Si el origen no traía el formato y no se ha tocado, no lo enviamos
+                    // para no sobrescribir el valor guardado.
+                    deliveryFormat: transactionEvent.transaction.deliveryFormat != nil || didChangeDeliveryFormat
+                        ? deliveryFormat
+                        : nil
                 ))
                 let undoHandle = undoResponse.handle(kind: .domain)
                 

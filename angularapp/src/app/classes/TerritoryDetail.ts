@@ -1,3 +1,4 @@
+import { DeliveryFormat } from "../enums/DeliveryFormat";
 import { TimelineItem } from "./TimelineItem";
 
 export class TerritoryDetail {
@@ -9,6 +10,7 @@ export class TerritoryDetail {
   personName?: string;
   lastPickedDateUtc?: Date;
   givenDateUtc?: Date;
+  deliveryFormat?: DeliveryFormat;
   pickedCount?: number;
   lastUser?: string;
   timelineItems?: TimelineItem[];

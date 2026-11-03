@@ -10,6 +10,8 @@ struct Territory: Codable, Identifiable, Equatable {
     let givenDateUtc: Date?
     let lastPickedDateUtc: Date?
     let mapGeometry: TerritoryMapGeometry?
+    /// Formato de la entrega en curso; `nil` si está libre.
+    var deliveryFormat: DeliveryFormat? = nil
 }
 
 enum TerritoryOperationalStatus: Equatable {
@@ -58,6 +60,7 @@ struct TerritoryDetail: Codable, Identifiable {
     let lastUser: String?
     let timelineItems: [TimelineItem]
     let mapGeometry: TerritoryMapGeometry?
+    var deliveryFormat: DeliveryFormat? = nil
 }
 
 /// Todo lo que necesita la pantalla de detalle, en una sola respuesta.
@@ -126,6 +129,7 @@ struct TimelineItem: Codable, Identifiable {
     let description: String
     let type: TimelineType
     let date: Date
+    var deliveryFormat: DeliveryFormat? = nil
 }
 
 enum TimelineType: Int, Codable {

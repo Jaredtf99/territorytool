@@ -1,3 +1,5 @@
+import { DeliveryFormat } from "../enums/DeliveryFormat";
+
 export class TerritoryTransaction {
     transactionId: number = 0;
     territoryId: number =0;
@@ -10,4 +12,5 @@ export class TerritoryTransaction {
     pickedDateUtc?: Date;
     isAutomaticPickedDate?: boolean;
     pickedBy?: string;
+    deliveryFormat: DeliveryFormat = 'physical';
 } 

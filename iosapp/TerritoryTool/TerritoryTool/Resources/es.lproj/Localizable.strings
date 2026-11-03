@@ -538,3 +538,10 @@
 "reports.pdf.assignments_one" = "1 asignación";
 "reports.pdf.worked" = "Territorios trabajados";
 "reports.pdf.not_worked" = "Territorios sin trabajar";
+
+// Formato de entrega
+"delivery_format.title" = "Formato de entrega";
+"delivery_format.physical" = "Físico";
+"delivery_format.virtual" = "Virtual";
+"delivery_format.all" = "Todos";
+"territory.detail.trajectory.empty_format" = "No hay entregas en este formato.";

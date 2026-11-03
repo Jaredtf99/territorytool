@@ -6,6 +6,7 @@ import { TerritoryTransactionService } from 'src/app/services/territory-transact
 import { TerritoryTransaction } from 'src/app/classes/territory-transaction.model';
 import { Observable, Subject, catchError, concat, distinctUntilChanged, of, switchMap, tap } from 'rxjs';
 import { PersonService } from 'src/app/shared/person.service';
+import { DELIVERY_FORMAT_ICONS, DELIVERY_FORMAT_LABELS, DeliveryFormat } from 'src/app/enums/DeliveryFormat';
 
 declare var $: any;
 
@@ -24,6 +25,10 @@ export class EditTransactionModalComponent {
   personsLoading = false;
   personsInput$ = new Subject<string>();
 
+  readonly deliveryFormats: DeliveryFormat[] = ['physical', 'virtual'];
+  readonly deliveryFormatLabels = DELIVERY_FORMAT_LABELS;
+  readonly deliveryFormatIcons = DELIVERY_FORMAT_ICONS;
+
   constructor(
     private fb: FormBuilder,
     private personService: PersonService,
@@ -34,7 +39,8 @@ export class EditTransactionModalComponent {
     this.editForm = this.fb.group({
       person: [null, Validators.required],
       givenDate: ['', Validators.required],
-      pickedDate: ['']
+      pickedDate: [''],
+      deliveryFormat: ['physical', Validators.required]
     }, { validators: this.dateRangeValidator });
   }
 
@@ -49,7 +55,8 @@ export class EditTransactionModalComponent {
         this.editForm.patchValue({
           person: { name: res.personName, id: res.personId },
           givenDate: this.formatDate(new Date(res.givenDateUtc)),
-          pickedDate: res.pickedDateUtc ? this.formatDate(new Date(res.pickedDateUtc)) : null
+          pickedDate: res.pickedDateUtc ? this.formatDate(new Date(res.pickedDateUtc)) : null,
+          deliveryFormat: res.deliveryFormat
         });
 
         $('#editTransaction').modal('show');
@@ -84,6 +91,7 @@ export class EditTransactionModalComponent {
     transactionData.personId = this.editForm.value.person.id;
     transactionData.givenDateUtc = new Date(this.editForm.value.givenDate);
     transactionData.pickedDateUtc = this.editForm.value.pickedDate ? new Date(this.editForm.value.pickedDate) : undefined;
+    transactionData.deliveryFormat = this.editForm.value.deliveryFormat;
 
     this.territoryTransactionService.updateTransaction(this.transactionId, transactionData).subscribe({
       next: res => {

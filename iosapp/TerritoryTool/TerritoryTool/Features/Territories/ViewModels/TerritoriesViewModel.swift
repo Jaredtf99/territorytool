@@ -69,7 +69,19 @@ final class TerritoriesViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var searchText = "" { didSet { recompute() } }
-    @Published var filterStatus: TerritoryFilter = .all
+    @Published var filterStatus: TerritoryFilter = .all {
+        didSet {
+            // Un territorio libre no tiene formato de entrega.
+            if filterStatus == .free, deliveryFormatFilter != nil { deliveryFormatFilter = nil }
+        }
+    }
+    /// Filtro local sobre las entregas en curso (físico/virtual). `nil` = todos.
+    @Published var deliveryFormatFilter: DeliveryFormat? {
+        didSet {
+            if deliveryFormatFilter != nil, filterStatus == .free { filterStatus = .inUse }
+            recompute()
+        }
+    }
     @Published var sortOption: TerritorySortOption = .code { didSet { recompute() } }
     @Published var sortAscending = true { didSet { recompute() } }
     @Published var attentionDays = 90 { didSet { recompute() } }
@@ -202,9 +214,13 @@ final class TerritoriesViewModel: ObservableObject {
     }
 
     private func filtered() -> [Territory] {
+        var values = territories
+        if let deliveryFormatFilter {
+            values = values.filter { $0.personName != nil && $0.deliveryFormat == deliveryFormatFilter }
+        }
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard isCodeQuery(query) else { return territories }
-        return territories.filter {
+        guard isCodeQuery(query) else { return values }
+        return values.filter {
             normalized($0.code).contains(normalized(query))
         }
     }
@@ -328,6 +344,7 @@ final class TerritoriesViewModel: ObservableObject {
     func applyLaunchContext(_ context: TerritoriesLaunchContext) {
         attentionDays = context.attentionDays
         filterStatus = context.filter
+        deliveryFormatFilter = nil
         setPresentation(context.presentation, persist: false)
         sortOption = context.filter == .attention ? .givenDate : .code
         sortAscending = true

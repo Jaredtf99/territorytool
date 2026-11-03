@@ -28,6 +28,12 @@
           {{ territory.givenDateUtc | timeago }}
         </span>
       </div>
+      <div class="info-row" *ngIf="territory.personName && territory.deliveryFormat">
+        <span class="delivery-format" [ngClass]="'delivery-format--' + territory.deliveryFormat">
+          <i [class]="deliveryFormatIcons[territory.deliveryFormat]"></i>
+          {{ deliveryFormatLabels[territory.deliveryFormat] }}
+        </span>
+      </div>
     </div>
   </div>
 </div>

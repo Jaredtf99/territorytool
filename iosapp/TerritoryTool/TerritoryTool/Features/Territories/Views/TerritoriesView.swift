@@ -151,18 +151,20 @@ struct TerritoriesView: View {
                 .tint(.accent)
             }
             .padding(.top, controlsHeight)
-        } else if viewModel.territories.isEmpty {
+        } else if viewModel.territories.isEmpty
+                    || (viewModel.deliveryFormatFilter != nil && viewModel.displayedTerritories.isEmpty) {
             ContentUnavailableView {
                 Label("territories.empty_list", systemImage: "map")
             } description: {
-                if viewModel.filterStatus != .all || !viewModel.searchText.isEmpty {
+                if hasActiveFilters {
                     Text("territories.empty_filtered")
                 }
             } actions: {
-                if viewModel.filterStatus != .all || !viewModel.searchText.isEmpty {
+                if hasActiveFilters {
                     Button("territories.clear_filters") {
                         viewModel.searchText = ""
                         viewModel.filterStatus = .all
+                        viewModel.deliveryFormatFilter = nil
                     }
                     .buttonStyle(.glassProminent)
                     .tint(.accent)
@@ -206,6 +208,10 @@ struct TerritoriesView: View {
                 }
             }
         }
+    }
+
+    private var hasActiveFilters: Bool {
+        viewModel.filterStatus != .all || viewModel.deliveryFormatFilter != nil || !viewModel.searchText.isEmpty
     }
 
     private func confirmDelete(_ territory: Territory) {

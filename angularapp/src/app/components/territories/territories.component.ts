@@ -8,6 +8,7 @@ import { TerritoryService } from '../../shared/territory.service';
 import { EditTerritoryModalComponent } from '../edit-territory-modal/edit-territory-modal.component';
 import { DeleteTerritoryModalComponent } from '../delete-territory-modal/delete-territory-modal.component';
 import { Router } from '@angular/router';
+import { DeliveryFormat } from '../../enums/DeliveryFormat';
 
 declare var $: any;
 
@@ -33,6 +34,8 @@ export class TerritoriesComponent {
   filterName = undefined;
   inUse = false;
   free = false;
+  physical = false;
+  virtual = false;
   sortAscending = true;
 
   constructor(public userService: UserService, private toastr: ToastrService, private spinner: NgxSpinnerService, public territoryService: TerritoryService, private router: Router) {
@@ -56,7 +59,7 @@ export class TerritoriesComponent {
       {
         next: res => {
           this.territories = res;
-          this.territoriesFiltered = res;
+          this.applyDeliveryFormatFilter();
           this.isLoading = false;
         },
         error: err => {
@@ -67,8 +70,32 @@ export class TerritoriesComponent {
   }
 
   onChangeFree() {
-    if (this.free) this.inUse = false;
+    if (this.free) {
+      this.inUse = false;
+      this.physical = false;
+      this.virtual = false;
+    }
     this.getTerritories();
+  }
+
+  onChangeDeliveryFormat(format: DeliveryFormat) {
+    if (format === 'physical' && this.physical) this.virtual = false;
+    if (format === 'virtual' && this.virtual) this.physical = false;
+
+    // El formato sólo existe en territorios entregados: si venimos de "Libres" hay que recargar.
+    if (this.free) {
+      this.free = false;
+      this.getTerritories();
+      return;
+    }
+    this.applyDeliveryFormatFilter();
+  }
+
+  private applyDeliveryFormatFilter() {
+    const format: DeliveryFormat | undefined = this.physical ? 'physical' : this.virtual ? 'virtual' : undefined;
+    this.territoriesFiltered = format
+      ? this.territories.filter(t => t.personName && t.deliveryFormat === format)
+      : this.territories;
   }
 
   onChangeInUse() {

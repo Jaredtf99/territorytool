@@ -27,6 +27,11 @@ struct TerritoryExplorerControls: View {
                     ForEach(TerritoryFilter.allCases) { filter in
                         filterChip(filter)
                     }
+                    Divider()
+                        .frame(height: 20)
+                    ForEach(DeliveryFormat.allCases) { format in
+                        deliveryFormatChip(format)
+                    }
                 }
                 .padding(.horizontal, AppSpacing.md)
                 .padding(.vertical, 2)
@@ -116,6 +121,36 @@ struct TerritoryExplorerControls: View {
         }
         .glassEffect(
             selected ? .regular.tint(.accent).interactive() : .regular.interactive(),
+            in: .capsule
+        )
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    /// Chip conmutable: tocar el formato activo lo desactiva.
+    private func deliveryFormatChip(_ format: DeliveryFormat) -> some View {
+        let selected = viewModel.deliveryFormatFilter == format
+        return Button {
+            HapticManager.shared.selection()
+            withAnimation(reduceMotion ? nil : .spring(response: 0.24, dampingFraction: 0.78)) {
+                viewModel.deliveryFormatFilter = selected ? nil : format
+                viewModel.select(nil)
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: format.systemImage)
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(selected ? .white : Color.accentSecondary)
+                Text(format.title)
+                    .font(.appCaption().weight(.medium))
+                    .foregroundStyle(selected ? .white : Color.textPrimary)
+            }
+            .padding(.horizontal, AppSpacing.sm)
+            .frame(height: 34)
+        }
+        .glassEffect(
+            selected ? .regular.tint(.accentSecondary).interactive() : .regular.interactive(),
             in: .capsule
         )
         .frame(minHeight: 44)
@@ -332,10 +367,16 @@ struct TerritoryExplorerRow: View {
                         .foregroundStyle(Color.textPrimary)
                         .lineLimit(1)
 
-                    Text(status.detail)
-                        .font(.appCaption().weight(.medium))
-                        .foregroundStyle(status.color)
-                        .lineLimit(1)
+                    HStack(spacing: AppSpacing.xxs) {
+                        Text(status.detail)
+                            .font(.appCaption().weight(.medium))
+                            .foregroundStyle(status.color)
+                            .lineLimit(1)
+
+                        if let deliveryFormat = territory.deliveryFormat {
+                            DeliveryFormatBadge(format: deliveryFormat)
+                        }
+                    }
                 }
             }
         } else {

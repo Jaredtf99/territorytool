@@ -172,6 +172,32 @@
   border-color: #cbd5e0;
 }
 
+.timeline-action-button.active {
+  background: RGBA(var(--bs-primary-rgb), 0.1);
+  border-color: RGBA(var(--bs-primary-rgb), 0.5);
+  color: RGBA(var(--bs-primary-rgb), 1);
+}
+
+.timeline-header-actions,
+.timeline-format-filter {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.timeline-empty {
+  padding: 20px;
+  font-size: 0.9rem;
+  color: #718096;
+}
+
+.timeline-format {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
 /* Simplificar los botones principales */
 .territory-actions {
   margin-top: 20px;

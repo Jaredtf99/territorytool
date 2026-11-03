@@ -4,6 +4,7 @@ import { TerritoryTransactionService } from '../../services/territory-transactio
 import { TerritoryTransaction } from '../../classes/territory-transaction.model';
 import { EditTransactionModalComponent } from '../edit-transaction-modal/edit-transaction-modal.component';
 import { ToastrService } from 'ngx-toastr';
+import { DELIVERY_FORMAT_LABELS } from '../../enums/DeliveryFormat';
 
 @Component({
   selector: 'app-territory-transactions',
@@ -14,6 +15,7 @@ export class TerritoryTransactionsComponent implements OnInit {
   
   transactions: TerritoryTransaction[] = [];
   territoryId!: number;
+  readonly deliveryFormatLabels = DELIVERY_FORMAT_LABELS;
   
   constructor(
     private route: ActivatedRoute,

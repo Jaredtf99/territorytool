@@ -5,6 +5,7 @@ import { Territory } from '../classes/Territory';
 import { TerritoryDetail } from '../classes/TerritoryDetail';
 import { TerritorySuggestion } from '../classes/TerritorySuggestion';
 import { TerritoryInfoTimelineType } from '../enums/TerritoryInfoTimelineType';
+import { parseDeliveryFormat } from '../enums/DeliveryFormat';
 import { SupabaseService } from './supabase.service';
 
 @Injectable()
@@ -181,22 +182,26 @@ export class TerritoryService {
       imgUrl: territory.imgUrl,
       personName: territory.personName,
       givenDateUtc: territory.givenDateUtc,
+      deliveryFormat: territory.deliveryFormat,
       lastPickedDateUtc: territory.lastPickedDateUtc,
       pickedCount: history.filter((tx: any) => tx.picked_at != null).length,
       lastUser: history[0]?.person_name,
       timelineItems: history.flatMap((tx: any) => {
+        const deliveryFormat = parseDeliveryFormat(tx.delivery_format);
         const items = [{
           id: tx.transaction_id,
           date: tx.given_at,
           description: `Entregado a ${tx.person_name}`,
-          type: TerritoryInfoTimelineType.Gave
+          type: TerritoryInfoTimelineType.Gave,
+          deliveryFormat
         }];
         if (tx.picked_at) {
           items.push({
             id: tx.transaction_id,
             date: tx.picked_at,
             description: `Recogido de ${tx.person_name}`,
-            type: TerritoryInfoTimelineType.Picked
+            type: TerritoryInfoTimelineType.Picked,
+            deliveryFormat
           });
         }
         return items;
@@ -213,7 +218,8 @@ export class TerritoryService {
       imgUrl: await this.getSignedImageUrl(row.image_path),
       personName: row.person_name,
       givenDateUtc: row.given_at ? new Date(row.given_at) : undefined,
-      lastPickedDateUtc: row.last_picked_at ? new Date(row.last_picked_at) : undefined
+      lastPickedDateUtc: row.last_picked_at ? new Date(row.last_picked_at) : undefined,
+      deliveryFormat: row.person_id != null ? parseDeliveryFormat(row.delivery_format) : undefined
     })));
   }
 

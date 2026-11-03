@@ -22,6 +22,24 @@
       </label>
     </div>
 
+    <div class="filter-checkbox me-1 me-sm-2">
+      <label>
+        <input type="checkbox" name="physical" #ctrl="ngModel" [(ngModel)]="physical" (change)="onChangeDeliveryFormat('physical')">
+        <div class="filter-checkbox_text">
+          Físico
+        </div>
+      </label>
+    </div>
+
+    <div class="filter-checkbox me-1 me-sm-2">
+      <label>
+        <input type="checkbox" name="virtual" #ctrl="ngModel" [(ngModel)]="virtual" (change)="onChangeDeliveryFormat('virtual')">
+        <div class="filter-checkbox_text">
+          Virtual
+        </div>
+      </label>
+    </div>
+
     <div class="sorting d-flex d-sm-none">
       <span class="me-1 me-sm-2">Orden</span>
       <ng-select class="me-1 me-sm-2" [(ngModel)]="orderBy" [clearable]="false" [searchable]="false" (change)="getTerritories()">

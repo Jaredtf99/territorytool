@@ -11,6 +11,8 @@ import { EditTerritoryModalComponent } from '../edit-territory-modal/edit-territ
 import { DeleteTerritoryModalComponent } from '../delete-territory-modal/delete-territory-modal.component';
 import { TerritoryTransactionService } from 'src/app/services/territory-transaction.service';
 import { EditTransactionModalComponent } from '../edit-transaction-modal/edit-transaction-modal.component';
+import { DELIVERY_FORMAT_ICONS, DELIVERY_FORMAT_LABELS, DeliveryFormat } from 'src/app/enums/DeliveryFormat';
+import { TimelineItem } from 'src/app/classes/TimelineItem';
 
 declare var $: any;
 
@@ -27,6 +29,11 @@ export class TerritoryDetailComponent implements OnInit {
   @ViewChild(EditTerritoryModalComponent) editTerritoryModalComponent!: EditTerritoryModalComponent;
   @ViewChild(DeleteTerritoryModalComponent) deleteTerritoryModalComponent!: DeleteTerritoryModalComponent;
   territoryStats: any;
+
+  readonly deliveryFormats: DeliveryFormat[] = ['physical', 'virtual'];
+  readonly deliveryFormatLabels = DELIVERY_FORMAT_LABELS;
+  readonly deliveryFormatIcons = DELIVERY_FORMAT_ICONS;
+  timelineFormatFilter: DeliveryFormat | null = null;
 
   @ViewChild('timelineScroll') timelineScroll!: ElementRef;
   @ViewChild('editTransactionModal') editTransactionModal!: EditTransactionModalComponent;
@@ -55,6 +62,16 @@ export class TerritoryDetailComponent implements OnInit {
         }
       }, 100);
     });
+  }
+
+  get filteredTimelineItems(): TimelineItem[] {
+    const items = this.territoryInfo?.timelineItems ?? [];
+    if (!this.timelineFormatFilter) return items;
+    return items.filter(item => item.deliveryFormat === this.timelineFormatFilter);
+  }
+
+  toggleTimelineFormatFilter(format: DeliveryFormat) {
+    this.timelineFormatFilter = this.timelineFormatFilter === format ? null : format;
   }
 
   viewTransactions()

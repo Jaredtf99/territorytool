@@ -206,13 +206,15 @@ final class NetworkManager: APIService {
 
         case .getTerritoryReport(let start, let end):
             // Misma consulta que la edge function `generate-territory-report`:
-            // movimientos cuya entrega o recogida cae dentro del rango. RLS
-            // limita las filas a la congregación activa del JWT.
+            // movimientos que se solapan con el rango, incluidos los entregados
+            // antes del inicio que siguen sin devolverse. RLS limita las filas
+            // a la congregación activa del JWT.
             let startStr = isoFormatter.string(from: start)
             let endStr = isoFormatter.string(from: end)
             let rows = try await restRows("/rest/v1/territory_details", queryItems: [
                 URLQueryItem(name: "select", value: "territory_id,name,code,person_name,given_at,picked_at"),
-                URLQueryItem(name: "or", value: "(and(given_at.gte.\(startStr),given_at.lte.\(endStr)),and(picked_at.gte.\(startStr),picked_at.lte.\(endStr)))"),
+                URLQueryItem(name: "given_at", value: "lte.\(endStr)"),
+                URLQueryItem(name: "or", value: "(picked_at.is.null,picked_at.gte.\(startStr))"),
                 URLQueryItem(name: "order", value: "code.asc,given_at.asc")
             ])
             let allTerritories = try await restRows("/rest/v1/territories", queryItems: [
@@ -494,20 +496,23 @@ final class NetworkManager: APIService {
         case .deleteTransactionUndoable(let id):
             return try await rpcObject("delete_transaction_undoable", body: ["transaction_id": id])
 
-        case .updateTransaction(let id, _, let personId, let date, let pickedDate):
+        case .updateTransaction(let id, _, let personId, let date, let pickedDate, let deliveryFormat):
             return try await rpcObject("update_transaction", body: [
                 "transaction_id": id,
                 "person_id": personId ?? NSNull(),
                 "given_at": isoFormatter.string(from: date),
-                "picked_at": pickedDate.map { isoFormatter.string(from: $0) } ?? NSNull()
+                "picked_at": pickedDate.map { isoFormatter.string(from: $0) } ?? NSNull(),
+                // `null` conserva el formato guardado.
+                "delivery_format": deliveryFormat?.rawValue ?? NSNull()
             ])
 
-        case .updateTransactionUndoable(let id, _, let personId, let date, let pickedDate):
+        case .updateTransactionUndoable(let id, _, let personId, let date, let pickedDate, let deliveryFormat):
             return try await rpcObject("update_transaction_undoable", body: [
                 "transaction_id": id,
                 "person_id": personId ?? NSNull(),
                 "given_at": isoFormatter.string(from: date),
-                "picked_at": pickedDate.map { isoFormatter.string(from: $0) } ?? NSNull()
+                "picked_at": pickedDate.map { isoFormatter.string(from: $0) } ?? NSNull(),
+                "delivery_format": deliveryFormat?.rawValue ?? NSNull()
             ])
         }
     }
@@ -610,18 +615,21 @@ final class NetworkManager: APIService {
         let territory = (await mapTerritories([state])).first ?? [:]
         let timeline = history.flatMap { row -> [[String: Any]] in
             guard let transactionId = row["transaction_id"] as? Int else { return [] }
+            let deliveryFormat = deliveryFormatValue(row["delivery_format"])
             var items: [[String: Any]] = [[
                 "id": transactionId * 10 + 2,
                 "description": "Entregado a \(row["person_name"] as? String ?? "")",
                 "type": 2,
-                "date": row["given_at"] ?? ""
+                "date": row["given_at"] ?? "",
+                "deliveryFormat": deliveryFormat
             ]]
             if let picked = row["picked_at"], !(picked is NSNull) {
                 items.append([
                     "id": transactionId * 10 + 1,
                     "description": "Recogido de \(row["person_name"] as? String ?? "")",
                     "type": 1,
-                    "date": picked
+                    "date": picked,
+                    "deliveryFormat": deliveryFormat
                 ])
             }
             return items
@@ -639,7 +647,8 @@ final class NetworkManager: APIService {
             "pickedCount": history.filter { !isNull($0["picked_at"]) }.count,
             "lastUser": history.first?["person_name"] ?? NSNull(),
             "timelineItems": timeline,
-            "mapGeometry": state["map_geometry"] ?? NSNull()
+            "mapGeometry": state["map_geometry"] ?? NSNull(),
+            "deliveryFormat": territory["deliveryFormat"] ?? NSNull()
         ]
     }
 
@@ -657,9 +666,15 @@ final class NetworkManager: APIService {
                 "personName": row["person_name"] ?? NSNull(),
                 "givenDateUtc": row["given_at"] ?? NSNull(),
                 "lastPickedDateUtc": row["last_picked_at"] ?? NSNull(),
-                "mapGeometry": row["map_geometry"] ?? NSNull()
+                "mapGeometry": row["map_geometry"] ?? NSNull(),
+                "deliveryFormat": isNull(row["person_id"]) ? NSNull() : deliveryFormatValue(row["delivery_format"])
             ]
         }
+    }
+
+    /// Las filas anteriores a la columna (o vistas que aún no la exponen) cuentan como físicas.
+    private func deliveryFormatValue(_ value: Any?) -> String {
+        (value as? String).flatMap(DeliveryFormat.init(rawValue:))?.rawValue ?? DeliveryFormat.physical.rawValue
     }
 
     /// Rutas de imagen que merece la pena firmar.
@@ -692,7 +707,8 @@ final class NetworkManager: APIService {
                 "pickedBy": row["picked_by_username"] ?? NSNull(),
                 "territoryId": row["territory_id"] ?? 0,
                 "territoryName": row["territory_name"] ?? row["name"] ?? "",
-                "personName": row["person_name"] ?? ""
+                "personName": row["person_name"] ?? "",
+                "deliveryFormat": deliveryFormatValue(row["delivery_format"])
             ]
         }
     }

@@ -161,6 +161,26 @@
             font-weight: 500;
           }
         }
+
+        .delivery-format {
+          display: inline-flex;
+          align-items: center;
+          padding: 2px 8px;
+          border-radius: 10px;
+          font-size: 0.8rem;
+          font-weight: 500;
+          background-color: rgba(108, 122, 230, 0.1);
+          color: #4A5568;
+
+          &--virtual {
+            background-color: rgba(56, 161, 105, 0.12);
+            color: #2F855A;
+
+            i {
+              color: #2F855A;
+            }
+          }
+        }
       }
     }
   }

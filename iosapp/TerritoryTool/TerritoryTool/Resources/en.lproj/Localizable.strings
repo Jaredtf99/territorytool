@@ -536,3 +536,10 @@
 "reports.pdf.assignments_one" = "1 assignment";
 "reports.pdf.worked" = "Territories worked";
 "reports.pdf.not_worked" = "Territories not worked";
+
+// Delivery format
+"delivery_format.title" = "Delivery format";
+"delivery_format.physical" = "Physical";
+"delivery_format.virtual" = "Virtual";
+"delivery_format.all" = "All";
+"territory.detail.trajectory.empty_format" = "No deliveries in this format.";

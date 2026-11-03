@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { from, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { TerritoryTransaction } from '../classes/territory-transaction.model';
+import { parseDeliveryFormat } from '../enums/DeliveryFormat';
 import { SupabaseService } from '../shared/supabase.service';
 
 @Injectable()
@@ -36,7 +37,8 @@ export class TerritoryTransactionService {
       transaction_id: id,
       person_id: transaction.personId,
       given_at: transaction.givenDateUtc,
-      picked_at: transaction.pickedDateUtc ?? null
+      picked_at: transaction.pickedDateUtc ?? null,
+      delivery_format: transaction.deliveryFormat
     })).pipe(map((result: any) => {
       if (result.error) throw result.error;
       return {
@@ -45,7 +47,8 @@ export class TerritoryTransactionService {
         territoryId: result.data.territory_id,
         personId: result.data.person_id,
         givenDateUtc: new Date(result.data.given_at),
-        pickedDateUtc: result.data.picked_at ? new Date(result.data.picked_at) : undefined
+        pickedDateUtc: result.data.picked_at ? new Date(result.data.picked_at) : undefined,
+        deliveryFormat: parseDeliveryFormat(result.data.delivery_format)
       };
     }));
   }
@@ -79,7 +82,8 @@ export class TerritoryTransactionService {
       givenBy: row.given_by_username,
       pickedDateUtc: row.picked_at ? new Date(row.picked_at) : undefined,
       isAutomaticPickedDate: row.is_automatic_picked_date ?? undefined,
-      pickedBy: row.picked_by_username
+      pickedBy: row.picked_by_username,
+      deliveryFormat: parseDeliveryFormat(row.delivery_format)
     };
   }
 }

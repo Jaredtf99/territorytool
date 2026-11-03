@@ -1,3 +1,5 @@
+import { DeliveryFormat } from "../enums/DeliveryFormat";
+
 export class Territory {
   id?: number;
   code?: string;
@@ -7,4 +9,5 @@ export class Territory {
   personName?: string;
   givenDateUtc?: Date;
   lastPickedDateUtc?: Date;
+  deliveryFormat?: DeliveryFormat;
 }

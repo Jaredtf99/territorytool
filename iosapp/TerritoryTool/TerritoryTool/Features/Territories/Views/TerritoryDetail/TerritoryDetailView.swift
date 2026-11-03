@@ -268,7 +268,7 @@ struct TerritoryDetailView: View {
                 .padding(.top, AppSpacing.md)
 
             if let person = territory.personName {
-                responsibleRow(person: person)
+                responsibleRow(person: person, deliveryFormat: territory.deliveryFormat)
                     .padding(.top, AppSpacing.xs)
             }
 
@@ -322,7 +322,7 @@ struct TerritoryDetailView: View {
     }
 
     /// Fila del responsable en cristal, integrada en el hero sobre el mapa.
-    private func responsibleRow(person: String) -> some View {
+    private func responsibleRow(person: String, deliveryFormat: DeliveryFormat?) -> some View {
         HStack(spacing: AppSpacing.sm) {
             InitialsAvatar(name: person, size: 40, tint: .accentDeep)
 
@@ -337,6 +337,10 @@ struct TerritoryDetailView: View {
             }
 
             Spacer(minLength: 0)
+
+            if let deliveryFormat {
+                DeliveryFormatBadge(format: deliveryFormat)
+            }
         }
         .padding(AppSpacing.sm)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: AppRadius.lg, style: .continuous))

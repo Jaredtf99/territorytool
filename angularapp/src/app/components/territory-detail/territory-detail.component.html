@@ -44,6 +44,14 @@
         <p class="form-control info">{{territoryInfo.givenDateUtc | date:'medium'}}</p>
       </div>
 
+      <div class="form-group" *ngIf="territoryInfo.personName && territoryInfo.deliveryFormat">
+        <label>Formato de entrega</label>
+        <p class="form-control info">
+          <i [class]="deliveryFormatIcons[territoryInfo.deliveryFormat]" class="me-2"></i>
+          {{ deliveryFormatLabels[territoryInfo.deliveryFormat] }}
+        </p>
+      </div>
+
       <div class="form-group">
         <label>Veces entregado</label>
         <p class="form-control info">{{territoryInfo.pickedCount}}</p>
@@ -85,14 +93,29 @@
         <i class="fa fa-clock-rotate-left"></i>
         Timeline
       </h3>
-      <button class="timeline-action-button" (click)="viewTransactions()" title="Ver detalles de transacciones">
-        <i class="fa fa-list-ul"></i>
-        <span>Ver transacciones</span>
-      </button>
+      <div class="timeline-header-actions">
+        <div class="timeline-format-filter" role="group" aria-label="Filtrar por formato de entrega">
+          <button *ngFor="let format of deliveryFormats"
+                  class="timeline-action-button"
+                  [class.active]="timelineFormatFilter === format"
+                  [attr.aria-pressed]="timelineFormatFilter === format"
+                  (click)="toggleTimelineFormatFilter(format)">
+            <i [class]="deliveryFormatIcons[format]"></i>
+            <span>{{ deliveryFormatLabels[format] }}</span>
+          </button>
+        </div>
+        <button class="timeline-action-button" (click)="viewTransactions()" title="Ver detalles de transacciones">
+          <i class="fa fa-list-ul"></i>
+          <span>Ver transacciones</span>
+        </button>
+      </div>
+    </div>
+    <div class="timeline-empty" *ngIf="!filteredTimelineItems.length">
+      No hay entregas en formato {{ deliveryFormatLabels[timelineFormatFilter!] | lowercase }}.
     </div>
     <div class="timeline-scroll" #timelineScroll>
       <div class="timeline-items">
-        <div class="timeline-item" *ngFor="let timelineItem of territoryInfo.timelineItems">
+        <div class="timeline-item" *ngFor="let timelineItem of filteredTimelineItems">
           <div class="timeline-content" [ngClass]="{
             'type-unknown': timelineItem.type === 0,
             'type-picked': timelineItem.type === 1,
@@ -102,6 +125,10 @@
           }">
             <div class="timeline-title">{{timelineItem.description}}</div>
             <div class="timeline-date">{{timelineItem.date | timeago}}</div>
+            <div class="timeline-format" *ngIf="timelineItem.type === 2 && timelineItem.deliveryFormat">
+              <i [class]="deliveryFormatIcons[timelineItem.deliveryFormat]"></i>
+              {{ deliveryFormatLabels[timelineItem.deliveryFormat] }}
+            </div>
             
             <!-- Botones de editar y borrar -->
             <div *ngIf="timelineItem.type === 1 || timelineItem.type === 2">

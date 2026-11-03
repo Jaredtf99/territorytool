@@ -93,6 +93,7 @@ struct DashboardMovement: Decodable, Identifiable, Hashable {
     let givenAt: Date
     let pickedAt: Date?
     let actorName: String
+    let deliveryFormat: DeliveryFormat?
 
     var id: String { "\(transactionId)-\(eventType.rawValue)" }
 
@@ -106,7 +107,8 @@ struct DashboardMovement: Decodable, Identifiable, Hashable {
             pickedBy: eventType == .returned ? actorName : nil,
             territoryId: territoryId,
             territoryName: territoryName,
-            personName: personName
+            personName: personName,
+            deliveryFormat: deliveryFormat
         )
     }
 }

@@ -7,6 +7,7 @@ private struct TrajectoryCycle: Identifiable {
     var id: Int { transaction.id }
     var personName: String { transaction.personName }
     var isCurrent: Bool { transaction.pickedDateUtc == nil }
+    var deliveryFormat: DeliveryFormat { transaction.deliveryFormat ?? .physical }
 
     var days: Int {
         let end = transaction.pickedDateUtc ?? Date()
@@ -25,12 +26,18 @@ struct TrajectorySection: View {
     let onDelete: (Transaction) -> Void
 
     @State private var selectedId: Int?
+    @State private var formatFilter: DeliveryFormat?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var cycles: [TrajectoryCycle] {
+    private var allCycles: [TrajectoryCycle] {
         transactions
             .map(TrajectoryCycle.init)
             .sorted { $0.transaction.givenDateUtc > $1.transaction.givenDateUtc }
+    }
+
+    private var cycles: [TrajectoryCycle] {
+        guard let formatFilter else { return allCycles }
+        return allCycles.filter { $0.deliveryFormat == formatFilter }
     }
 
     /// Escala común de los anillos: el ciclo más largo marca el 100 %.
@@ -40,6 +47,7 @@ struct TrajectorySection: View {
 
     var body: some View {
         let cycles = self.cycles
+        let hasAnyCycle = !transactions.isEmpty
 
         VStack(alignment: .leading, spacing: AppSpacing.sm) {
             CartoSectionHeader(
@@ -48,10 +56,14 @@ struct TrajectorySection: View {
                 count: cycles.isEmpty ? nil : cycles.count
             )
 
+            if hasAnyCycle {
+                formatFilterBar
+            }
+
             if cycles.isEmpty {
                 CartoEmptyState(
-                    systemImage: "map",
-                    message: "territory.detail.trajectory.empty"
+                    systemImage: formatFilter?.systemImage ?? "map",
+                    message: hasAnyCycle ? "territory.detail.trajectory.empty_format" : "territory.detail.trajectory.empty"
                 )
             } else {
                 ScrollView(.horizontal) {
@@ -83,6 +95,48 @@ struct TrajectorySection: View {
                 }
             }
         }
+    }
+
+    // MARK: Filtro por formato
+
+    private var formatFilterBar: some View {
+        HStack(spacing: AppSpacing.xs) {
+            formatChip(nil)
+            ForEach(DeliveryFormat.allCases) { format in
+                formatChip(format)
+            }
+        }
+    }
+
+    private func formatChip(_ format: DeliveryFormat?) -> some View {
+        let selected = formatFilter == format
+        return Button {
+            HapticManager.shared.selection()
+            withAnimation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.85)) {
+                formatFilter = format
+                selectedId = nil
+            }
+        } label: {
+            HStack(spacing: 4) {
+                if let format {
+                    Image(systemName: format.systemImage)
+                    Text(format.title)
+                } else {
+                    Text("delivery_format.all")
+                }
+            }
+            .font(.appCaption().weight(.medium))
+            .foregroundStyle(selected ? .white : Color.textPrimary)
+            .padding(.horizontal, AppSpacing.sm)
+            .frame(height: 30)
+        }
+        .glassEffect(
+            selected ? .regular.tint(.accent).interactive() : .regular.interactive(),
+            in: .capsule
+        )
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     // MARK: Anillo de ciclo
@@ -140,6 +194,11 @@ struct TrajectorySection: View {
                         .minimumScaleFactor(0.85)
                 }
                 .frame(maxWidth: 96)
+
+                Image(systemName: cycle.deliveryFormat.systemImage)
+                    .font(.caption2)
+                    .foregroundStyle(Color.textSecondary)
+                    .accessibilityHidden(true)
             }
             .padding(.horizontal, AppSpacing.xxs)
             .contentShape(Rectangle())
@@ -156,7 +215,7 @@ struct TrajectorySection: View {
                 }
             }
         }
-        .accessibilityLabel(Text("\(cycle.personName), \(cycle.days) \(String.localized("common.days"))"))
+        .accessibilityLabel(Text("\(cycle.personName), \(cycle.days) \(String.localized("common.days")), \(cycle.deliveryFormat.localizedName)"))
     }
 
     // MARK: Detalle del ciclo seleccionado
@@ -171,10 +230,13 @@ struct TrajectorySection: View {
             InitialsAvatar(name: cycle.personName, size: 40, tint: tint)
 
             VStack(alignment: .leading, spacing: AppSpacing.xxs) {
-                Text(cycle.personName)
-                    .font(.appHeadline())
-                    .foregroundStyle(Color.textPrimary)
-                    .lineLimit(1)
+                HStack(spacing: AppSpacing.xs) {
+                    Text(cycle.personName)
+                        .font(.appHeadline())
+                        .foregroundStyle(Color.textPrimary)
+                        .lineLimit(1)
+                    DeliveryFormatBadge(format: cycle.deliveryFormat)
+                }
 
                 datesRoute(for: cycle, tint: tint)
             }

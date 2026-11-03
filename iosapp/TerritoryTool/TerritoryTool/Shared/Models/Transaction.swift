@@ -10,11 +10,13 @@ struct Transaction: Codable, Identifiable {
     let territoryId: Int
     let territoryName: String
     let personName: String
+    /// `nil` cuando el origen no lo trae; al editar no se envía para no pisar el valor real.
+    let deliveryFormat: DeliveryFormat?
     
     enum CodingKeys: String, CodingKey {
         // camelCase
         case id = "transactionId"
-        case personId, givenDateUtc, pickedDateUtc, givenBy, pickedBy, territoryId, territoryName, personName
+        case personId, givenDateUtc, pickedDateUtc, givenBy, pickedBy, territoryId, territoryName, personName, deliveryFormat
         // PascalCase
         case TransactionId, PersonId, GivenDateUtc, PickedDateUtc, GivenBy, PickedBy, TerritoryId, TerritoryName, PersonName
     }
@@ -32,10 +34,11 @@ struct Transaction: Codable, Identifiable {
         territoryId = try container.decodeIfPresent(Int.self, forKey: .territoryId) ?? container.decode(Int.self, forKey: .TerritoryId)
         territoryName = try container.decodeIfPresent(String.self, forKey: .territoryName) ?? container.decode(String.self, forKey: .TerritoryName)
         personName = try container.decodeIfPresent(String.self, forKey: .personName) ?? container.decode(String.self, forKey: .PersonName)
+        deliveryFormat = try container.decodeIfPresent(DeliveryFormat.self, forKey: .deliveryFormat)
     }
     
     // Manual initializer for creating instances programmatically
-    init(id: Int, personId: Int, givenDateUtc: Date, pickedDateUtc: Date?, givenBy: String?, pickedBy: String?, territoryId: Int, territoryName: String, personName: String) {
+    init(id: Int, personId: Int, givenDateUtc: Date, pickedDateUtc: Date?, givenBy: String?, pickedBy: String?, territoryId: Int, territoryName: String, personName: String, deliveryFormat: DeliveryFormat? = nil) {
         self.id = id
         self.personId = personId
         self.givenDateUtc = givenDateUtc
@@ -45,6 +48,7 @@ struct Transaction: Codable, Identifiable {
         self.territoryId = territoryId
         self.territoryName = territoryName
         self.personName = personName
+        self.deliveryFormat = deliveryFormat
     }
     
     func encode(to encoder: Encoder) throws {
@@ -58,5 +62,6 @@ struct Transaction: Codable, Identifiable {
         try container.encode(territoryId, forKey: .territoryId)
         try container.encode(territoryName, forKey: .territoryName)
         try container.encode(personName, forKey: .personName)
+        try container.encodeIfPresent(deliveryFormat, forKey: .deliveryFormat)
     }
 }
