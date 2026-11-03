@@ -206,7 +206,8 @@ class MockAPIService: APIService {
                 return EmptyResponse() as! T
 
             case .getTerritoryReport(let start, let end):
-                // Movimientos de ejemplo repartidos dentro del rango pedido.
+                // Movimientos de ejemplo repartidos dentro del rango pedido,
+                // más uno entregado antes del inicio que sigue sin devolverse.
                 let span = max(end.timeIntervalSince(start), 86400)
                 func date(_ ratio: Double) -> Date { start.addingTimeInterval(span * ratio) }
                 return TerritoryReportResponse(
@@ -215,7 +216,8 @@ class MockAPIService: APIService {
                         TerritoryReportEntry(territoryId: 1, code: "T-01", territoryName: "Barrio del Río", personName: "Andrés Morales", givenAt: date(0.05), pickedAt: date(0.35)),
                         TerritoryReportEntry(territoryId: 1, code: "T-01", territoryName: "Barrio del Río", personName: "Lucía Ferrer", givenAt: date(0.5), pickedAt: nil),
                         TerritoryReportEntry(territoryId: 2, code: "T-02", territoryName: "Casco Antiguo", personName: "Marcos Vidal", givenAt: date(0.1), pickedAt: date(0.8)),
-                        TerritoryReportEntry(territoryId: 3, code: "T-03", territoryName: "Zona Industrial", personName: "Elena Ruiz", givenAt: date(0.4), pickedAt: date(0.6))
+                        TerritoryReportEntry(territoryId: 3, code: "T-03", territoryName: "Zona Industrial", personName: "Elena Ruiz", givenAt: date(0.4), pickedAt: date(0.6)),
+                        TerritoryReportEntry(territoryId: 4, code: "T-04", territoryName: "Los Pinos", personName: "Raúl Castillo", givenAt: date(-0.3), pickedAt: nil)
                     ]
                 ) as! T
 

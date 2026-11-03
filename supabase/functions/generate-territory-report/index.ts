@@ -47,7 +47,10 @@ Deno.serve(async (req) => {
       .from("territory_details")
       .select("territory_id, territory_name:name, code, person_name, given_at, picked_at")
       .eq("congregation_id", actor.congregationId)
-      .or(`and(given_at.gte.${start.toISOString()},given_at.lte.${end.toISOString()}),and(picked_at.gte.${start.toISOString()},picked_at.lte.${end.toISOString()})`)
+      // Movimientos que se solapan con el rango, incluidos los entregados
+      // antes del inicio que siguen sin devolverse o se devolvieron después.
+      .lte("given_at", end.toISOString())
+      .or(`picked_at.is.null,picked_at.gte.${start.toISOString()}`)
       .order("territory_id", { ascending: true })
       .order("given_at", { ascending: true });
 
