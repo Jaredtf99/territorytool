@@ -390,10 +390,9 @@ private fun CurrentCard(assignment: PersonCurrentAssignment, averageDays: Double
             .bounceClick(onClick = onOpen)
             .height(IntrinsicSize.Min),
     ) {
-        Box(Modifier.width(4.dp).fillMaxHeight().background(tint))
         Row(Modifier.padding(AppSpacing.sm), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
             val thumb = RoundedCornerShape(AppRadius.md)
-            Box(Modifier.size(84.dp, 72.dp).clip(thumb).border(1.dp, tint.copy(alpha = 0.28f), thumb)) {
+            Box(Modifier.size(84.dp, 72.dp).clip(thumb)) {
                 val geometry = assignment.mapGeometry
                 if (geometry != null) TerritorySnapshotBackdrop(geometry, Modifier.fillMaxSize(), stroke = tint, fill = tint, centersTerritory = true)
                 else Box(Modifier.fillMaxSize().background(colors.textSecondary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {

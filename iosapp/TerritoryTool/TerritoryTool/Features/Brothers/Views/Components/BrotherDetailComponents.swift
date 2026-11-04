@@ -164,11 +164,6 @@ struct BrotherCurrentCard: View {
             }
             .padding(AppSpacing.sm)
             .paperCard(cornerRadius: AppRadius.lg)
-            .overlay(alignment: .leading) {
-                UnevenRoundedRectangle(topLeadingRadius: AppRadius.lg, bottomLeadingRadius: AppRadius.lg)
-                    .fill(tint)
-                    .frame(width: 4)
-            }
             .contentShape(RoundedRectangle(cornerRadius: AppRadius.lg, style: .continuous))
         }
         .buttonStyle(ScaleButtonStyle())
@@ -201,7 +196,6 @@ struct BrotherCurrentCard: View {
             }
         }
         .clipShape(shape)
-        .overlay(shape.stroke(tint.opacity(0.28), lineWidth: 1))
     }
 }
 
