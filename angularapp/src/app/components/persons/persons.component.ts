@@ -4,6 +4,7 @@ import { ToastrService } from 'ngx-toastr';
 import { PersonService } from '../../shared/person.service';
 import { NgxSpinnerService } from "ngx-spinner";
 import { CellComponent, TabulatorFull as Tabulator } from 'tabulator-tables';
+import { Router } from '@angular/router';
 
 declare var $: any;
 
@@ -25,7 +26,7 @@ export class PersonsComponent {
   editPersonEnabled: boolean = false;
   canEdit = false; // To control visibility of edit features
 
-  constructor(public userService: UserService, private toastr: ToastrService, private personService: PersonService, private spinner: NgxSpinnerService) {
+  constructor(public userService: UserService, private toastr: ToastrService, private personService: PersonService, private spinner: NgxSpinnerService, private router: Router) {
 
     this.canDelete = userService.isAdmin() || userService.isSuperAdmin();
     this.canEdit = userService.isAdmin() || userService.isSuperAdmin(); // Add this line
@@ -54,6 +55,22 @@ export class PersonsComponent {
       });
 
   }
+  public detailIcon = (): string => {
+    return "<i class='fa fa-id-card person-detail-link' title='Ver ficha e histórico'></i>";
+  };
+
+  /** Nombre como enlace a la ficha del hermano (escapado: viene de datos de usuario). */
+  public nameFormatter = (cell: CellComponent): string => {
+    const span = document.createElement('span');
+    span.className = 'person-name-link';
+    span.textContent = cell.getValue() ?? '';
+    return span.outerHTML;
+  };
+
+  openPersonDetail(person: any) {
+    if (person?.id != null) this.router.navigate(['/person', person.id]);
+  }
+
   public deleteIcon = (): string => { // Changed to public arrow function for consistency
     return "<i class='fa fa-trash-can'></i>";
   };
@@ -75,7 +92,14 @@ export class PersonsComponent {
           visible: this.canEdit, // Only visible for admin/superadmin
           cellClick: (e, cell) => this.openEditPersonModal(cell.getRow().getData())
         },
-        { title: "Nombre", field: "name", headerFilter: "input" },
+        {
+          title: "", formatter: this.detailIcon, width: 40, hozAlign: "center", headerSort: false,
+          cellClick: (e, cell) => this.openPersonDetail(cell.getRow().getData())
+        },
+        {
+          title: "Nombre", field: "name", headerFilter: "input", formatter: this.nameFormatter,
+          cellClick: (e, cell) => this.openPersonDetail(cell.getRow().getData())
+        },
         {
           title: "Habilitado",
           field: "enabled",

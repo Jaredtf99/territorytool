@@ -1,0 +1,21 @@
+:host ::ng-deep .person-name-link {
+  cursor: pointer;
+  font-weight: 500;
+  color: RGBA(var(--bs-primary-rgb), 1);
+  transition: color 0.2s ease;
+}
+
+:host ::ng-deep .person-name-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+:host ::ng-deep .person-detail-link {
+  cursor: pointer;
+  color: RGBA(var(--bs-primary-rgb), 0.85);
+  transition: transform 0.2s ease;
+}
+
+:host ::ng-deep .person-detail-link:hover {
+  transform: scale(1.15);
+}

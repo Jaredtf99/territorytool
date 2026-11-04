@@ -1,5 +1,7 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
+import { registerLocaleData } from '@angular/common';
+import localeEs from '@angular/common/locales/es';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgxSpinnerModule } from "ngx-spinner";
@@ -45,6 +47,10 @@ import { EditTransactionModalComponent } from './components/edit-transaction-mod
 import { TerritoryCardComponent } from './components/territory-card/territory-card.component';
 import { RecentTransactionsComponent } from './components/recent-transactions/recent-transactions.component';
 import { CongregationsComponent } from './components/congregations/congregations.component';
+import { PersonDetailComponent } from './components/person-detail/person-detail.component';
+
+// Solo para los `date` pipes que piden 'es' explícitamente; LOCALE_ID global no cambia.
+registerLocaleData(localeEs);
 
 LOAD_WASM().subscribe((res: any) => console.log('LOAD_WASM', res));
 
@@ -80,6 +86,7 @@ export class MyIntl extends TimeagoIntl {
     EditTransactionModalComponent,
     RecentTransactionsComponent,
     CongregationsComponent,
+    PersonDetailComponent,
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -108,7 +115,8 @@ export class MyIntl extends TimeagoIntl {
           { path: 'users', component: UsersComponent, data: { permittedRoles: ['SUPERADMIN', 'ADMIN'] } },
           { path: 'congregations', component: CongregationsComponent, data: { permittedRoles: ['SUPERADMIN'] } },
           { path: 'add-person', component: AddPersonComponent, data: { permittedRoles: ['SUPERADMIN', 'ADMIN'] } },
-          { path: 'persons', component: PersonsComponent }
+          { path: 'persons', component: PersonsComponent },
+          { path: 'person/:id', component: PersonDetailComponent }
 
         ]
       },

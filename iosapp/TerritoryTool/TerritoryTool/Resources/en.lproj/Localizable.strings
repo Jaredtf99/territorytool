@@ -129,6 +129,8 @@
 // Territory detail (redesign)
 "territory.detail.menu.refresh_map" = "Refresh map";
 "territory.detail.menu.accessibility" = "Territory options";
+"territory.detail.open_map" = "Open map";
+"territory.detail.open_map_error" = "Couldn't open the map link";
 "territory.detail.cycle.title" = "Current cycle";
 "territory.detail.cycle.started_label" = "In use for";
 "territory.detail.cycle.since_date" = "since %@";
@@ -347,6 +349,7 @@
 "change_password.success" = "Password changed successfully";
 "territory_detail.refresh_image_failed" = "Could not refresh the image";
 "territories.filter.attention" = "Attention";
+"territories.filter.status" = "Status";
 "dashboard.greeting.morning" = "Good morning";
 "dashboard.greeting.afternoon" = "Good afternoon";
 "dashboard.greeting.evening" = "Good evening";
@@ -356,6 +359,7 @@
 "dashboard.priority.follow_up" = "Follow up";
 "dashboard.priority.given_on" = "Assigned on %@";
 "dashboard.priority.view" = "View territory";
+"dashboard.priority.return" = "Return";
 "dashboard.priority.none_overdue" = "No territories have reached 90 days.";
 "dashboard.flow.title" = "Circulation";
 "dashboard.flow.free" = "free";
@@ -542,4 +546,39 @@
 "delivery_format.physical" = "Physical";
 "delivery_format.virtual" = "Virtual";
 "delivery_format.all" = "All";
+"delivery_format.toggle.title" = "Delivered virtually";
+"delivery_format.toggle.physical_hint" = "Off: the paper card is handed over";
+"delivery_format.toggle.virtual_hint" = "Sent digitally, no paper card";
+"delivery_format.delivered_virtually" = "Delivered virtually";
 "territory.detail.trajectory.empty_format" = "No deliveries in this format.";
+
+/* Excluir de sugerencias */
+"territory.exclude_from_suggestions.title" = "Don't suggest for assigning";
+"territory.exclude_from_suggestions.hint" = "It won't appear in the suggestions when assigning a territory";
+
+/* Brother detail */
+"brother.detail.open" = "View profile";
+"brother.detail.open_hint" = "Opens the brother's profile";
+"brother.detail.expand_hint" = "Shows their current territories";
+"brother.detail.collapse_hint" = "Hides their current territories";
+"brother.detail.give" = "Give territory";
+"brother.detail.error" = "Couldn't load the profile";
+"brother.detail.status.available" = "Available";
+"brother.detail.status.with_territories" = "%d in progress";
+"brother.detail.current.title" = "In progress";
+"brother.detail.current.empty" = "No territories right now.";
+"brother.detail.activity.title" = "Activity · 12 months";
+"brother.detail.activity.given" = "Given";
+"brother.detail.activity.returned" = "Returned";
+"brother.detail.activity.month_summary" = "%d given · %d returned";
+"brother.detail.activity.empty" = "No activity in the last 12 months.";
+"brother.detail.activity.hint" = "Tap a month to see details.";
+"brother.detail.history.title" = "Territory history";
+"brother.detail.history.filter.all" = "All";
+"brother.detail.history.filter.ongoing" = "In progress";
+"brother.detail.history.filter.returned" = "Returned";
+"brother.detail.history.filter.virtual" = "Virtual";
+"brother.detail.history.search" = "Search territory…";
+"brother.detail.history.empty" = "Hasn't received any territory yet.";
+"brother.detail.history.empty_filtered" = "No territory matches the filter.";
+"brother.detail.history.show_more" = "Show more (%d)";

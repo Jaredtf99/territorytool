@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -83,6 +84,8 @@ import com.jared.territorytool.designsystem.glass
 import com.jared.territorytool.designsystem.paperCard
 import com.jared.territorytool.shared.components.DateFormats
 import com.jared.territorytool.shared.components.DeliveryFormatBadge
+import com.jared.territorytool.shared.components.familyTint
+import com.jared.territorytool.shared.components.tint
 import com.jared.territorytool.shared.models.DeliveryFormat
 import com.jared.territorytool.shared.models.TerritoryStatistics
 import com.jared.territorytool.shared.models.Transaction
@@ -224,7 +227,12 @@ private fun CycleRing(
                     maxLines = 1,
                 )
             }
-            Icon(cycle.deliveryFormat.icon, stringResource(cycle.deliveryFormat.titleRes), Modifier.size(12.dp), tint = colors.textSecondary)
+            // Solo se marcan las entregas virtuales (físico es lo habitual).
+            if (cycle.deliveryFormat == DeliveryFormat.Virtual) {
+                Icon(DeliveryFormat.Virtual.icon, stringResource(R.string.delivery_format_delivered_virtually), Modifier.size(12.dp), tint = DeliveryFormat.Virtual.tint)
+            } else {
+                Spacer(Modifier.size(12.dp))
+            }
         }
         DropdownMenu(menu, { menu = false }, Modifier.background(colors.surfaceRaised)) {
             DropdownMenuItem(text = { Text(stringResource(R.string.common_edit)) }, leadingIcon = { Icon(Icons.Rounded.Edit, null) }, onClick = { menu = false; onEdit() })
@@ -248,13 +256,14 @@ private fun FormatFilterBar(selected: DeliveryFormat?, onSelect: (DeliveryFormat
                 Modifier
                     .height(30.dp)
                     .clip(CircleShape)
-                    .then(if (isSelected) Modifier.background(colors.accent) else Modifier.glass(CircleShape))
+                    // Mismo color que los chips de formato del listado de territorios.
+                    .then(if (isSelected) Modifier.background(DeliveryFormat.familyTint) else Modifier.glass(CircleShape))
                     .bounceClick { onSelect(option) }
                     .padding(horizontal = AppSpacing.sm),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                option?.let { Icon(it.icon, null, Modifier.size(12.dp), tint = if (isSelected) Color.White else colors.textPrimary) }
+                option?.let { Icon(it.icon, null, Modifier.size(12.dp), tint = if (isSelected) Color.White else DeliveryFormat.familyTint) }
                 Text(
                     stringResource(option?.titleRes ?: R.string.delivery_format_all),
                     style = AppType.appCaption.copy(fontWeight = FontWeight.Medium),

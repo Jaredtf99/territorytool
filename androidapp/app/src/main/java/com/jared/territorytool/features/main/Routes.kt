@@ -12,6 +12,7 @@ data object UsersRoute : Route
 data object DeactivatedUsersRoute : Route
 data object TerritoryReportRoute : Route
 data class TerritoryDetailRoute(val territoryId: Int, val territoryName: String) : Route
+data class BrotherDetailRoute(val personId: Int, val personName: String) : Route
 data class WeeklyActivityRoute(
     val events: List<DashboardMovement>,
     val viewModel: DashboardViewModel,

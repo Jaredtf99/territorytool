@@ -124,14 +124,8 @@ final class QuickActionViewModel: ObservableObject {
             .map { $0 }
 
         // Disponibles desde hace tiempo: nil (nunca cogidos) primero, luego más antiguos.
-        oldestFreeTerritories = freeList
-            .sorted { lhs, rhs in
-                guard let l = lhs.lastPickedDateUtc else { return true }
-                guard let r = rhs.lastPickedDateUtc else { return false }
-                return l < r
-            }
-            .prefix(3)
-            .map { $0 }
+        // Se omiten los marcados como "no sugerir para entregar".
+        oldestFreeTerritories = freeList.giveSuggestions(limit: 3)
 
         isLoadingSuggestions = false
     }

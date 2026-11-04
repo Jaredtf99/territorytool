@@ -17,6 +17,8 @@ data class Territory(
     val mapGeometry: TerritoryMapGeometry?,
     /** Formato de la entrega en curso; `null` si está libre. */
     val deliveryFormat: DeliveryFormat? = null,
+    /** `true` = no aparece en las sugerencias para entregar; `null` si la fuente no lo trae. */
+    val excludeFromSuggestions: Boolean? = null,
 ) {
     fun operationalStatus(attentionDays: Int = 90, now: Instant = Instant.now()): TerritoryOperationalStatus {
         if (personName == null) return TerritoryOperationalStatus.Available
@@ -61,6 +63,7 @@ data class TerritoryDetail(
     val timelineItems: List<TimelineItem>,
     val mapGeometry: TerritoryMapGeometry?,
     val deliveryFormat: DeliveryFormat? = null,
+    val excludeFromSuggestions: Boolean? = null,
 )
 
 /** Todo lo que necesita la pantalla de detalle, en una sola respuesta. */
@@ -149,3 +152,12 @@ data class TimelineItem(
 )
 
 enum class TimelineType(val raw: Int) { Picked(1), Gave(2), Edited(3), Added(4) }
+
+/**
+ * Territorios libres que merece la pena sugerir para entregar: sin los marcados como
+ * "no sugerir", los nunca recogidos primero y luego los que llevan más tiempo libres.
+ */
+fun List<Territory>.giveSuggestions(limit: Int = 3): List<Territory> =
+    filter { it.excludeFromSuggestions != true }
+        .sortedWith(compareBy<Territory, Instant?>(nullsFirst()) { it.lastPickedDateUtc }.thenBy { it.id })
+        .take(limit)

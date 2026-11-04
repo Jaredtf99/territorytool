@@ -150,7 +150,6 @@ private struct RotationScale: View {
                     .fill(markerColor)
                     .frame(width: 26, height: 26)
                     .overlay(Circle().stroke(Color.surface, lineWidth: 4))
-                    .shadow(color: markerColor.opacity(0.35), radius: 6, x: 0, y: 3)
                     .offset(x: min(max(markerX - 13, 0), max(width - 26, 0)))
             }
         }
@@ -596,7 +595,6 @@ private struct StatIcon: View {
                 ),
                 in: Circle()
             )
-            .shadow(color: color.opacity(0.35), radius: 6, x: 0, y: 3)
     }
 }
 

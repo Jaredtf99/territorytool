@@ -292,7 +292,7 @@ private struct DailyPriorityCard: View {
                     HapticManager.shared.selection()
                     AppRouter.shared.openQuickAction(.territory(priority.territory))
                 } label: {
-                    Label("territory.detail.return", systemImage: "tray.and.arrow.down.fill")
+                    Label("dashboard.priority.return", systemImage: "tray.and.arrow.down.fill")
                         .font(.appSubheadline().weight(.semibold))
                 }
                 .buttonStyle(.glass)
@@ -304,12 +304,12 @@ private struct DailyPriorityCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(alignment: .trailing) { mapBleed(priority) }
         .background {
+            // Sombra en la forma (sin `compositingGroup`, que forzaba un pase offscreen).
             RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
                 .fill(Color.surface)
+                .shadow(color: Color.glassShadow, radius: 8, x: 0, y: 4)
         }
         .overlay { glassBorder }
-        .compositingGroup()
-        .shadow(color: Color.glassShadow, radius: 14, x: 0, y: 8)
     }
 
     // MARK: Piezas
@@ -357,7 +357,6 @@ private struct DailyPriorityCard: View {
                     ),
                     in: Circle()
                 )
-                .shadow(color: highlight.opacity(0.5), radius: 5, x: 0, y: 2)
             Text("dashboard.priority.title")
                 .font(.appSubheadline().weight(.bold))
                 .foregroundStyle(highlight)
@@ -384,22 +383,12 @@ private struct DailyPriorityCard: View {
     @ViewBuilder
     private func mapBleed(_ priority: DashboardPriority) -> some View {
         if let geometry = priority.mapGeometry {
+            // Fundido con el color de la tarjeta + recorte, en vez de dos máscaras.
             TerritorySnapshotBackdrop(geometry: geometry, verticalBias: 0.22)
-                .mask(
-                    LinearGradient(
-                        stops: [
-                            .init(color: .black.opacity(0.0), location: 0.0),
-                            .init(color: .black.opacity(0.5), location: 0.30),
-                            .init(color: .black, location: 0.55),
-                            .init(color: .black, location: 1.0)
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .mask(
-                    RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
-                )
+                .overlay {
+                    SurfaceFade(stops: [(0, 0), (0.5, 0.30), (1, 0.55), (1, 1)])
+                }
+                .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous))
         }
     }
 }
@@ -556,7 +545,6 @@ private struct FlowGlowIcon: View {
                         )
                     )
             )
-            .shadow(color: tint.opacity(0.28), radius: 4, x: 0, y: 2)
     }
 }
 
@@ -617,7 +605,7 @@ private struct WeeklyActivityChart: View {
                 }
                 .chartXAxis {
                     AxisMarks(values: .stride(by: .day)) { _ in
-                        AxisValueLabel(format: .dateTime.weekday(.narrow))
+                        AxisValueLabel(format: .dateTime.weekday(.narrow), anchor: .top)
                             .font(.caption2)
                     }
                 }
@@ -632,7 +620,7 @@ private struct WeeklyActivityChart: View {
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .onAppear {
             guard !reduceMotion else { animated = true; return }
-            withAnimation(.easeOut(duration: 0.8)) { animated = true }
+            withAnimation(.easeOut(duration: 0.45)) { animated = true }
         }
     }
 }
@@ -681,7 +669,6 @@ struct MovementRow: View {
                                    startPoint: .topLeading, endPoint: .bottomTrailing),
                     in: Circle()
                 )
-                .shadow(color: eventTint.opacity(0.35), radius: 5, x: 0, y: 2)
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: AppSpacing.xs) {

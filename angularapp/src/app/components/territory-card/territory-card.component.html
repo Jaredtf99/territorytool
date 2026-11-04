@@ -28,10 +28,11 @@
           {{ territory.givenDateUtc | timeago }}
         </span>
       </div>
-      <div class="info-row" *ngIf="territory.personName && territory.deliveryFormat">
-        <span class="delivery-format" [ngClass]="'delivery-format--' + territory.deliveryFormat">
-          <i [class]="deliveryFormatIcons[territory.deliveryFormat]"></i>
-          {{ deliveryFormatLabels[territory.deliveryFormat] }}
+      <!-- Físico es lo habitual: solo se marcan las entregas virtuales. -->
+      <div class="info-row" *ngIf="territory.personName && territory.deliveryFormat === 'virtual'">
+        <span class="delivery-format">
+          <i [class]="deliveryFormatIcons.virtual"></i>
+          {{ deliveryFormatLabels.virtual }}
         </span>
       </div>
     </div>

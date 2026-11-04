@@ -5,7 +5,7 @@ import { Territory } from '../classes/Territory';
 import { TerritoryDetail } from '../classes/TerritoryDetail';
 import { TerritorySuggestion } from '../classes/TerritorySuggestion';
 import { TerritoryInfoTimelineType } from '../enums/TerritoryInfoTimelineType';
-import { parseDeliveryFormat } from '../enums/DeliveryFormat';
+import { DeliveryFormat, parseDeliveryFormat } from '../enums/DeliveryFormat';
 import { SupabaseService } from './supabase.service';
 
 @Injectable()
@@ -13,12 +13,13 @@ export class TerritoryService {
 
   constructor(private supabase: SupabaseService) { }
 
-  editTerritory(id: number, mapUrl:string, name: string, code: string): Observable<any> {
+  editTerritory(id: number, mapUrl:string, name: string, code: string, excludeFromSuggestions: boolean): Observable<any> {
     return from(this.supabase.client.rpc('update_territory', {
       territory_id: id,
       map_url: mapUrl,
       name,
-      code
+      code,
+      exclude_from_suggestions: excludeFromSuggestions
     }));
   }
 
@@ -67,8 +68,13 @@ export class TerritoryService {
     return from(this.supabase.client.rpc('delete_territory', { territory_id: id }));
   }
 
-  addTerritory(mapUrl: string, name: string, code: string): Observable<any> {
-    return from(this.supabase.client.rpc('add_territory', { map_url: mapUrl, name, code }));
+  addTerritory(mapUrl: string, name: string, code: string, excludeFromSuggestions: boolean): Observable<any> {
+    return from(this.supabase.client.rpc('add_territory', {
+      map_url: mapUrl,
+      name,
+      code,
+      exclude_from_suggestions: excludeFromSuggestions
+    }));
   }
 
   searchTerritories(term: string): Observable<Territory[]> {
@@ -118,11 +124,18 @@ export class TerritoryService {
     );
   }
 
-  giveTerritory(territoryCode: string, personName: string, isCustomDate: boolean, customDate: Date | undefined): Observable<any> {
+  giveTerritory(
+    territoryCode: string,
+    personName: string,
+    isCustomDate: boolean,
+    customDate: Date | undefined,
+    deliveryFormat: DeliveryFormat = 'physical'
+  ): Observable<any> {
     return from(this.supabase.client.rpc('give_territory', {
       territory_code: territoryCode,
       person_name: personName,
-      custom_date: isCustomDate ? customDate?.toISOString() : null
+      custom_date: isCustomDate ? customDate?.toISOString() : null,
+      delivery_format: deliveryFormat
     }));
   }
 
@@ -180,9 +193,11 @@ export class TerritoryService {
       name: territory.name,
       mapUrl: territory.mapUrl,
       imgUrl: territory.imgUrl,
+      personId: territory.personId,
       personName: territory.personName,
       givenDateUtc: territory.givenDateUtc,
       deliveryFormat: territory.deliveryFormat,
+      excludeFromSuggestions: territory.excludeFromSuggestions,
       lastPickedDateUtc: territory.lastPickedDateUtc,
       pickedCount: history.filter((tx: any) => tx.picked_at != null).length,
       lastUser: history[0]?.person_name,
@@ -216,10 +231,12 @@ export class TerritoryService {
       name: row.name,
       mapUrl: row.map_url,
       imgUrl: await this.getSignedImageUrl(row.image_path),
+      personId: row.person_id ?? undefined,
       personName: row.person_name,
       givenDateUtc: row.given_at ? new Date(row.given_at) : undefined,
       lastPickedDateUtc: row.last_picked_at ? new Date(row.last_picked_at) : undefined,
-      deliveryFormat: row.person_id != null ? parseDeliveryFormat(row.delivery_format) : undefined
+      deliveryFormat: row.person_id != null ? parseDeliveryFormat(row.delivery_format) : undefined,
+      excludeFromSuggestions: row.exclude_from_suggestions === true
     })));
   }
 

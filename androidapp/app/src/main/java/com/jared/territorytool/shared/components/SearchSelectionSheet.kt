@@ -63,12 +63,18 @@ fun AppSheet(
 }
 
 @Composable
-fun SearchField(value: String, onValueChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier) {
+fun SearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    filled: Boolean = true,
+) {
     val colors = AppTheme.colors
     Row(
         modifier
             .fillMaxWidth()
-            .background(colors.textSecondary.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
+            .then(if (filled) Modifier.background(colors.textSecondary.copy(alpha = 0.12f), RoundedCornerShape(12.dp)) else Modifier)
             .padding(horizontal = AppSpacing.sm, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs),

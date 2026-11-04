@@ -20,6 +20,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,6 +44,7 @@ import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.MoveToInbox
@@ -52,7 +54,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -80,11 +81,14 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -102,6 +106,7 @@ import com.jared.territorytool.designsystem.AppScreen
 import com.jared.territorytool.designsystem.AppSpacing
 import com.jared.territorytool.designsystem.AppTheme
 import com.jared.territorytool.designsystem.AppType
+import com.jared.territorytool.designsystem.appTopBarInset
 import com.jared.territorytool.designsystem.ContentUnavailable
 import com.jared.territorytool.designsystem.GlassIconButton
 import com.jared.territorytool.designsystem.InitialsAvatar
@@ -118,7 +123,8 @@ import com.jared.territorytool.features.main.TerritoryDetailRoute
 import com.jared.territorytool.features.quickaction.QuickActionResolution
 import com.jared.territorytool.features.territories.map.TerritoriesExplorerMap
 import com.jared.territorytool.shared.components.CongregationSwitcher
-import com.jared.territorytool.shared.components.DeliveryFormatBadge
+import com.jared.territorytool.shared.components.DetailWithVirtualMark
+import com.jared.territorytool.shared.components.familyTint
 import com.jared.territorytool.shared.components.ToastManager
 import com.jared.territorytool.shared.components.ToastStyle
 import com.jared.territorytool.shared.map.TerritorySnapshotBackdrop
@@ -204,6 +210,8 @@ fun TerritoriesScreen(viewModel: TerritoriesViewModel = viewModel()) {
             background = { com.jared.territorytool.designsystem.LiquidBackground() },
             // Mapa a pantalla completa: sin barra superior, el mapa ocupa también su hueco.
             showTopBar = showChrome,
+            // Como en iOS: el mapa (y la lista) pasan por detrás de la barra superior.
+            contentUnderTopBar = true,
         ) {
             Box(Modifier.fillMaxSize()) {
                 val topInset = with(density) { controlsHeight.toDp() }
@@ -260,7 +268,12 @@ fun TerritoriesScreen(viewModel: TerritoriesViewModel = viewModel()) {
                 }
 
                 androidx.compose.animation.AnimatedVisibility(showChrome, enter = slideInVertically { -it } + fadeIn(), exit = slideOutVertically { -it } + fadeOut()) {
-                    TerritoryExplorerControls(viewModel, onRequestLocation = location::requestLocation, modifier = Modifier.onSizeChanged { controlsHeight = it.height })
+                    // La altura medida incluye el hueco de la barra superior, así `topInset` cubre ambos.
+                    TerritoryExplorerControls(
+                        viewModel,
+                        onRequestLocation = location::requestLocation,
+                        modifier = Modifier.onSizeChanged { controlsHeight = it.height }.padding(top = appTopBarInset()),
+                    )
                 }
             }
         }
@@ -311,7 +324,8 @@ private fun TerritoryExplorerControls(viewModel: TerritoriesViewModel, onRequest
     val presentation by viewModel.presentation.collectAsStateWithLifecycle()
     var sortMenu by remember { mutableStateOf(false) }
 
-    Column(modifier.padding(bottom = AppSpacing.xs), verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
+    // Margen superior: sin él el buscador quedaba pegado a la barra superior.
+    Column(modifier.padding(top = AppSpacing.xs, bottom = AppSpacing.xs), verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
         Row(Modifier.padding(horizontal = AppSpacing.md), horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs), verticalAlignment = Alignment.CenterVertically) {
             SearchCapsule(search, { viewModel.searchText.value = it }, stringResource(R.string.territories_search_explorer), Modifier.weight(1f))
             PresentationToggle(presentation) {
@@ -346,50 +360,99 @@ private fun TerritoryExplorerControls(viewModel: TerritoriesViewModel, onRequest
                     }
                 }
             }
-            items(TerritoryFilter.entries) { option ->
-                val selected = option == filter
-                Row(
-                    Modifier
-                        .height(34.dp)
-                        .clip(CircleShape)
-                        .then(if (selected) Modifier.background(colors.accent) else Modifier.glass(CircleShape))
-                        .bounceClick {
-                            HapticManager.selection()
-                            viewModel.filterStatus.value = option
-                            viewModel.select(null)
-                        }
-                        .padding(horizontal = AppSpacing.sm),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    if (option == TerritoryFilter.All) Icon(Icons.Rounded.Layers, null, Modifier.size(12.dp), tint = if (selected) Color.White else colors.accent)
-                    else Box(Modifier.size(9.dp).background(if (selected) Color.White else option.dotColor(colors), CircleShape))
-                    Text(stringResource(option.title), style = AppType.appCaption.copy(fontWeight = FontWeight.Medium), color = if (selected) Color.White else colors.textPrimary)
+            item {
+                val active = filter != TerritoryFilter.All
+                FilterMenuChip(
+                    label = stringResource(if (active) filter.title else R.string.territories_filter_status),
+                    contentDescription = stringResource(R.string.territories_filter_status),
+                    active = active,
+                    activeTint = colors.accent,
+                    leading = if (active) ({ Box(Modifier.size(9.dp).background(Color.White, CircleShape)) }) else null,
+                ) { close ->
+                    TerritoryFilter.entries.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(option.title)) },
+                            leadingIcon = {
+                                if (option == TerritoryFilter.All) Icon(Icons.Rounded.Layers, null, Modifier.size(16.dp), tint = colors.accent)
+                                else Box(Modifier.size(10.dp).background(option.dotColor(colors), CircleShape))
+                            },
+                            trailingIcon = { if (option == filter) Icon(Icons.Rounded.Check, null, tint = colors.accent) },
+                            onClick = {
+                                HapticManager.selection()
+                                viewModel.filterStatus.value = option
+                                viewModel.select(null)
+                                close()
+                            },
+                        )
+                    }
                 }
             }
             item {
-                VerticalDivider(Modifier.height(20.dp), color = colors.hairline)
-            }
-            items(DeliveryFormat.entries) { option ->
-                val selected = option == formatFilter
-                Row(
-                    Modifier
-                        .height(34.dp)
-                        .clip(CircleShape)
-                        .then(if (selected) Modifier.background(colors.accentSecondary) else Modifier.glass(CircleShape))
-                        .bounceClick {
-                            HapticManager.selection()
-                            viewModel.toggleDeliveryFormatFilter(option)
-                            viewModel.select(null)
-                        }
-                        .padding(horizontal = AppSpacing.sm),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Icon(option.icon, null, Modifier.size(12.dp), tint = if (selected) Color.White else colors.accentSecondary)
-                    Text(stringResource(option.titleRes), style = AppType.appCaption.copy(fontWeight = FontWeight.Medium), color = if (selected) Color.White else colors.textPrimary)
+                val active = formatFilter != null
+                FilterMenuChip(
+                    label = stringResource(formatFilter?.titleRes ?: R.string.delivery_format_title),
+                    contentDescription = stringResource(R.string.delivery_format_title),
+                    active = active,
+                    // Color de la familia "formato", distinto de los colores de estado.
+                    activeTint = DeliveryFormat.familyTint,
+                    leading = formatFilter?.let { format -> { Icon(format.icon, null, Modifier.size(12.dp), tint = Color.White) } },
+                ) { close ->
+                    (listOf<DeliveryFormat?>(null) + DeliveryFormat.entries).forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(option?.titleRes ?: R.string.delivery_format_all)) },
+                            leadingIcon = {
+                                if (option == null) Icon(Icons.Rounded.Layers, null, Modifier.size(16.dp), tint = DeliveryFormat.familyTint)
+                                else Icon(option.icon, null, Modifier.size(16.dp), tint = DeliveryFormat.familyTint)
+                            },
+                            trailingIcon = { if (option == formatFilter) Icon(Icons.Rounded.Check, null, tint = colors.accent) },
+                            onClick = {
+                                HapticManager.selection()
+                                viewModel.setDeliveryFormatFilter(option)
+                                viewModel.select(null)
+                                close()
+                            },
+                        )
+                    }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Chip que abre un menú de opciones. Inactivo (valor por defecto) muestra el nombre del
+ * filtro; activo se tiñe y muestra la opción elegida.
+ */
+@Composable
+private fun FilterMenuChip(
+    label: String,
+    contentDescription: String,
+    active: Boolean,
+    activeTint: Color,
+    leading: (@Composable () -> Unit)?,
+    menu: @Composable ColumnScope.(close: () -> Unit) -> Unit,
+) {
+    val colors = AppTheme.colors
+    var expanded by remember { mutableStateOf(false) }
+    val content = if (active) Color.White else colors.textPrimary
+    Box {
+        Row(
+            Modifier
+                .height(34.dp)
+                .clip(CircleShape)
+                .then(if (active) Modifier.background(activeTint) else Modifier.glass(CircleShape))
+                .bounceClick { expanded = true }
+                .semantics { this.contentDescription = "$contentDescription: $label" }
+                .padding(start = AppSpacing.sm, end = AppSpacing.xs),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            leading?.invoke()
+            Text(label, style = AppType.appCaption.copy(fontWeight = FontWeight.Medium), color = content)
+            Icon(Icons.Rounded.KeyboardArrowDown, null, Modifier.size(16.dp), tint = if (active) Color.White else colors.textSecondary)
+        }
+        DropdownMenu(expanded, { expanded = false }, Modifier.background(colors.surfaceRaised)) {
+            menu { expanded = false }
         }
     }
 }
@@ -535,9 +598,8 @@ fun TerritoryExplorerRow(territory: Territory, status: TerritoryOperationalStatu
                     InitialsAvatar(person, size = 32.dp, tint = presentation.color)
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(person, style = AppType.appHeadline, color = colors.textPrimary, maxLines = 1)
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(presentation.detail, style = AppType.appCaption.copy(fontWeight = FontWeight.Medium), color = presentation.color, maxLines = 1)
-                            territory.deliveryFormat?.let { DeliveryFormatBadge(it) }
+                        DetailWithVirtualMark(territory.deliveryFormat) {
+                            Text(presentation.detail, style = AppType.appCaption.copy(fontWeight = FontWeight.Medium), color = presentation.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 }

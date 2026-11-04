@@ -18,12 +18,10 @@ struct InitialsAvatar: View {
             .foregroundStyle(.white)
             .frame(width: size, height: size)
             .background(
-                // Sombra en el círculo, no en la vista compuesta: si va después
-                // del background también sombrea las iniciales (un blur extra por fila).
+                // Sin glow: la sombra de color era un blur extra por avatar en cada fila.
                 Circle()
                     .fill(LinearGradient(colors: [tint, tint.opacity(0.78)],
                                          startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .shadow(color: tint.opacity(0.35), radius: 5, x: 0, y: 2)
             )
             .accessibilityHidden(true)
     }

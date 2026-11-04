@@ -129,6 +129,8 @@
 // Detalle de territorio (rediseño)
 "territory.detail.menu.refresh_map" = "Actualizar mapa";
 "territory.detail.menu.accessibility" = "Opciones del territorio";
+"territory.detail.open_map" = "Abrir mapa";
+"territory.detail.open_map_error" = "No se pudo abrir el enlace del mapa";
 "territory.detail.cycle.title" = "Ciclo actual";
 "territory.detail.cycle.started_label" = "En uso desde hace";
 "territory.detail.cycle.since_date" = "desde el %@";
@@ -349,6 +351,7 @@
 "change_password.success" = "Contraseña cambiada correctamente";
 "territory_detail.refresh_image_failed" = "No se pudo actualizar la imagen";
 "territories.filter.attention" = "Atención";
+"territories.filter.status" = "Estado";
 "dashboard.greeting.morning" = "Buenos días";
 "dashboard.greeting.afternoon" = "Buenas tardes";
 "dashboard.greeting.evening" = "Buenas noches";
@@ -358,6 +361,7 @@
 "dashboard.priority.follow_up" = "Seguimiento";
 "dashboard.priority.given_on" = "Entregado el %@";
 "dashboard.priority.view" = "Ver territorio";
+"dashboard.priority.return" = "Devolver";
 "dashboard.priority.none_overdue" = "No hay territorios con 90 días o más.";
 "dashboard.flow.title" = "Circulación";
 "dashboard.flow.free" = "libres";
@@ -544,4 +548,39 @@
 "delivery_format.physical" = "Físico";
 "delivery_format.virtual" = "Virtual";
 "delivery_format.all" = "Todos";
+"delivery_format.toggle.title" = "Entregado en virtual";
+"delivery_format.toggle.physical_hint" = "Desactivado: se entrega la tarjeta en papel";
+"delivery_format.toggle.virtual_hint" = "Se envió en formato digital, sin tarjeta en papel";
+"delivery_format.delivered_virtually" = "Entregado en virtual";
 "territory.detail.trajectory.empty_format" = "No hay entregas en este formato.";
+
+/* Excluir de sugerencias */
+"territory.exclude_from_suggestions.title" = "No sugerir para entregar";
+"territory.exclude_from_suggestions.hint" = "No aparecerá en las sugerencias al entregar un territorio";
+
+/* Ficha de hermano */
+"brother.detail.open" = "Ver ficha";
+"brother.detail.open_hint" = "Abre la ficha del hermano";
+"brother.detail.expand_hint" = "Muestra sus territorios en curso";
+"brother.detail.collapse_hint" = "Oculta sus territorios en curso";
+"brother.detail.give" = "Entregar territorio";
+"brother.detail.error" = "No se pudo cargar la ficha";
+"brother.detail.status.available" = "Disponible";
+"brother.detail.status.with_territories" = "Con %d en curso";
+"brother.detail.current.title" = "En curso";
+"brother.detail.current.empty" = "No tiene ningún territorio ahora mismo.";
+"brother.detail.activity.title" = "Actividad · 12 meses";
+"brother.detail.activity.given" = "Entregas";
+"brother.detail.activity.returned" = "Devoluciones";
+"brother.detail.activity.month_summary" = "%d entregadas · %d devueltas";
+"brother.detail.activity.empty" = "Sin movimientos en los últimos 12 meses.";
+"brother.detail.activity.hint" = "Toca un mes para ver el detalle.";
+"brother.detail.history.title" = "Histórico de territorios";
+"brother.detail.history.filter.all" = "Todos";
+"brother.detail.history.filter.ongoing" = "En curso";
+"brother.detail.history.filter.returned" = "Devueltos";
+"brother.detail.history.filter.virtual" = "Virtuales";
+"brother.detail.history.search" = "Buscar territorio…";
+"brother.detail.history.empty" = "Todavía no ha recibido ningún territorio.";
+"brother.detail.history.empty_filtered" = "Ningún territorio coincide con el filtro.";
+"brother.detail.history.show_more" = "Mostrar más (%d)";

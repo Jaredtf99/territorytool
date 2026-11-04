@@ -8,8 +8,13 @@ extension Color {
 
     /// Color dinámico claro/oscuro a partir de enteros 0xRRGGBB.
     init(light: UInt, dark: UInt) {
+        // Las dos variantes se crean una sola vez: el proveedor dinámico se invoca en
+        // cada resolución (MapKit lo hace en cada acceso a `CGColor`), y antes reservaba
+        // un `UIColor` nuevo en cada llamada.
+        let lightColor = UIColor(rgb: light)
+        let darkColor = UIColor(rgb: dark)
         self.init(uiColor: UIColor { traits in
-            traits.userInterfaceStyle == .dark ? UIColor(rgb: dark) : UIColor(rgb: light)
+            traits.userInterfaceStyle == .dark ? darkColor : lightColor
         })
     }
 

@@ -336,7 +336,6 @@ struct ActionPromptCard: View {
                     LinearGradient(colors: [tint, tint.opacity(0.78)], startPoint: .topLeading, endPoint: .bottomTrailing),
                     in: Circle()
                 )
-                .shadow(color: tint.opacity(0.35), radius: 5, x: 0, y: 2)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.appHeadline()).foregroundStyle(Color.textPrimary)
                 Text(subtitle).font(.appCaption()).foregroundStyle(Color.textSecondary)

@@ -334,7 +334,7 @@ private fun DailyPriorityCard(
                     large = true,
                 )
                 AppButton(
-                    stringResource(R.string.territory_detail_return),
+                    stringResource(R.string.dashboard_priority_return),
                     {
                         HapticManager.selection()
                         AppRouter.openQuickAction(QuickActionResolution.ForTerritory(priority.territory))

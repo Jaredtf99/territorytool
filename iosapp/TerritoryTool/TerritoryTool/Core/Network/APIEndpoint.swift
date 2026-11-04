@@ -47,17 +47,18 @@ enum TerritoryEndpoint: APIEndpoint {
     case getTerritoryDetailBundle(id: Int)
     case getTerritoryStats(id: Int)
     case getTerritoryTransactions(id: Int)
-    case giveTerritory(code: String, personName: String, date: Date?)
+    case giveTerritory(code: String, personName: String, date: Date?, deliveryFormat: DeliveryFormat = .physical)
     case pickTerritory(code: String, date: Date?)
     case getPersons(search: String?)
     case getPersonsWithAssignments(search: String?)
+    case getPersonDetail(id: Int)
     case searchQuickAction(term: String)
     case resolveTerritorySelector(value: String)
     case getDashboardSnapshot(weekStart: Date, timeZone: String, attentionDays: Int)
     case getMovementHistory(page: Int, pageSize: Int, search: String?, filter: MovementHistoryFilter, sort: MovementHistorySort)
     case getTerritoryReport(start: Date, end: Date)
     case login(credentials: LoginCredentials)
-    case giveTerritoryUndoable(code: String, personName: String, date: Date?)
+    case giveTerritoryUndoable(code: String, personName: String, date: Date?, deliveryFormat: DeliveryFormat = .physical)
     case pickTerritoryUndoable(code: String, date: Date?)
     case getTerritories(term: String?, inUse: Bool?, orderBy: Int?, orderByAscending: Bool?, lastGivenDateFrom: Date?, lastGivenDateTo: Date?)
     case getTerritoryExplorer(term: String?, filter: TerritoryFilter, attentionDays: Int)
@@ -70,14 +71,14 @@ enum TerritoryEndpoint: APIEndpoint {
     case deleteTerritoryUndoable(id: Int)
     case addPerson(name: String)
     case addPersonUndoable(name: String)
-    case addTerritory(code: String, name: String, mapUrl: String)
-    case addTerritoryUndoable(code: String, name: String, mapUrl: String)
+    case addTerritory(code: String, name: String, mapUrl: String, excludeFromSuggestions: Bool = false)
+    case addTerritoryUndoable(code: String, name: String, mapUrl: String, excludeFromSuggestions: Bool = false)
     case updatePerson(id: Int, name: String, enabled: Bool)
     case updatePersonUndoable(id: Int, name: String, enabled: Bool)
     case deletePerson(name: String)
     case deletePersonUndoable(name: String)
-    case updateTerritory(id: Int, code: String, name: String, mapUrl: String)
-    case updateTerritoryUndoable(id: Int, code: String, name: String, mapUrl: String)
+    case updateTerritory(id: Int, code: String, name: String, mapUrl: String, excludeFromSuggestions: Bool? = nil)
+    case updateTerritoryUndoable(id: Int, code: String, name: String, mapUrl: String, excludeFromSuggestions: Bool? = nil)
     case getUsers
     case addUser(name: String, role: String, password: String)
     case addUserUndoable(name: String, role: String, password: String)
@@ -102,7 +103,7 @@ enum TerritoryEndpoint: APIEndpoint {
     var method: HTTPMethod {
         switch self {
         case .getTerritory, .getTerritoryDetail, .getTerritoryDetailBundle, .getTerritoryStats, .getTerritoryTransactions,
-             .getPersons, .getPersonsWithAssignments, .searchQuickAction, .resolveTerritorySelector,
+             .getPersons, .getPersonsWithAssignments, .getPersonDetail, .searchQuickAction, .resolveTerritorySelector,
              .getDashboardSnapshot, .getMovementHistory, .getTerritories, .getTerritoryExplorer,
              .getTerritoryReport:
             return .GET
@@ -127,12 +128,13 @@ enum TerritoryEndpoint: APIEndpoint {
     
     var body: Data? {
         switch self {
-        case .giveTerritory(let code, let personName, let date), .giveTerritoryUndoable(let code, let personName, let date):
+        case .giveTerritory(let code, let personName, let date, let deliveryFormat), .giveTerritoryUndoable(let code, let personName, let date, let deliveryFormat):
             let params: [String: Any] = [
                 "territoryCode": code,
                 "personName": personName,
                 "isCustomDate": date != nil,
-                "customDate": date.map { ISO8601DateFormatter().string(from: $0) } ?? NSNull()
+                "customDate": date.map { ISO8601DateFormatter().string(from: $0) } ?? NSNull(),
+                "deliveryFormat": deliveryFormat.rawValue
             ]
             return try? JSONSerialization.data(withJSONObject: params)
         case .pickTerritory(let code, let date), .pickTerritoryUndoable(let code, let date):
@@ -153,14 +155,14 @@ enum TerritoryEndpoint: APIEndpoint {
             return try? JSONSerialization.data(withJSONObject: params)
         case .login(let credentials):
             return try? JSONEncoder().encode(credentials)
-        case .updateTerritory(_, let code, let name, let mapUrl), .updateTerritoryUndoable(_, let code, let name, let mapUrl):
+        case .updateTerritory(_, let code, let name, let mapUrl, _), .updateTerritoryUndoable(_, let code, let name, let mapUrl, _):
             let params: [String: Any] = [
                 "code": code,
                 "name": name,
                 "mapUrl": mapUrl
             ]
             return try? JSONSerialization.data(withJSONObject: params)
-        case .addTerritory(let code, let name, let mapUrl), .addTerritoryUndoable(let code, let name, let mapUrl):
+        case .addTerritory(let code, let name, let mapUrl, _), .addTerritoryUndoable(let code, let name, let mapUrl, _):
             let params: [String: Any] = [
                 "code": code,
                 "name": name,

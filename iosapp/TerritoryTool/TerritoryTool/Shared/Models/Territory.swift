@@ -12,6 +12,24 @@ struct Territory: Codable, Identifiable, Equatable {
     let mapGeometry: TerritoryMapGeometry?
     /// Formato de la entrega en curso; `nil` si está libre.
     var deliveryFormat: DeliveryFormat? = nil
+    /// Si es `true`, no aparece en las sugerencias de territorios para entregar.
+    /// Opcional para que los payloads que no lo traen se decodifiquen igual.
+    var excludeFromSuggestions: Bool? = nil
+}
+
+extension Array where Element == Territory {
+    /// Territorios libres que merece la pena sugerir para entregar: sin los marcados como
+    /// "no sugerir", los nunca recogidos primero y luego los que llevan más tiempo libres.
+    func giveSuggestions(limit: Int = 3) -> [Territory] {
+        filter { $0.excludeFromSuggestions != true }
+            .sorted { lhs, rhs in
+                guard let l = lhs.lastPickedDateUtc else { return rhs.lastPickedDateUtc != nil || lhs.id < rhs.id }
+                guard let r = rhs.lastPickedDateUtc else { return false }
+                return l == r ? lhs.id < rhs.id : l < r
+            }
+            .prefix(limit)
+            .map { $0 }
+    }
 }
 
 enum TerritoryOperationalStatus: Equatable {
@@ -61,6 +79,7 @@ struct TerritoryDetail: Codable, Identifiable {
     let timelineItems: [TimelineItem]
     let mapGeometry: TerritoryMapGeometry?
     var deliveryFormat: DeliveryFormat? = nil
+    var excludeFromSuggestions: Bool? = nil
 }
 
 /// Todo lo que necesita la pantalla de detalle, en una sola respuesta.

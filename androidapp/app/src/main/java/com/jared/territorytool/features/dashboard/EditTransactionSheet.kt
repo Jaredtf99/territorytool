@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
@@ -61,6 +60,7 @@ import com.jared.territorytool.shared.components.SearchSelectionSheet
 import com.jared.territorytool.shared.components.SelectionRow
 import com.jared.territorytool.shared.components.ToastManager
 import com.jared.territorytool.shared.components.ToastStyle
+import com.jared.territorytool.shared.components.VirtualDeliveryToggle
 import com.jared.territorytool.shared.models.DeliveryFormat
 import com.jared.territorytool.shared.models.Person
 import com.jared.territorytool.shared.models.Territory
@@ -195,38 +195,10 @@ fun EditTransactionSheet(transactionEvent: TransactionEvent, onDismiss: () -> Un
                     }
 
                     AppCard(cornerRadius = 16.dp) {
-                        DateLabel(deliveryFormat.icon, stringResource(R.string.delivery_format_title))
-                        Row(
-                            Modifier.fillMaxWidth().padding(top = AppSpacing.xs).background(colors.hairline.copy(alpha = 0.5f), CircleShape).padding(3.dp),
-                            horizontalArrangement = Arrangement.spacedBy(3.dp),
-                        ) {
-                            DeliveryFormat.entries.forEach { option ->
-                                val selected = option == deliveryFormat
-                                Row(
-                                    Modifier
-                                        .weight(1f)
-                                        .clip(CircleShape)
-                                        .background(if (selected) colors.accent else Color.Transparent)
-                                        .bounceClick {
-                                            if (!selected) {
-                                                HapticManager.selection()
-                                                deliveryFormat = option
-                                                didChangeDeliveryFormat = true
-                                            }
-                                        }
-                                        .padding(vertical = AppSpacing.xs),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Icon(option.icon, null, Modifier.size(16.dp), tint = if (selected) Color.White else colors.textPrimary)
-                                    Text(
-                                        stringResource(option.titleRes),
-                                        style = AppType.subheadline.copy(fontWeight = FontWeight.SemiBold),
-                                        color = if (selected) Color.White else colors.textPrimary,
-                                    )
-                                }
-                            }
-                        }
+                        VirtualDeliveryToggle(deliveryFormat, {
+                            deliveryFormat = it
+                            didChangeDeliveryFormat = true
+                        })
                     }
 
                     AppCard(cornerRadius = 16.dp) {

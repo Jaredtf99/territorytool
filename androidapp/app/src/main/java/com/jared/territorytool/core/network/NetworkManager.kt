@@ -16,6 +16,7 @@ import com.jared.territorytool.shared.models.DeliveryFormat
 import com.jared.territorytool.shared.models.ActionType
 import com.jared.territorytool.shared.models.PaginatedResponse
 import com.jared.territorytool.shared.models.Person
+import com.jared.territorytool.shared.models.PersonDetail
 import com.jared.territorytool.shared.models.Territory
 import com.jared.territorytool.shared.models.TerritoryDetail
 import com.jared.territorytool.shared.models.TerritoryDetailBundle
@@ -51,16 +52,18 @@ interface ApiService {
     suspend fun getDashboardSnapshot(weekStart: Instant, timeZone: String, attentionDays: Int): DashboardSnapshot
     suspend fun getTerritoryReport(start: Instant, end: Instant): TerritoryReportResponse
     suspend fun getMovementHistory(page: Int, pageSize: Int, search: String?, filter: MovementHistoryFilter, sort: MovementHistorySort): MovementHistoryPage
-    suspend fun giveTerritoryUndoable(code: String, personName: String, date: Instant?): UndoableMutationResponse
+    suspend fun giveTerritoryUndoable(code: String, personName: String, date: Instant?, deliveryFormat: DeliveryFormat = DeliveryFormat.Physical): UndoableMutationResponse
     suspend fun pickTerritoryUndoable(code: String, date: Instant?): UndoableMutationResponse
     suspend fun getPersons(search: String? = null): List<Person>
     suspend fun getPersonsWithAssignments(search: String? = null): List<Person>
+    suspend fun getPersonDetail(id: Int): PersonDetail
     suspend fun resolveTerritorySelector(value: String): Territory
     suspend fun addPersonUndoable(name: String): UndoableMutationResponse
     suspend fun updatePersonUndoable(id: Int, name: String, enabled: Boolean): UndoableMutationResponse
     suspend fun deletePersonUndoable(name: String): UndoableMutationResponse
-    suspend fun addTerritoryUndoable(code: String, name: String, mapUrl: String): UndoableMutationResponse
-    suspend fun updateTerritoryUndoable(id: Int, code: String, name: String, mapUrl: String): UndoableMutationResponse
+    suspend fun addTerritoryUndoable(code: String, name: String, mapUrl: String, excludeFromSuggestions: Boolean = false): UndoableMutationResponse
+    /** `excludeFromSuggestions = null` deja el valor guardado como está. */
+    suspend fun updateTerritoryUndoable(id: Int, code: String, name: String, mapUrl: String, excludeFromSuggestions: Boolean? = null): UndoableMutationResponse
     suspend fun deleteTerritory(id: Int)
     suspend fun deleteTerritoryUndoable(id: Int): UndoableMutationResponse
     suspend fun undoAction(id: String)
@@ -217,8 +220,11 @@ class NetworkManager : ApiService {
         return decode(MovementHistoryPage.serializer(), obj)
     }
 
-    override suspend fun giveTerritoryUndoable(code: String, personName: String, date: Instant?) = undoable(
-        rpcObject("give_territory_undoable", jsonBody("territory_code" to code, "person_name" to personName, "custom_date" to date)),
+    override suspend fun giveTerritoryUndoable(code: String, personName: String, date: Instant?, deliveryFormat: DeliveryFormat) = undoable(
+        rpcObject(
+            "give_territory_undoable",
+            jsonBody("territory_code" to code, "person_name" to personName, "custom_date" to date, "delivery_format" to deliveryFormat.raw),
+        ),
     )
 
     override suspend fun pickTerritoryUndoable(code: String, date: Instant?) = undoable(
@@ -255,6 +261,15 @@ class NetworkManager : ApiService {
         rpcRows("search_persons_with_assignments", jsonBody("term" to search, "take" to 1000))
             .map { mapPerson(it, it["territories_in_use"]) }
 
+    override suspend fun getPersonDetail(id: Int): PersonDetail {
+        // Ficha completa en una sola RPC; ya viene en camelCase y se decodifica tal cual.
+        val obj = rpcObject(
+            "get_person_detail",
+            jsonBody("p_person_id" to id, "p_timezone" to java.time.ZoneId.systemDefault().id),
+        )
+        return decode(PersonDetail.serializer(), obj)
+    }
+
     override suspend fun resolveTerritorySelector(value: String): Territory {
         val rows = rpcRows("resolve_territory_selector", jsonBody("value" to value))
         return mapTerritories(rows).firstOrNull()
@@ -272,11 +287,18 @@ class NetworkManager : ApiService {
 
     // MARK: - Gestión de territorios
 
-    override suspend fun addTerritoryUndoable(code: String, name: String, mapUrl: String) =
-        undoable(rpcObject("add_territory_undoable", jsonBody("code" to code, "name" to name, "map_url" to mapUrl)))
+    override suspend fun addTerritoryUndoable(code: String, name: String, mapUrl: String, excludeFromSuggestions: Boolean) = undoable(
+        rpcObject(
+            "add_territory_undoable",
+            jsonBody("code" to code, "name" to name, "map_url" to mapUrl, "exclude_from_suggestions" to excludeFromSuggestions),
+        ),
+    )
 
-    override suspend fun updateTerritoryUndoable(id: Int, code: String, name: String, mapUrl: String) = undoable(
-        rpcObject("update_territory_undoable", jsonBody("territory_id" to id, "code" to code, "name" to name, "map_url" to mapUrl)),
+    override suspend fun updateTerritoryUndoable(id: Int, code: String, name: String, mapUrl: String, excludeFromSuggestions: Boolean?) = undoable(
+        rpcObject(
+            "update_territory_undoable",
+            jsonBody("territory_id" to id, "code" to code, "name" to name, "map_url" to mapUrl, "exclude_from_suggestions" to excludeFromSuggestions),
+        ),
     )
 
     override suspend fun deleteTerritory(id: Int) {
@@ -461,6 +483,7 @@ class NetworkManager : ApiService {
             timelineItems = timeline,
             mapGeometry = territory?.mapGeometry,
             deliveryFormat = territory?.deliveryFormat,
+            excludeFromSuggestions = territory?.excludeFromSuggestions,
         )
     }
 
@@ -485,6 +508,7 @@ class NetworkManager : ApiService {
                     runCatching { SupabaseJson.decodeFromJsonElement(TerritoryMapGeometry.serializer(), geometry) }.getOrNull()
                 },
                 deliveryFormat = if (row["person_id"].isNull()) null else DeliveryFormat.from(row.str("delivery_format")),
+                excludeFromSuggestions = row.bool("exclude_from_suggestions"),
             )
         }
     }

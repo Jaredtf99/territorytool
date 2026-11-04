@@ -113,30 +113,13 @@ struct EditTransactionSheet: View {
                                     .frame(width: 50, height: 50)
                                     .background(Color.accent)
                                     .cornerRadius(12)
-                                    .shadow(color: .accent.opacity(0.3), radius: 5, x: 0, y: 3)
                             }
                         }
                         
                         // Delivery Format
                         GlassCard(cornerRadius: 16) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Label("delivery_format.title", systemImage: deliveryFormat.systemImage)
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-
-                                Picker("delivery_format.title", selection: Binding(
-                                    get: { deliveryFormat },
-                                    set: {
-                                        deliveryFormat = $0
-                                        didChangeDeliveryFormat = true
-                                        HapticManager.shared.selection()
-                                    }
-                                )) {
-                                    ForEach(DeliveryFormat.allCases) { format in
-                                        Label(format.title, systemImage: format.systemImage).tag(format)
-                                    }
-                                }
-                                .pickerStyle(.segmented)
+                            VirtualDeliveryToggle(format: $deliveryFormat) { _ in
+                                didChangeDeliveryFormat = true
                             }
                         }
 

@@ -2,6 +2,7 @@ package com.jared.territorytool.features.main
 
 import androidx.compose.runtime.Composable
 import com.jared.territorytool.core.navigation.Route
+import com.jared.territorytool.features.brothers.BrotherDetailScreen
 import com.jared.territorytool.features.dashboard.MovementHistoryScreen
 import com.jared.territorytool.features.dashboard.WeeklyActivityScreen
 import com.jared.territorytool.features.reports.TerritoryReportScreen
@@ -18,6 +19,7 @@ fun Destination(route: Route) {
         is WeeklyActivityRoute -> WeeklyActivityScreen(route.events, route.viewModel, route.initialFilter)
         is MovementHistoryRoute -> MovementHistoryScreen(route.actionViewModel)
         is TerritoryDetailRoute -> TerritoryDetailScreen(route.territoryId, route.territoryName)
+        is BrotherDetailRoute -> BrotherDetailScreen(route.personId, route.personName)
         SettingsRoute -> SettingsScreen()
         ChangePasswordRoute -> ChangePasswordScreen()
         CongregationsRoute -> CongregationsManagementScreen()

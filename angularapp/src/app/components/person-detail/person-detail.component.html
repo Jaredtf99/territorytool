@@ -1,0 +1,219 @@
+<div class="person-detail-container" *ngIf="detail as d">
+
+  <!-- Perfil -->
+  <section class="pd-card pd-profile appear" style="--i: 0">
+    <button class="pd-back" (click)="goBack()" title="Volver a hermanos">
+      <i class="fa fa-arrow-left"></i>
+    </button>
+
+    <div class="pd-avatar" [ngClass]="avatarTint">
+      <span>{{ initials }}</span>
+      <span class="pd-avatar-ring" *ngIf="d.summary.activeAssignments > 0"></span>
+    </div>
+
+    <h2 class="pd-name">{{ d.person.name }}</h2>
+
+    <span class="pd-status" [ngClass]="statusClass">
+      <span class="dot"></span>
+      {{ statusLabel }}
+    </span>
+
+    <div class="pd-actions">
+      <button class="btn btn-primary" *ngIf="d.person.enabled" (click)="giveTerritory()">
+        <i class="fa fa-share me-2"></i>Entregar territorio
+      </button>
+      <button class="btn btn-outline-primary" *ngIf="canManage" (click)="openEditModal()" title="Editar hermano">
+        <i class="fa fa-pen-to-square"></i>
+        <span class="d-none d-sm-inline ms-2">Editar</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- En curso -->
+  <section class="pd-card pd-current appear" style="--i: 1">
+    <header class="card-header">
+      <h3><i class="fa fa-person-walking"></i> Territorios en curso</h3>
+      <span class="pd-count" *ngIf="d.current.length">{{ d.current.length }}</span>
+    </header>
+
+    <div class="pd-empty" *ngIf="!d.current.length">
+      <span class="pd-empty-icon"><i class="fa fa-mug-hot"></i></span>
+      <span>No tiene ningún territorio ahora mismo.</span>
+      <button class="btn btn-sm btn-outline-primary ms-auto" *ngIf="d.person.enabled" (click)="giveTerritory()">
+        <i class="fa fa-share me-1"></i> Entregar
+      </button>
+    </div>
+
+    <div class="pd-current-grid" *ngIf="d.current.length">
+      <button class="pd-current-item appear" *ngFor="let c of d.current; let i = index; trackBy: trackByTransaction"
+              [style.--i]="i" [ngClass]="urgencyClass(c.days)" (click)="openTerritory(c.territoryId)">
+        <div class="pd-current-top">
+          <span class="pd-code">{{ c.territoryCode }}</span>
+          <span class="pd-days-pill">{{ c.days }} días</span>
+        </div>
+        <span class="pd-current-name">{{ c.territoryName }}</span>
+        <div class="pd-progress" [attr.aria-label]="'Progreso frente a la media: ' + progressFor(c.days) + '%'">
+          <span class="pd-progress-fill" [style.width.%]="barsReady ? progressFor(c.days) : 0"></span>
+        </div>
+        <div class="pd-current-meta">
+          <span><i class="fa fa-share"></i> {{ c.givenAt | date:'d MMM y':undefined:'es' }}</span>
+          <span *ngIf="c.deliveryFormat === 'virtual'" class="pd-virtual">
+            <i [class]="deliveryFormatIcons.virtual"></i> {{ deliveryFormatLabels.virtual }}
+          </span>
+          <i class="fa fa-chevron-right pd-chevron"></i>
+        </div>
+      </button>
+    </div>
+  </section>
+
+  <!-- Actividad -->
+  <section class="pd-card pd-activity appear" style="--i: 2">
+    <header class="card-header">
+      <h3><i class="fa fa-chart-column"></i> Actividad · 12 meses</h3>
+      <div class="pd-legend">
+        <span><span class="swatch given"></span>Entregas</span>
+        <span><span class="swatch returned"></span>Devoluciones</span>
+      </div>
+    </header>
+
+    <div class="pd-chart" (mouseleave)="hoveredMonth = null">
+      <div class="pd-chart-tooltip" *ngIf="hoveredMonth as m">
+        <strong>{{ m.month | date:'MMMM yyyy':undefined:'es' | titlecase }}</strong>
+        <span>{{ m.givenCount }} entregadas · {{ m.returnedCount }} devueltas</span>
+      </div>
+      <div class="pd-chart-body">
+        <!-- Eje Y: valores redondos alineados con las líneas guía -->
+        <div class="pd-chart-axis" aria-hidden="true">
+          <span *ngFor="let t of axisTicks" [style.bottom.%]="tickPosition(t)">{{ t }}</span>
+        </div>
+        <div class="pd-chart-plot">
+          <div class="pd-chart-grid" aria-hidden="true">
+            <span *ngFor="let t of axisTicks" [class.baseline]="t === 0" [style.bottom.%]="tickPosition(t)"></span>
+          </div>
+          <div class="pd-chart-cols">
+            <div class="pd-chart-col" *ngFor="let m of d.activity; let i = index"
+                 [class.hovered]="hoveredMonth === m" (mouseenter)="hoveredMonth = m">
+              <div class="pd-chart-bars">
+                <span class="bar given" [style.height.%]="barHeight(m.givenCount)" [style.transition-delay.ms]="i * 35"></span>
+                <span class="bar returned" [style.height.%]="barHeight(m.returnedCount)" [style.transition-delay.ms]="i * 35 + 20"></span>
+              </div>
+              <span class="pd-chart-label">{{ m.month | date:'MMM':undefined:'es' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="pd-chart-caption" *ngIf="activityTotal === 0">Sin entregas en los últimos 12 meses.</p>
+  </section>
+
+  <!-- Historial -->
+  <section class="pd-card pd-history appear" style="--i: 3">
+    <header class="card-header pd-history-header">
+      <h3><i class="fa fa-clock-rotate-left"></i> Histórico de territorios</h3>
+      <div class="pd-search">
+        <i class="fa fa-magnifying-glass"></i>
+        <input type="search" placeholder="Buscar territorio…" [(ngModel)]="historySearch" (ngModelChange)="onHistorySearch()" aria-label="Buscar territorio en el histórico" />
+      </div>
+    </header>
+
+    <div class="pd-filters" role="group" aria-label="Filtrar histórico">
+      <button *ngFor="let f of historyFilters" class="pd-chip" [class.active]="historyFilter === f.id"
+              [attr.aria-pressed]="historyFilter === f.id" (click)="setHistoryFilter(f.id)"
+              [disabled]="f.id !== 'all' && countFor(f.id) === 0">
+        <i [class]="f.icon"></i>
+        <span>{{ f.label }}</span>
+        <span class="pd-chip-count">{{ countFor(f.id) }}</span>
+      </button>
+    </div>
+
+    <div class="pd-empty" *ngIf="!filteredHistory.length">
+      <span class="pd-empty-icon"><i class="fa fa-map"></i></span>
+      <span>{{ d.history.length ? 'Ningún territorio coincide con el filtro.' : 'Todavía no ha recibido ningún territorio.' }}</span>
+    </div>
+
+    <div class="pd-timeline" *ngIf="filteredHistory.length">
+      <div class="pd-year" *ngFor="let group of historyGroups; trackBy: trackByYear">
+        <div class="pd-year-label">{{ group.year }}</div>
+        <button class="pd-entry" *ngFor="let h of group.items; let i = index; trackBy: trackByTransaction"
+                [class.ongoing]="!h.pickedAt" [ngClass]="urgencyClass(h.days)" [style.--i]="i"
+                (click)="openTerritory(h.territoryId)">
+          <span class="pd-node"></span>
+          <div class="pd-entry-main">
+            <div class="pd-entry-title">
+              <span class="pd-code">{{ h.territoryCode }}</span>
+              <span class="pd-entry-name" *ngIf="h.territoryName !== h.territoryCode">{{ h.territoryName }}</span>
+              <span class="pd-virtual" *ngIf="h.deliveryFormat === 'virtual'">
+                <i [class]="deliveryFormatIcons.virtual"></i> {{ deliveryFormatLabels.virtual }}
+              </span>
+            </div>
+            <div class="pd-route">
+              <span class="pd-route-point given"></span>
+              <span>{{ h.givenAt | date:'d MMM y':undefined:'es' }}</span>
+              <span class="pd-route-dash"></span>
+              <ng-container *ngIf="h.pickedAt; else ongoingLabel">
+                <span class="pd-route-point returned"></span>
+                <span>{{ h.pickedAt | date:'d MMM y':undefined:'es' }}</span>
+              </ng-container>
+              <ng-template #ongoingLabel>
+                <span class="pd-route-point open"></span>
+                <span class="pd-ongoing-label">En curso</span>
+              </ng-template>
+            </div>
+            <div class="pd-entry-users" *ngIf="h.givenBy || h.pickedBy">
+              <span *ngIf="h.givenBy"><i class="fa fa-user-pen"></i> Entregó {{ h.givenBy }}</span>
+              <span *ngIf="h.pickedBy"><i class="fa fa-user-check"></i> Recogió {{ h.pickedBy }}</span>
+            </div>
+          </div>
+          <span class="pd-days-pill">{{ h.days }} {{ h.days === 1 ? 'día' : 'días' }}</span>
+        </button>
+      </div>
+
+      <button class="pd-more" *ngIf="hasMoreHistory" (click)="showMoreHistory()">
+        Mostrar más <span>({{ filteredHistory.length - historyLimit }} restantes)</span>
+        <i class="fa fa-chevron-down"></i>
+      </button>
+    </div>
+  </section>
+
+</div>
+
+<!-- Error -->
+<div class="pd-error" *ngIf="loadError && !detail">
+  <span class="pd-empty-icon"><i class="fa fa-triangle-exclamation"></i></span>
+  <h4>No se pudo cargar la ficha</h4>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-secondary" (click)="goBack()">Volver</button>
+    <button class="btn btn-primary" (click)="load()">Reintentar</button>
+  </div>
+</div>
+
+<!-- Editar hermano -->
+<div class="modal fade" id="editPersonDetailModal" tabindex="-1" aria-labelledby="editPersonDetailLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editPersonDetailLabel">Editar Hermano</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form #editForm="ngForm" (ngSubmit)="submitEdit()">
+          <div class="mb-3">
+            <label for="pdEditName" class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="pdEditName" name="pdEditName" [(ngModel)]="editName" required #nameInput="ngModel">
+            <div *ngIf="nameInput.invalid && (nameInput.dirty || nameInput.touched)" class="text-danger">El nombre es requerido.</div>
+          </div>
+          <div class="form-group">
+            <label>Habilitado</label>
+            <div class="checkbox-wrapper-2 ms-1">
+              <input type="checkbox" class="ikxBAC" id="pdEditEnabled" name="pdEditEnabled" [(ngModel)]="editEnabled">
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="submitEdit()" [disabled]="editForm.invalid">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+</div>

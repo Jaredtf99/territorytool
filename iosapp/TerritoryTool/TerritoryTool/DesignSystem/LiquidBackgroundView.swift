@@ -1,8 +1,80 @@
 import SwiftUI
+import UIKit
 
 /// Fondo "cartográfico cálido": papel con líneas de contorno topográfico tenues
-/// y una veladura cálida. Estático (respeta Reduce Motion) y barato de dibujar.
+/// y una veladura cálida. Estático (respeta Reduce Motion).
+///
+/// Rendimiento: el fondo aparece en casi todas las pantallas. Antes cada instancia
+/// re-trazaba ~1.700 segmentos + dos degradados radiales a pantalla completa (también
+/// en cada push de navegación, donde conviven dos). Ahora se rasteriza **una vez** por
+/// tamaño y esquema de color y todas las pantallas comparten el mismo bitmap.
 struct LiquidBackgroundView: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.displayScale) private var displayScale
+
+    var body: some View {
+        GeometryReader { proxy in
+            if let image = LiquidBackgroundRaster.image(
+                size: proxy.size,
+                colorScheme: colorScheme,
+                scale: displayScale
+            ) {
+                Image(uiImage: image)
+                    .resizable()
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+            } else {
+                LiquidBackgroundLayers()
+            }
+        }
+        .ignoresSafeArea()
+        .accessibilityHidden(true)
+    }
+}
+
+/// Caché compartida del fondo rasterizado.
+@MainActor
+private enum LiquidBackgroundRaster {
+    private struct Key: Hashable {
+        let width: Int
+        let height: Int
+        let dark: Bool
+        let scale: Int
+    }
+
+    private static var cache: [Key: UIImage] = [:]
+    private static var order: [Key] = []
+    private static let capacity = 4
+
+    static func image(size: CGSize, colorScheme: ColorScheme, scale: CGFloat) -> UIImage? {
+        guard size.width >= 1, size.height >= 1 else { return nil }
+        let key = Key(
+            width: Int(size.width.rounded()),
+            height: Int(size.height.rounded()),
+            dark: colorScheme == .dark,
+            scale: Int((scale * 10).rounded())
+        )
+        if let cached = cache[key] { return cached }
+
+        let renderer = ImageRenderer(
+            content: LiquidBackgroundLayers()
+                .frame(width: CGFloat(key.width), height: CGFloat(key.height))
+                .environment(\.colorScheme, colorScheme)
+        )
+        renderer.scale = scale
+        renderer.isOpaque = true
+        guard let image = renderer.uiImage else { return nil }
+
+        cache[key] = image
+        order.append(key)
+        if order.count > capacity {
+            cache[order.removeFirst()] = nil
+        }
+        return image
+    }
+}
+
+/// Capas vectoriales del fondo (fuente del raster).
+private struct LiquidBackgroundLayers: View {
     var body: some View {
         ZStack {
             // Base de papel
@@ -28,7 +100,6 @@ struct LiquidBackgroundView: View {
             ContourField()
                 .stroke(Color.cartoLine.opacity(0.14), lineWidth: 1)
         }
-        .ignoresSafeArea()
     }
 }
 

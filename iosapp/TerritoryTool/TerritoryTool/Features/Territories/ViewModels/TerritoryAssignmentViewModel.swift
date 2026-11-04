@@ -12,6 +12,8 @@ class TerritoryAssignmentViewModel: ObservableObject {
     @Published var selectedPerson: Person?
     @Published var useCustomDate: Bool = false
     @Published var customDate: Date = Date()
+    /// Físico por defecto; el interruptor "Entregado en virtual" lo cambia.
+    @Published var deliveryFormat: DeliveryFormat = .physical
     
     @Published var isLoadingTerritories = false
     @Published var isLoadingPersons = false
@@ -98,9 +100,8 @@ class TerritoryAssignmentViewModel: ObservableObject {
     }
     
     func loadSuggestions() async {
-        // Suggestions are oldest free territories
-        // We fetch all free territories and sort by lastPickedDateUtc ascending (oldest returned first)
-        
+        // Sugerencias: territorios libres que llevan más tiempo sin usarse, sin los
+        // marcados como "no sugerir para entregar".
         do {
             let result: [Territory] = try await apiService.request(endpoint: TerritoryEndpoint.getTerritories(
                 term: nil,
@@ -110,18 +111,7 @@ class TerritoryAssignmentViewModel: ObservableObject {
                 lastGivenDateFrom: nil,
                 lastGivenDateTo: nil
             ))
-            
-            // Sort client side: nil dates (never picked) come first or last? 
-            // Usually we want those that have been returned longest ago.
-            // If lastPickedDateUtc is nil, it might mean it was never returned (new?).
-            // Let's assume we want oldest dates first.
-            let sorted = result.sorted { t1, t2 in
-                guard let d1 = t1.lastPickedDateUtc else { return true } // Treat nil as very old
-                guard let d2 = t2.lastPickedDateUtc else { return false }
-                return d1 < d2
-            }
-            
-            self.suggestedTerritories = Array(sorted.prefix(3))
+            self.suggestedTerritories = result.giveSuggestions(limit: 3)
         } catch {
             print("Error loading suggestions: \(error)")
         }
@@ -141,7 +131,8 @@ class TerritoryAssignmentViewModel: ObservableObject {
             let undoResponse: UndoableMutationResponse = try await apiService.request(endpoint: TerritoryEndpoint.giveTerritoryUndoable(
                 code: territory.code,
                 personName: person.name,
-                date: date
+                date: date,
+                deliveryFormat: deliveryFormat
             ))
             let undoHandle = undoResponse.handle(kind: .domain)
             
@@ -158,6 +149,7 @@ class TerritoryAssignmentViewModel: ObservableObject {
             selectedPerson = nil
             useCustomDate = false
             customDate = Date()
+            deliveryFormat = .physical
             territorySearchText = ""
             personSearchText = ""
             

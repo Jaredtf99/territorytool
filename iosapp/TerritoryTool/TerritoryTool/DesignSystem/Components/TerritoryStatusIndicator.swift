@@ -50,7 +50,6 @@ struct TerritoryStatusIcon: View {
                 ),
                 in: Circle()
             )
-            .shadow(color: presentation.color.opacity(0.35), radius: 5, x: 0, y: 2)
             .accessibilityHidden(true)
     }
 }

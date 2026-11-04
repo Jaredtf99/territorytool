@@ -23,10 +23,10 @@ struct CountUpText: View {
             .contentTransition(.numericText(value: Double(shown)))
             .onAppear {
                 guard !reduceMotion else { shown = value; return }
-                withAnimation(.easeOut(duration: 0.8)) { shown = value }
+                withAnimation(.easeOut(duration: 0.45)) { shown = value }
             }
             .onChange(of: value) { _, newValue in
-                withAnimation(.easeOut(duration: 0.5)) { shown = newValue }
+                withAnimation(.easeOut(duration: 0.3)) { shown = newValue }
             }
     }
 }
@@ -41,10 +41,11 @@ private struct AppearTransition: ViewModifier {
     func body(content: Content) -> some View {
         content
             .opacity(visible ? 1 : 0)
-            .offset(y: visible ? 0 : 16)
+            .offset(y: visible ? 0 : 10)
             .onAppear {
-                guard !reduceMotion else { visible = true; return }
-                withAnimation(.spring(response: 0.55, dampingFraction: 0.85).delay(delay)) {
+                guard !reduceMotion, !visible else { visible = true; return }
+                // Entrada más corta (antes 0.55 s + 40 ms por elemento).
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.9).delay(delay)) {
                     visible = true
                 }
             }
@@ -53,8 +54,9 @@ private struct AppearTransition: ViewModifier {
 
 extension View {
     /// Fundido + desplazamiento de entrada. `index` escalona el retardo.
-    func appear(index: Int = 0, base: Double = 0.04) -> some View {
-        modifier(AppearTransition(delay: Double(index) * base))
+    func appear(index: Int = 0, base: Double = 0.025) -> some View {
+        // Retardo acotado: en listas largas el último elemento llegaba a esperar >1 s.
+        modifier(AppearTransition(delay: min(Double(index) * base, 0.15)))
     }
 }
 
@@ -130,7 +132,6 @@ struct StatTile: View {
                                            startPoint: .topLeading, endPoint: .bottomTrailing)
                         )
                 )
-                .shadow(color: tint.opacity(0.35), radius: 6, x: 0, y: 3)
 
             CountUpText(value: value, font: .system(size: 32, design: .rounded).weight(.heavy))
                 .padding(.top, 2)

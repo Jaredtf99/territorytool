@@ -43,6 +43,10 @@ struct EditTerritoryView: View {
                             text: $viewModel.mapUrl,
                             label: LocalizedStringKey(NSLocalizedString("territory.mapUrl", comment: "") + " *")
                         )
+
+                        ExcludeFromSuggestionsToggle(isExcluded: $viewModel.excludeFromSuggestions)
+                            .padding(AppSpacing.md)
+                            .glassEffect(.regular, in: .rect(cornerRadius: AppRadius.md))
                     }
                     .padding(.horizontal)
                     

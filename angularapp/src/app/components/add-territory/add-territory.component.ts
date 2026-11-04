@@ -31,7 +31,8 @@ export class AddTerritoryComponent implements AfterViewInit {
     this.addTerritoryForm = this.formBuilder.group({
       code: ['', Validators.required],
       name: ['', Validators.required],
-      mapUrl: ['', Validators.required]
+      mapUrl: ['', Validators.required],
+      excludeFromSuggestions: [false]
     });
 
   }
@@ -54,11 +55,11 @@ export class AddTerritoryComponent implements AfterViewInit {
 
       this.spinner.show();
 
-      this.territoryService.addTerritory(this.f['mapUrl'].value, this.f['name'].value, this.f['code'].value).subscribe({
+      this.territoryService.addTerritory(this.f['mapUrl'].value, this.f['name'].value, this.f['code'].value, this.f['excludeFromSuggestions'].value === true).subscribe({
         next: resp => {
           this.spinner.hide();
           this.toastr.success('Territorio guardado');
-          this.addTerritoryForm.reset();
+          this.addTerritoryForm.reset({ excludeFromSuggestions: false });
         },
         error: err => {
           this.spinner.hide();

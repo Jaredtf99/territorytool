@@ -39,6 +39,7 @@ import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.material.icons.rounded.Badge
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
@@ -106,6 +107,7 @@ import com.jared.territorytool.designsystem.bounceClick
 import com.jared.territorytool.designsystem.glass
 import com.jared.territorytool.designsystem.paperCard
 import com.jared.territorytool.features.main.LocalTabBarPadding
+import com.jared.territorytool.features.main.BrotherDetailRoute
 import com.jared.territorytool.features.main.TerritoryDetailRoute
 import com.jared.territorytool.features.quickaction.QuickActionResolution
 import com.jared.territorytool.features.quickaction.daysHeld
@@ -226,6 +228,7 @@ fun BrothersScreen(viewModel: BrothersViewModel = viewModel()) {
                                     geometry = { geometries[it] },
                                     imageUrl = { imageUrls[it] },
                                     onOpenTerritory = { navigator.push(TerritoryDetailRoute(it.territoryId, it.territoryName)) },
+                                    onOpenDetail = { navigator.push(BrotherDetailRoute(brother.id, brother.name)) },
                                     modifier = Modifier.alpha(if (isLoading) 0.5f else 1f),
                                 )
                             }
@@ -303,7 +306,7 @@ private fun BrothersControls(viewModel: BrothersViewModel, derived: BrothersDeri
 @Composable
 fun SearchCapsule(value: String, onValueChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth().height(44.dp).glass(CircleShape), contentAlignment = Alignment.CenterStart) {
-        SearchField(value, onValueChange, placeholder, Modifier.background(Color.Transparent))
+        SearchField(value, onValueChange, placeholder, filled = false)
     }
 }
 
@@ -380,19 +383,17 @@ private fun BrotherCard(
     geometry: (Int) -> TerritoryMapGeometry?,
     imageUrl: (Int) -> String?,
     onOpenTerritory: (TerritoryInUse) -> Unit,
+    onOpenDetail: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = AppTheme.colors
     val territories = person.territoriesInUse.orEmpty().sortedBy { it.givenDate }
     var menu by remember { mutableStateOf(false) }
 
+    // El toque en la fila abre la ficha; el contador de territorios despliega la ruta.
     fun primaryTap() {
-        if (territories.isNotEmpty()) {
-            HapticManager.impact(HapticManager.Impact.Light)
-            onToggle()
-        } else if (person.enabled) {
-            onGive()
-        }
+        HapticManager.selection()
+        onOpenDetail()
     }
 
     Column(modifier.paperCard().alpha(if (person.enabled) 1f else 0.72f).animateContentSize(spring(dampingRatio = 0.84f, stiffness = 400f))) {
@@ -427,7 +428,17 @@ private fun BrotherCard(
                         onGive,
                         icon = Icons.AutoMirrored.Rounded.Send,
                     )
-                    else -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
+                    else -> Row(
+                        Modifier
+                            .clip(CircleShape)
+                            .bounceClick {
+                                HapticManager.impact(HapticManager.Impact.Light)
+                                onToggle()
+                            }
+                            .padding(vertical = AppSpacing.xxs, horizontal = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs),
+                    ) {
                         val tint = colors.urgency(person.maxDaysHeld ?: 0)
                         Row(
                             Modifier
@@ -446,6 +457,11 @@ private fun BrotherCard(
                 }
             }
             DropdownMenu(menu, { menu = false }, Modifier.background(colors.surfaceRaised)) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.brother_detail_open)) },
+                    leadingIcon = { Icon(Icons.Rounded.Badge, null) },
+                    onClick = { menu = false; onOpenDetail() },
+                )
                 if (person.enabled) DropdownMenuItem(
                     text = { Text(stringResource(R.string.brothers_give)) },
                     leadingIcon = { Icon(Icons.AutoMirrored.Rounded.Send, null) },
@@ -522,7 +538,7 @@ private fun AssignedTerritoryRow(territory: TerritoryInUse, geometry: TerritoryM
 // MARK: - Alta y edición
 
 @Composable
-private fun BrotherSheetScaffold(title: String, onDismiss: () -> Unit, content: @Composable () -> Unit) {
+internal fun BrotherSheetScaffold(title: String, onDismiss: () -> Unit, content: @Composable () -> Unit) {
     AppSheet(onDismiss) {
         Box {
             LiquidBackground(Modifier.matchParentSize())

@@ -24,6 +24,14 @@ struct TerritoriesExplorerMap: View {
     /// no confundirlo con un desplazamiento manual del usuario (que compacta el drawer).
     @State private var isProgrammaticMove = false
     @State private var programmaticMoveToken = 0
+    /// Para resolver los colores de los polígonos a valores estáticos (ver `map`).
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var colorEnvironment: EnvironmentValues {
+        var environment = EnvironmentValues()
+        environment.colorScheme = colorScheme
+        return environment
+    }
 
     var body: some View {
         GeometryReader { proxy in
@@ -114,23 +122,27 @@ struct TerritoriesExplorerMap: View {
                 ForEach(viewModel.territoriesWithGeometry) { territory in
                     if let geometry = preparedGeometries[territory.id] {
                         let territoryStyle = style(for: territory)
+                        // Color ya resuelto (estático): con el token dinámico, MapKit volvía a
+                        // invocar el proveedor claro/oscuro en cada acceso a `CGColor` de cada
+                        // renderer (~15 % del hilo principal al mostrar el mapa).
+                        let tint = Color(territoryStyle.color.resolve(in: colorEnvironment))
                         let selected = viewModel.selectedTerritoryID == territory.id
                         let dimmed = viewModel.selectedTerritoryID != nil && !selected
 
                         ForEach(geometry.polygons) { polygon in
                             MapPolygon(coordinates: polygon.coordinates)
                                 .foregroundStyle(
-                                    territoryStyle.color.opacity(selected ? 0.58 : dimmed ? 0.08 : 0.22)
+                                    tint.opacity(selected ? 0.58 : dimmed ? 0.08 : 0.22)
                                 )
                                 .stroke(
-                                    territoryStyle.color.opacity(dimmed ? 0.38 : 1),
+                                    tint.opacity(dimmed ? 0.38 : 1),
                                     lineWidth: selected ? 5 : dimmed ? 1.25 : territoryStyle.lineWidth
                                 )
                         }
                         ForEach(geometry.polylines) { polyline in
                             MapPolyline(coordinates: polyline.coordinates)
                                 .stroke(
-                                    territoryStyle.color.opacity(dimmed ? 0.35 : 1),
+                                    tint.opacity(dimmed ? 0.35 : 1),
                                     lineWidth: selected ? 4 : 2.5
                                 )
                         }
@@ -625,7 +637,6 @@ private struct TerritoryMapNameLabel: View {
             .padding(6)
             .scaleEffect(isSelected ? 1.08 : 1)
             .shadow(color: .white.opacity(0.95), radius: 1)
-            .shadow(color: presentation.color.opacity(isSelected ? 0.45 : 0.18), radius: isSelected ? 5 : 2)
             .allowsHitTesting(false)
             .accessibilityLabel(Text("\(territory.code), \(territory.name)"))
             .accessibilityValue(presentation.title)

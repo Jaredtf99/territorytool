@@ -39,6 +39,12 @@
       </div>
     </div>
 
+    <div class="form-check mb-4">
+      <input class="form-check-input" type="checkbox" id="addExcludeFromSuggestions" formControlName="excludeFromSuggestions">
+      <label class="form-check-label" for="addExcludeFromSuggestions">No sugerir para entregar</label>
+      <div class="form-text">No aparecerá en las sugerencias al entregar un territorio a un hermano.</div>
+    </div>
+
     <div class="form_buttons">
       <button type="submit" class="btn btn-primary" [disabled]="addTerritoryForm.invalid">Añadir territorio</button>
     </div>

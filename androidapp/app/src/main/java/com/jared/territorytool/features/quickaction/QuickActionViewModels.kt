@@ -8,6 +8,7 @@ import com.jared.territorytool.core.network.ApiService
 import com.jared.territorytool.features.territories.TerritorySortOption
 import com.jared.territorytool.shared.models.Person
 import com.jared.territorytool.shared.models.Territory
+import com.jared.territorytool.shared.models.giveSuggestions
 import com.jared.territorytool.shared.utils.isCancellation
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -111,8 +112,9 @@ class QuickActionViewModel(private val api: ApiService = DIContainer.apiService)
                 .filter { (it.daysAssigned() ?: 0) >= attentionDays }
                 .sortedBy { it.givenDateUtc ?: Instant.MAX }
                 .take(3)
-            // Libres desde hace tiempo: nunca recogidos primero, luego los más antiguos.
-            oldestFreeTerritories.value = free.sortedWith(compareBy(nullsFirst()) { it.lastPickedDateUtc }).take(3)
+            // Libres desde hace tiempo: nunca recogidos primero, luego los más antiguos,
+            // sin los marcados como "no sugerir para entregar".
+            oldestFreeTerritories.value = free.giveSuggestions(limit = 3)
             isLoadingSuggestions.value = false
         }
     }

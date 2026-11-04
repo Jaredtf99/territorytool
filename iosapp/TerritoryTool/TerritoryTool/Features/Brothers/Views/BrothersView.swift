@@ -16,6 +16,7 @@ struct BrothersView: View {
     @State private var showingDeleteConfirmation = false
     @State private var brotherToDelete: Person?
     @State private var territoryRoute: BrotherTerritoryRoute?
+    @State private var detailRoute: BrotherDetailRoute?
 
     /// Inyectable para previews/capturas con datos mock.
     init(viewModel: BrothersViewModel? = nil) {
@@ -73,6 +74,9 @@ struct BrothersView: View {
             }
             .navigationDestination(item: $territoryRoute) { route in
                 TerritoryDetailView(territoryId: route.id, territoryName: route.name)
+            }
+            .navigationDestination(item: $detailRoute) { route in
+                BrotherDetailView(personId: route.id, personName: route.name)
             }
             .task {
                 await viewModel.fetchBrothers()
@@ -146,7 +150,8 @@ struct BrothersView: View {
             imageURL: { viewModel.territoryImageURLs[$0] },
             onOpenTerritory: {
                 territoryRoute = BrotherTerritoryRoute(id: $0.territoryId, name: $0.territoryName)
-            }
+            },
+            onOpenDetail: { openDetail(brother) }
         )
         .listRowStyleCarto()
         .opacity(viewModel.isLoading ? 0.5 : 1)
@@ -181,6 +186,11 @@ struct BrothersView: View {
             }
         }
         .contextMenu {
+            Button {
+                openDetail(brother)
+            } label: {
+                Label("brother.detail.open", systemImage: "person.text.rectangle")
+            }
             if brother.enabled {
                 Button {
                     give(brother)
@@ -221,6 +231,10 @@ struct BrothersView: View {
     private func give(_ brother: Person) {
         HapticManager.shared.impact(style: .medium)
         router.openQuickAction(.person(brother))
+    }
+
+    private func openDetail(_ brother: Person) {
+        detailRoute = BrotherDetailRoute(id: brother.id, name: brother.name)
     }
 
     private func edit(_ brother: Person) {

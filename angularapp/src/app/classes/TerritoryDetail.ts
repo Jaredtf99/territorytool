@@ -7,10 +7,12 @@ export class TerritoryDetail {
   name?: string;
   mapUrl?: string;
   imgUrl?: string;
+  personId?: number;
   personName?: string;
   lastPickedDateUtc?: Date;
   givenDateUtc?: Date;
   deliveryFormat?: DeliveryFormat;
+  excludeFromSuggestions?: boolean;
   pickedCount?: number;
   lastUser?: string;
   timelineItems?: TimelineItem[];

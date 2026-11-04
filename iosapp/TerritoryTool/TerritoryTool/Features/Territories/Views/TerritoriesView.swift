@@ -197,7 +197,7 @@ struct TerritoriesView: View {
                     )
                 }
             }
-            .animation(reduceMotion ? .easeInOut(duration: 0.15) : .easeInOut(duration: 0.28), value: viewModel.presentation)
+            .animation(reduceMotion ? .easeInOut(duration: 0.12) : .easeInOut(duration: 0.2), value: viewModel.presentation)
             .overlay(alignment: .top) {
                 if viewModel.isLoading {
                     ProgressView()

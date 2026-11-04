@@ -28,4 +28,17 @@ nonisolated enum DeliveryFormat: String, Codable, CaseIterable, Identifiable, Se
         case .virtual: "iphone"
         }
     }
+
+    /// Color de la familia "formato de entrega" (filtros, marca virtual, interruptor).
+    /// Azul pizarra: verde, ámbar y terracota quedan reservados al *estado* del
+    /// territorio (libre, en uso, atención), así que ambos ejes no se confunden.
+    static let familyTint: Color = .info
+
+    /// Color de la marca en un elemento concreto: solo lo virtual se destaca.
+    var tint: Color {
+        switch self {
+        case .physical: .textSecondary
+        case .virtual: Self.familyTint
+        }
+    }
 }

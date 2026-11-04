@@ -91,36 +91,87 @@ struct TerritorySnapshotBackdrop: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.displayScale) private var displayScale
     @State private var snapshotImage: UIImage?
-    @State private var displayedCacheKey: String?
+    @State private var displayedRequest: SnapshotRequest?
+
+    /// Identidad barata de la petición. Antes el `task(id:)` usaba la clave de caché en
+    /// `String` (huella de todas las coordenadas + ~10 `String(format:)` + resolución de
+    /// colores), recalculada en **cada** evaluación de body de cada tarjeta. Comparar
+    /// la geometría es O(1) cuando no cambió (los arrays comparten almacenamiento).
+    private struct SnapshotRequest: Equatable {
+        let geometry: TerritoryMapGeometry
+        let size: CGSize
+        let dark: Bool
+        let scale: CGFloat
+        let stroke: Color
+        let fill: Color
+        let centersTerritory: Bool
+        let strokeLineWidth: CGFloat
+        let verticalBias: Double
+        let distanceMultiplier: Double?
+        let horizontalShift: Double?
+    }
 
     var body: some View {
         GeometryReader { proxy in
-            let cacheKey = snapshotCacheKey(size: proxy.size, dark: colorScheme == .dark)
+            let request = snapshotRequest(size: proxy.size)
 
             ZStack {
-                if let snapshotImage, displayedCacheKey == cacheKey {
-                    Image(uiImage: snapshotImage)
-                        .resizable()
-                        .frame(width: proxy.size.width, height: proxy.size.height)
+                if let snapshotImage, displayedRequest == request {
+                    snapshot(snapshotImage, size: proxy.size)
+                } else if let cached = memoryCachedImage(size: proxy.size) {
+                    // Celda reciclada / vista recreada: la imagen ya está en memoria, se
+                    // pinta en el primer frame en vez de mostrar el placeholder.
+                    snapshot(cached, size: proxy.size)
                 } else {
                     Color.accent.opacity(0.06)
                 }
             }
-            .task(id: cacheKey) {
-                await loadSnapshotImage(size: proxy.size, dark: colorScheme == .dark)
+            .task(id: request) {
+                await loadSnapshotImage(request)
             }
         }
         .accessibilityHidden(true)
     }
 
-    private func loadSnapshotImage(size: CGSize, dark: Bool) async {
+    private func snapshot(_ image: UIImage, size: CGSize) -> some View {
+        Image(uiImage: image)
+            .resizable()
+            .frame(width: size.width, height: size.height)
+    }
+
+    private func snapshotRequest(size: CGSize) -> SnapshotRequest {
+        SnapshotRequest(
+            geometry: geometry,
+            size: size,
+            dark: colorScheme == .dark,
+            scale: displayScale,
+            stroke: stroke,
+            fill: fill,
+            centersTerritory: centersTerritory,
+            strokeLineWidth: strokeLineWidth,
+            verticalBias: verticalBias,
+            distanceMultiplier: distanceMultiplier,
+            horizontalShift: horizontalShift
+        )
+    }
+
+    private func memoryCachedImage(size: CGSize) -> UIImage? {
+        guard size.width > 1, size.height > 1 else { return nil }
+        return TerritorySnapshotCache.shared.cachedImage(
+            for: snapshotCacheKey(size: size, dark: colorScheme == .dark)
+        )
+    }
+
+    private func loadSnapshotImage(_ request: SnapshotRequest) async {
+        let size = request.size
+        let dark = request.dark
         guard size.width > 1, size.height > 1 else { return }
         let cacheKey = snapshotCacheKey(size: size, dark: dark)
         // La lectura de disco y la descompresión ocurren en el worker; aquí sólo se espera.
         if let cached = await TerritorySnapshotCache.shared.image(for: cacheKey) {
             guard !Task.isCancelled else { return }
             snapshotImage = cached
-            displayedCacheKey = cacheKey
+            displayedRequest = request
             return
         }
         guard !Task.isCancelled else { return }
@@ -141,14 +192,12 @@ struct TerritorySnapshotBackdrop: View {
         } onCancel: {
             snapshotter.cancel()
         }
-        guard let result,
-              !Task.isCancelled,
-              snapshotCacheKey(size: size, dark: colorScheme == .dark) == cacheKey else { return }
+        guard let result, !Task.isCancelled else { return }
 
         let image = renderedSnapshotImage(from: result, size: size, traitCollection: traitCollection)
         TerritorySnapshotCache.shared.insert(image, for: cacheKey)
         snapshotImage = image
-        displayedCacheKey = cacheKey
+        displayedRequest = request
     }
 
     private func renderedSnapshotImage(

@@ -34,7 +34,9 @@ import com.jared.territorytool.designsystem.GlassIconButton
 import com.jared.territorytool.designsystem.GlassTextField
 import com.jared.territorytool.designsystem.LiquidBackground
 import com.jared.territorytool.designsystem.PrimaryButton
+import com.jared.territorytool.designsystem.glass
 import com.jared.territorytool.shared.components.AppSheet
+import com.jared.territorytool.shared.components.ExcludeFromSuggestionsToggle
 import com.jared.territorytool.shared.components.ToastManager
 import com.jared.territorytool.shared.components.ToastStyle
 import com.jared.territorytool.shared.models.UndoHandleKind
@@ -62,42 +64,58 @@ fun AddTerritorySheet(onDismiss: () -> Unit) {
         title = stringResource(R.string.territory_add_title),
         initial = null,
         onDismiss = onDismiss,
-    ) { code, name, mapUrl ->
-        val handle = DIContainer.apiService.addTerritoryUndoable(code, name, mapUrl).handle(UndoHandleKind.Domain)
+    ) { code, name, mapUrl, exclude ->
+        val handle = DIContainer.apiService.addTerritoryUndoable(code, name, mapUrl, exclude).handle(UndoHandleKind.Domain)
         ToastManager.show("territory.add.success", ToastStyle.Success, handle, handle.toastDurationMillis)
     }
 }
 
 @Composable
 fun EditTerritorySheet(territory: Territory, onDismiss: () -> Unit, onSuccess: (() -> Unit)? = null) {
-    EditTerritorySheet(territory.id, territory.code, territory.name, territory.mapUrl, onDismiss, onSuccess)
+    EditTerritorySheet(territory.id, territory.code, territory.name, territory.mapUrl, territory.excludeFromSuggestions, onDismiss, onSuccess)
 }
 
+/**
+ * [excludeFromSuggestions] es el valor guardado; `null` si la fuente no lo trae. En ese caso
+ * sólo se envía si el usuario lo activa, para no pisar el valor guardado.
+ */
 @Composable
-fun EditTerritorySheet(id: Int, code: String, name: String, mapUrl: String, onDismiss: () -> Unit, onSuccess: (() -> Unit)? = null) {
+fun EditTerritorySheet(
+    id: Int,
+    code: String,
+    name: String,
+    mapUrl: String,
+    excludeFromSuggestions: Boolean?,
+    onDismiss: () -> Unit,
+    onSuccess: (() -> Unit)? = null,
+) {
     TerritoryFormSheet(
         title = stringResource(R.string.territory_edit_title),
-        initial = Triple(code, name, mapUrl),
+        initial = TerritoryFormValues(code, name, mapUrl, excludeFromSuggestions ?: false),
         onDismiss = onDismiss,
-    ) { c, n, m ->
-        val handle = DIContainer.apiService.updateTerritoryUndoable(id, c, n, m).handle(UndoHandleKind.Domain)
+    ) { c, n, m, exclude ->
+        val toSend = if (excludeFromSuggestions != null || exclude) exclude else null
+        val handle = DIContainer.apiService.updateTerritoryUndoable(id, c, n, m, toSend).handle(UndoHandleKind.Domain)
         ToastManager.show("territory.edit.success", ToastStyle.Success, handle, handle.toastDurationMillis)
         HapticManager.notification(HapticManager.Notification.Success)
         onSuccess?.invoke()
     }
 }
 
+private data class TerritoryFormValues(val code: String, val name: String, val mapUrl: String, val excludeFromSuggestions: Boolean)
+
 @Composable
 private fun TerritoryFormSheet(
     title: String,
-    initial: Triple<String, String, String>?,
+    initial: TerritoryFormValues?,
     onDismiss: () -> Unit,
-    save: suspend (code: String, name: String, mapUrl: String) -> Unit,
+    save: suspend (code: String, name: String, mapUrl: String, excludeFromSuggestions: Boolean) -> Unit,
 ) {
     val colors = AppTheme.colors
-    var code by remember { mutableStateOf(initial?.first ?: "") }
-    var name by remember { mutableStateOf(initial?.second ?: "") }
-    var mapUrl by remember { mutableStateOf(initial?.third ?: "") }
+    var code by remember { mutableStateOf(initial?.code ?: "") }
+    var name by remember { mutableStateOf(initial?.name ?: "") }
+    var mapUrl by remember { mutableStateOf(initial?.mapUrl ?: "") }
+    var excludeFromSuggestions by remember { mutableStateOf(initial?.excludeFromSuggestions ?: false) }
     var isLoading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
@@ -115,6 +133,11 @@ private fun TerritoryFormSheet(
                         GlassTextField(code, { code = it }, stringResource(R.string.territory_code), label = stringResource(R.string.territory_code) + " *", autoCapitalize = false, imeAction = ImeAction.Next)
                         GlassTextField(name, { name = it }, stringResource(R.string.territory_name), label = stringResource(R.string.territory_name) + " *", imeAction = ImeAction.Next)
                         GlassTextField(mapUrl, { mapUrl = it }, stringResource(R.string.territory_mapUrl), label = stringResource(R.string.territory_mapUrl) + " *", keyboardType = KeyboardType.Uri, autoCapitalize = false)
+                        ExcludeFromSuggestionsToggle(
+                            excludeFromSuggestions,
+                            { excludeFromSuggestions = it },
+                            Modifier.glass().padding(AppSpacing.md),
+                        )
                     }
                     error?.let { Text(it, style = AppType.caption, color = colors.danger, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) }
                     PrimaryButton(
@@ -124,7 +147,7 @@ private fun TerritoryFormSheet(
                             error = null
                             scope.launch {
                                 try {
-                                    save(code, name, mapUrl)
+                                    save(code, name, mapUrl, excludeFromSuggestions)
                                     onDismiss()
                                 } catch (e: Exception) {
                                     error = mapTerritoryError(e)

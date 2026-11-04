@@ -83,6 +83,8 @@ import com.jared.territorytool.shared.components.DateTimeField
 import com.jared.territorytool.shared.components.ToastManager
 import com.jared.territorytool.shared.components.ToastStyle
 import com.jared.territorytool.shared.map.TerritorySnapshotBackdrop
+import com.jared.territorytool.shared.components.VirtualDeliveryToggle
+import com.jared.territorytool.shared.models.DeliveryFormat
 import com.jared.territorytool.shared.models.Territory
 import com.jared.territorytool.shared.models.UndoHandleKind
 import com.jared.territorytool.shared.utils.userFriendlyMessage
@@ -106,6 +108,8 @@ fun QuickActionConfirmScreen(
     var customized by remember { mutableStateOf(false) }
     var pickedDate by remember { mutableStateOf(Instant.now()) }
     var submitting by remember { mutableStateOf(false) }
+    // Solo en entrega: físico por defecto.
+    var deliveryFormat by remember { mutableStateOf(DeliveryFormat.Physical) }
     // Si llegó sin geometría (p. ej. desde la decisión de persona) se hidrata con el completo.
     var hydrated by remember { mutableStateOf<Territory?>(null) }
     val territory = hydrated ?: action.territory
@@ -126,7 +130,7 @@ fun QuickActionConfirmScreen(
             try {
                 val personName = action.personName
                 val (response, toastKey) = if (personName != null) {
-                    api.giveTerritoryUndoable(territory.code, personName, date) to R.string.assignment_success
+                    api.giveTerritoryUndoable(territory.code, personName, date, deliveryFormat) to R.string.assignment_success
                 } else {
                     api.pickTerritoryUndoable(territory.code, date) to R.string.return_success
                 }
@@ -235,6 +239,14 @@ fun QuickActionConfirmScreen(
                         }
                     }
                 }
+            }
+
+            if (action.isDeliver) {
+                VirtualDeliveryToggle(
+                    deliveryFormat,
+                    { deliveryFormat = it },
+                    Modifier.appear(3).paperCard(AppRadius.lg).padding(AppSpacing.md),
+                )
             }
         }
     }

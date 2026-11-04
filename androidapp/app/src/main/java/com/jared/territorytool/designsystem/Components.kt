@@ -157,13 +157,30 @@ fun AppCard(
     Column(modifier.paperCard(cornerRadius).padding(padding), content = content)
 }
 
-/** Superficie translúcida tipo "glass" (cristal) usada en campos y hojas. */
+/**
+ * Relleno del "cristal" de iOS. Allí `glassEffect` difumina lo que hay detrás; Android no tiene
+ * blur de fondo, así que el relleno debe ser casi opaco: con más transparencia, el mapa (calles,
+ * etiquetas) se transparenta y el texto encima deja de leerse.
+ */
+val AppColors.frostedFill: Color get() = surfaceRaised.copy(alpha = if (isDark) 0.92f else 0.95f)
+
+/** Superficie tipo "glass" (cristal) usada en campos, controles flotantes y hojas. */
 fun Modifier.glass(shape: Shape = RoundedCornerShape(AppRadius.md)): Modifier = composed {
     val colors = AppTheme.colors
     this
         .clip(shape)
-        .background(colors.surfaceRaised.copy(alpha = if (colors.isDark) 0.55f else 0.72f), shape)
-        .border(1.dp, Color.White.copy(alpha = if (colors.isDark) 0.08f else 0.6f), shape)
+        .background(colors.frostedFill, shape)
+        .border(1.dp, if (colors.isDark) Color.White.copy(alpha = 0.08f) else colors.hairline.copy(alpha = 0.7f), shape)
+}
+
+/** Equivalente a `glassEffect(.regular.tint(...))` de iOS: base de cristal + tinte encima. */
+fun Modifier.tintedGlass(tint: Color, shape: Shape, tintAlpha: Float = 0.14f, borderColor: Color? = null): Modifier = composed {
+    val colors = AppTheme.colors
+    this
+        .clip(shape)
+        .background(colors.frostedFill, shape)
+        .background(tint.copy(alpha = tintAlpha), shape)
+        .border(1.dp, borderColor ?: tint.copy(alpha = 0.22f), shape)
 }
 
 // MARK: - Botones
@@ -205,11 +222,12 @@ fun AppButton(
     val interaction = remember { MutableInteractionSource() }
     val active = enabled && !isLoading
     val shape = CircleShape
-    val (bg, fg, border) = when (style) {
-        AppButtonStyle.Prominent -> Triple(tint.copy(alpha = if (active) 1f else 0.4f), Color.White, null)
-        AppButtonStyle.Glass -> Triple(tint.copy(alpha = 0.14f), tint, tint.copy(alpha = 0.22f))
-        AppButtonStyle.Bordered -> Triple(tint.copy(alpha = 0.10f), tint, null)
-        AppButtonStyle.Plain -> Triple(Color.Transparent, tint, null)
+    val (bg, fg) = when (style) {
+        AppButtonStyle.Prominent -> tint.copy(alpha = if (active) 1f else 0.4f) to Color.White
+        // El fondo de Glass lo pinta `tintedGlass` (base opaca + tinte); aquí solo el color del contenido.
+        AppButtonStyle.Glass -> Color.Transparent to tint
+        AppButtonStyle.Bordered -> tint.copy(alpha = 0.10f) to tint
+        AppButtonStyle.Plain -> Color.Transparent to tint
     }
     Row(
         modifier
@@ -220,9 +238,9 @@ fun AppButton(
                     Modifier.shadow(8.dp, shape, ambientColor = tint.copy(alpha = 0.3f), spotColor = tint.copy(alpha = 0.3f))
                 else Modifier,
             )
+            .then(if (style == AppButtonStyle.Glass) Modifier.tintedGlass(tint, shape) else Modifier)
             .clip(shape)
             .background(bg, shape)
-            .then(if (border != null) Modifier.border(1.dp, border, shape) else Modifier)
             .clickable(interactionSource = interaction, indication = null, enabled = active, role = Role.Button, onClick = onClick)
             .alpha(if (active || style == AppButtonStyle.Prominent) 1f else 0.5f)
             .padding(horizontal = if (large) 20.dp else 16.dp, vertical = if (large) 14.dp else 10.dp),

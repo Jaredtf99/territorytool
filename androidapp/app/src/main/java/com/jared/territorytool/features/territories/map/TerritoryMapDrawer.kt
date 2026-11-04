@@ -154,7 +154,7 @@ fun TerritoryMapDrawer(
             .height(animatedHeight)
             .shadow(18.dp, shape, ambientColor = Color.Black.copy(alpha = 0.12f), spotColor = Color.Black.copy(alpha = 0.12f))
             .clip(shape)
-            .background(colors.surface.copy(alpha = 0.96f))
+            .background(colors.surface)
             .border(1.dp, colors.hairline.copy(alpha = 0.6f), shape),
     ) {
         // Asa de arrastre.

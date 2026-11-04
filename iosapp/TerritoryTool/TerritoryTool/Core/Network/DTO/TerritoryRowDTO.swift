@@ -22,6 +22,7 @@ nonisolated struct TerritoryRowDTO: Decodable, Sendable {
     let lastPickedAt: Date?
     let mapGeometry: TerritoryMapGeometry?
     let deliveryFormat: DeliveryFormat?
+    let excludeFromSuggestions: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -34,6 +35,7 @@ nonisolated struct TerritoryRowDTO: Decodable, Sendable {
         case lastPickedAt = "last_picked_at"
         case mapGeometry = "map_geometry"
         case deliveryFormat = "delivery_format"
+        case excludeFromSuggestions = "exclude_from_suggestions"
     }
 
     /// `imgUrl` se rellena aparte: sólo se firma para los territorios sin geometría, que
@@ -49,7 +51,8 @@ nonisolated struct TerritoryRowDTO: Decodable, Sendable {
             givenDateUtc: givenAt,
             lastPickedDateUtc: lastPickedAt,
             mapGeometry: mapGeometry,
-            deliveryFormat: personName == nil ? nil : (deliveryFormat ?? .physical)
+            deliveryFormat: personName == nil ? nil : (deliveryFormat ?? .physical),
+            excludeFromSuggestions: excludeFromSuggestions
         )
     }
 }

@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloseFullscreen
@@ -132,7 +134,8 @@ fun TerritoriesExplorerMap(
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val widthDp = maxWidth.value
-        val bottomInset = LocalTabBarPadding.current
+        // El drawer llega hasta el borde inferior; su contenido deja hueco a la tab bar y a la barra del sistema.
+        val bottomInset = LocalTabBarPadding.current + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         val mediumHeight = (maxHeight * 0.50f).coerceIn(360.dp + bottomInset, 440.dp + bottomInset)
         val collapsedHeight = if (selectedId != null) 30.dp + 132.dp + bottomInset + 6.dp else 168.dp + bottomInset
         val drawerHeight = if (detent == TerritoryDrawerDetent.Collapsed) collapsedHeight else mediumHeight
@@ -434,7 +437,7 @@ fun TerritoriesExplorerMap(
             )
         }
 
-        Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding()) {
+        Box(Modifier.align(Alignment.BottomCenter)) {
             TerritoryMapDrawer(
                 viewModel = viewModel,
                 collapsedHeight = collapsedHeight,

@@ -15,6 +15,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -53,6 +56,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
@@ -61,6 +65,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.jared.territorytool.R
@@ -68,6 +73,13 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 // MARK: - Barra superior estilo iOS (título inline + acciones)
+
+/** Alto de [AppTopBar] sin contar la barra de estado. */
+val AppTopBarHeight: Dp = 52.dp
+
+/** Espacio que ocupa [AppTopBar] (barra de estado incluida) cuando el contenido pasa por debajo. */
+@Composable
+fun appTopBarInset(): Dp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + AppTopBarHeight
 
 @Composable
 fun AppTopBar(
@@ -82,7 +94,7 @@ fun AppTopBar(
         modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .height(52.dp)
+            .height(AppTopBarHeight)
             .padding(horizontal = AppSpacing.sm),
     ) {
         Row(Modifier.align(Alignment.CenterStart), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
@@ -118,13 +130,42 @@ fun AppScreen(
     actions: (@Composable RowScope.() -> Unit)? = null,
     background: @Composable BoxScope.() -> Unit = { LiquidBackground() },
     showTopBar: Boolean = true,
+    /**
+     * El contenido ocupa toda la pantalla y la barra flota encima con un degradado del fondo,
+     * como la barra de navegación de iOS sobre un mapa. El contenido debe dejar
+     * [appTopBarInset] de margen superior a lo que tenga que quedar visible.
+     */
+    contentUnderTopBar: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Box(modifier.fillMaxSize()) {
         background()
-        Column(Modifier.fillMaxSize()) {
-            if (showTopBar) AppTopBar(title, onBack = onBack, leading = leading, actions = actions)
-            content()
+        if (contentUnderTopBar) {
+            Column(Modifier.fillMaxSize(), content = content)
+            if (showTopBar) {
+                val background = AppTheme.colors.appBackground
+                Box(Modifier.fillMaxWidth()) {
+                    // Borde suave: casi opaco tras el título y desvanecido hacia el contenido.
+                    Spacer(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(appTopBarInset() + AppSpacing.lg)
+                            .background(
+                                Brush.verticalGradient(
+                                    0f to background.copy(alpha = 0.94f),
+                                    0.55f to background.copy(alpha = 0.78f),
+                                    1f to background.copy(alpha = 0f),
+                                ),
+                            ),
+                    )
+                    AppTopBar(title, onBack = onBack, leading = leading, actions = actions)
+                }
+            }
+        } else {
+            Column(Modifier.fillMaxSize()) {
+                if (showTopBar) AppTopBar(title, onBack = onBack, leading = leading, actions = actions)
+                content()
+            }
         }
     }
 }

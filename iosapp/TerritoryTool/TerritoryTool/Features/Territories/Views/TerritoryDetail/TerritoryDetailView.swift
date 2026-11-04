@@ -7,12 +7,14 @@ struct TerritoryDetailView: View {
     @StateObject private var viewModel: TerritoryDetailViewModel
     @ObservedObject private var permissionManager = PermissionManager.shared
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
 
     @State private var showDeleteAlert = false
     @State private var showEditSheet = false
     @State private var editingTransaction: Transaction?
     @State private var transactionToDelete: Transaction?
     @State private var showDeleteTransactionAlert = false
+    @State private var brotherRoute: BrotherDetailRoute?
 
     private let territoryName: String
 
@@ -84,6 +86,11 @@ struct TerritoryDetailView: View {
         .toolbar(.hidden, for: .tabBar)
         .toolbarVisibility(.hidden, for: .tabBar)
         .toolbar {
+            if let mapURL = viewModel.territory?.mapURL {
+                ToolbarItem(placement: .topBarTrailing) {
+                    openMapButton(url: mapURL)
+                }
+            }
             if permissionManager.canManageTerritories {
                 ToolbarItem(placement: .topBarTrailing) {
                     adminMenu
@@ -92,6 +99,9 @@ struct TerritoryDetailView: View {
         }
         .task {
             await viewModel.loadData()
+        }
+        .navigationDestination(item: $brotherRoute) { route in
+            BrotherDetailView(personId: route.id, personName: route.name)
         }
         .alert("territory.detail.delete_confirmation_title", isPresented: $showDeleteAlert) {
             Button("cancel", role: .cancel) { }
@@ -322,7 +332,23 @@ struct TerritoryDetailView: View {
     }
 
     /// Fila del responsable en cristal, integrada en el hero sobre el mapa.
+    /// Responsable del ciclo actual; toca para abrir su ficha (el id sale de la
+    /// transacción abierta, que siempre llega con el bundle del detalle).
     private func responsibleRow(person: String, deliveryFormat: DeliveryFormat?) -> some View {
+        let personId = viewModel.transactions.first(where: { $0.pickedDateUtc == nil })?.personId
+        return Button {
+            guard let personId else { return }
+            HapticManager.shared.selection()
+            brotherRoute = BrotherDetailRoute(id: personId, name: person)
+        } label: {
+            responsibleRowContent(person: person, deliveryFormat: deliveryFormat, isNavigable: personId != nil)
+        }
+        .buttonStyle(ScaleButtonStyle())
+        .disabled(personId == nil)
+        .accessibilityHint(Text("brother.detail.open_hint"))
+    }
+
+    private func responsibleRowContent(person: String, deliveryFormat: DeliveryFormat?, isNavigable: Bool) -> some View {
         HStack(spacing: AppSpacing.sm) {
             InitialsAvatar(name: person, size: 40, tint: .accentDeep)
 
@@ -341,9 +367,16 @@ struct TerritoryDetailView: View {
             if let deliveryFormat {
                 DeliveryFormatBadge(format: deliveryFormat)
             }
+
+            if isNavigable {
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.textSecondary)
+            }
         }
         .padding(AppSpacing.sm)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: AppRadius.lg, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: AppRadius.lg, style: .continuous))
     }
 
     /// Aviso "conviene revisar": lleva directamente al flujo de devolución.
@@ -366,7 +399,6 @@ struct TerritoryDetailView: View {
                         ),
                         in: Circle()
                     )
-                    .shadow(color: Color.accentTertiary.opacity(0.35), radius: 4, x: 0, y: 2)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("territory.detail.cycle.review_title")
@@ -504,6 +536,25 @@ struct TerritoryDetailView: View {
         .padding(.top, AppSpacing.xs)
     }
 
+    // MARK: Abrir mapa
+
+    /// Abre el enlace de mapa del territorio (Google My Maps, etc.) en la app
+    /// o el navegador que el sistema tenga asociado. Disponible para todos.
+    private func openMapButton(url: URL) -> some View {
+        Button {
+            HapticManager.shared.selection()
+            openURL(url) { accepted in
+                if !accepted {
+                    HapticManager.shared.notification(type: .error)
+                    ToastManager.shared.show(NSLocalizedString("territory.detail.open_map_error", comment: ""), style: .error)
+                }
+            }
+        } label: {
+            Image(systemName: "map")
+        }
+        .accessibilityLabel(Text("territory.detail.open_map"))
+    }
+
     // MARK: Menú de administración
 
     private var adminMenu: some View {
@@ -548,6 +599,16 @@ struct TerritoryDetailView: View {
 }
 
 extension TerritoryDetail {
+    /// URL del mapa lista para abrir, o `nil` si no hay enlace válido. Si el
+    /// enlace se guardó sin esquema se asume https.
+    var mapURL: URL? {
+        let trimmed = mapUrl.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        let withScheme = trimmed.contains("://") ? trimmed : "https://\(trimmed)"
+        guard let url = URL(string: withScheme), url.host != nil else { return nil }
+        return url
+    }
+
     func toTerritory() -> Territory {
         return Territory(
             id: self.id,

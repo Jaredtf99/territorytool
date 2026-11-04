@@ -129,28 +129,36 @@ struct ToastGlassMessageView: View {
         }
         .scaleEffect(isUndoing ? 0.985 : 1)
         .animation(.spring(response: 0.24, dampingFraction: 0.82), value: isUndoing)
-        .shadow(color: Color.black.opacity(0.14), radius: 16, x: 0, y: 8)
+        // Sin `.shadow` extra: el cristal ya proyecta sombra y esta se calculaba sobre
+        // todo el contenido (texto, botón, anillo) en cada frame de la animación.
         .accessibilityElement(children: .combine)
     }
 }
 
+/// Anillo de cuenta atrás. Antes era un `TimelineView(.animation)` que re-evaluaba el
+/// body a la tasa de refresco (120 Hz) durante todo el toast; ahora es una única
+/// animación lineal del `trim`, que interpola el render server sin tocar SwiftUI.
 private struct UndoCountdownRing: View {
     let expiresAt: Date
 
-    var body: some View {
-        TimelineView(.animation) { context in
-            let remaining = max(expiresAt.timeIntervalSince(context.date), 0)
-            let progress = min(max(remaining / 5, 0), 1)
+    @State private var progress: Double = 1
 
-            ZStack {
-                Circle()
-                    .stroke(Color.danger.opacity(0.22), lineWidth: 2)
-                Circle()
-                    .trim(from: 0, to: progress)
-                    .stroke(Color.danger, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(Color.danger.opacity(0.22), lineWidth: 2)
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(Color.danger, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+        }
+        .frame(width: 14, height: 14)
+        .onAppear {
+            let remaining = max(expiresAt.timeIntervalSinceNow, 0)
+            progress = min(max(remaining / 5, 0), 1)
+            withAnimation(.linear(duration: remaining)) {
+                progress = 0
             }
-            .frame(width: 14, height: 14)
         }
         .accessibilityHidden(true)
     }

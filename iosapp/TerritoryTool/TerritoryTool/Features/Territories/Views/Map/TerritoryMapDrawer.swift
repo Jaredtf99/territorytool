@@ -60,7 +60,9 @@ struct TerritoryMapDrawer: View {
                 .stroke(Color.hairline.opacity(0.6), lineWidth: 1)
                 .allowsHitTesting(false)
         }
-        .shadow(color: .black.opacity(0.12), radius: 18, y: -4)
+        // Sin `.shadow` sobre el drawer completo: se calculaba sobre el alfa de todo el
+        // contenido (filas, textos, mapas) y se recalculaba en cada frame del arrastre.
+        // El cristal ya aporta su propio borde/sombra.
     }
 
     /// Asa de arrastre sin cabecera para dejar el contenido centrado en los territorios.
@@ -243,11 +245,6 @@ struct TerritoryMapDrawer: View {
                 .stroke(selected ? presentation.color.opacity(0.30) : Color.clear, lineWidth: 1)
         )
         .clipShape(cardShape)
-        .shadow(
-            color: selected ? presentation.color.opacity(0.12) : .clear,
-            radius: 10,
-            y: 4
-        )
         .contentShape(Rectangle())
         .onTapGesture {
             guard !selected else { return }

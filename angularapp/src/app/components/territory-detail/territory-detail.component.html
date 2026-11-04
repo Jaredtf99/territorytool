@@ -26,7 +26,14 @@
 
       <div class="form-group">
         <label>Asignado a</label>
-        <p class="form-control info">{{territoryInfo.personName ?? 'Nadie'}}</p>
+        <p class="form-control info">
+          <a *ngIf="territoryInfo.personName && territoryInfo.personId; else plainPerson"
+             class="person-link" [routerLink]="['/person', territoryInfo.personId]" title="Ver ficha del hermano">
+            {{territoryInfo.personName}}
+            <i class="fa fa-arrow-right"></i>
+          </a>
+          <ng-template #plainPerson>{{territoryInfo.personName ?? 'Nadie'}}</ng-template>
+        </p>
       </div>
 
       <div class="form-group">
@@ -125,9 +132,9 @@
           }">
             <div class="timeline-title">{{timelineItem.description}}</div>
             <div class="timeline-date">{{timelineItem.date | timeago}}</div>
-            <div class="timeline-format" *ngIf="timelineItem.type === 2 && timelineItem.deliveryFormat">
-              <i [class]="deliveryFormatIcons[timelineItem.deliveryFormat]"></i>
-              {{ deliveryFormatLabels[timelineItem.deliveryFormat] }}
+            <div class="timeline-format" *ngIf="timelineItem.type === 2 && timelineItem.deliveryFormat === 'virtual'">
+              <i [class]="deliveryFormatIcons.virtual"></i>
+              {{ deliveryFormatLabels.virtual }}
             </div>
             
             <!-- Botones de editar y borrar -->

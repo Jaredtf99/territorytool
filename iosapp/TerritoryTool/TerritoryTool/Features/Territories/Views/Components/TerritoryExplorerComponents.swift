@@ -12,6 +12,14 @@ struct TerritoryExplorerControls: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        // Un único contenedor para todos los cristales de la barra (buscador, conmutador
+        // y chips): se renderizan juntos mientras el contenido se desplaza debajo.
+        GlassEffectContainer {
+            controls
+        }
+    }
+
+    private var controls: some View {
         VStack(spacing: AppSpacing.sm) {
             HStack(spacing: AppSpacing.xs) {
                 searchField
@@ -24,19 +32,19 @@ struct TerritoryExplorerControls: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AppSpacing.xs) {
                     sortMenu
-                    ForEach(TerritoryFilter.allCases) { filter in
-                        filterChip(filter)
-                    }
-                    Divider()
-                        .frame(height: 20)
-                    ForEach(DeliveryFormat.allCases) { format in
-                        deliveryFormatChip(format)
-                    }
+                    statusMenu
+                    deliveryFormatMenu
                 }
                 .padding(.horizontal, AppSpacing.md)
                 .padding(.vertical, 2)
             }
+            // Sin recorte: el menú se despliega "creciendo" desde el chip de cristal y,
+            // con el recorte del scroll, la animación de abrir/cerrar se veía cortada.
+            .scrollClipDisabled()
         }
+        // Separación respecto a la navigation bar: sin ella el buscador quedaba pegado
+        // al borde inferior de la barra.
+        .padding(.top, AppSpacing.xs)
         .padding(.bottom, AppSpacing.xs)
     }
 
@@ -100,86 +108,103 @@ struct TerritoryExplorerControls: View {
         .accessibilityLabel(Text("territories.sort.title"))
     }
 
-    @ViewBuilder
-    private func filterChip(_ filter: TerritoryFilter) -> some View {
-        let selected = viewModel.filterStatus == filter
-        Button {
-            HapticManager.shared.selection()
-            withAnimation(reduceMotion ? nil : .spring(response: 0.24, dampingFraction: 0.78)) {
-                viewModel.filterStatus = filter
-                viewModel.select(nil)
+    private var statusMenu: some View {
+        let current = viewModel.filterStatus
+        let active = current != .all
+        return Menu {
+            Picker("territories.filter.status", selection: Binding(
+                get: { viewModel.filterStatus },
+                set: { newValue in
+                    HapticManager.shared.selection()
+                    withAnimation(reduceMotion ? nil : .spring(response: 0.24, dampingFraction: 0.78)) {
+                        viewModel.filterStatus = newValue
+                        viewModel.select(nil)
+                    }
+                }
+            )) {
+                ForEach(TerritoryFilter.allCases) { filter in
+                    Text(filter.localizedName).tag(filter)
+                }
             }
         } label: {
-            HStack(spacing: 6) {
-                filterIndicator(filter, selected: selected)
-                Text(filter.localizedName)
-                    .font(.appCaption().weight(.medium))
-                    .foregroundStyle(selected ? .white : Color.textPrimary)
+            FilterMenuChipLabel(active: active, tint: .accent) {
+                if active {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 9, height: 9)
+                }
+                Text(active ? current.localizedName : String.localized("territories.filter.status"))
             }
-            .padding(.horizontal, AppSpacing.sm)
-            .frame(height: 34)
         }
-        .glassEffect(
-            selected ? .regular.tint(.accent).interactive() : .regular.interactive(),
-            in: .capsule
-        )
         .frame(minHeight: 44)
         .contentShape(Rectangle())
-        .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityLabel(Text("territories.filter.status"))
+        .accessibilityValue(Text(current.localizedName))
     }
 
-    /// Chip conmutable: tocar el formato activo lo desactiva.
-    private func deliveryFormatChip(_ format: DeliveryFormat) -> some View {
-        let selected = viewModel.deliveryFormatFilter == format
-        return Button {
-            HapticManager.shared.selection()
-            withAnimation(reduceMotion ? nil : .spring(response: 0.24, dampingFraction: 0.78)) {
-                viewModel.deliveryFormatFilter = selected ? nil : format
-                viewModel.select(nil)
+    /// Usa el color de la familia "formato" (no el de ningún estado) para no
+    /// confundirse con el filtro de estado.
+    private var deliveryFormatMenu: some View {
+        let current = viewModel.deliveryFormatFilter
+        return Menu {
+            Picker("delivery_format.title", selection: Binding(
+                get: { viewModel.deliveryFormatFilter },
+                set: { newValue in
+                    HapticManager.shared.selection()
+                    withAnimation(reduceMotion ? nil : .spring(response: 0.24, dampingFraction: 0.78)) {
+                        viewModel.deliveryFormatFilter = newValue
+                        viewModel.select(nil)
+                    }
+                }
+            )) {
+                Label("delivery_format.all", systemImage: "square.stack.3d.up")
+                    .tag(DeliveryFormat?.none)
+                ForEach(DeliveryFormat.allCases) { format in
+                    Label(format.title, systemImage: format.systemImage)
+                        .tag(DeliveryFormat?.some(format))
+                }
             }
         } label: {
-            HStack(spacing: 6) {
-                Image(systemName: format.systemImage)
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(selected ? .white : Color.accentSecondary)
-                Text(format.title)
-                    .font(.appCaption().weight(.medium))
-                    .foregroundStyle(selected ? .white : Color.textPrimary)
+            FilterMenuChipLabel(active: current != nil, tint: DeliveryFormat.familyTint) {
+                if let current {
+                    Image(systemName: current.systemImage)
+                        .font(.caption2.weight(.bold))
+                    Text(current.title)
+                } else {
+                    Text("delivery_format.title")
+                }
             }
-            .padding(.horizontal, AppSpacing.sm)
-            .frame(height: 34)
         }
-        .glassEffect(
-            selected ? .regular.tint(.accentSecondary).interactive() : .regular.interactive(),
-            in: .capsule
-        )
         .frame(minHeight: 44)
         .contentShape(Rectangle())
-        .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-
-    @ViewBuilder
-    private func filterIndicator(_ filter: TerritoryFilter, selected: Bool) -> some View {
-        if filter == .all {
-            Image(systemName: "square.stack.3d.up.fill")
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(selected ? .white : Color.accent)
-        } else {
-            Circle()
-                .fill(selected ? Color.white : filter.dotColor)
-                .frame(width: 9, height: 9)
-        }
+        .accessibilityLabel(Text("delivery_format.title"))
+        .accessibilityValue(Text(current?.title ?? "delivery_format.all"))
     }
 }
 
-extension TerritoryFilter {
-    /// Punto de color del chip según el estado que representa.
-    var dotColor: Color {
-        switch self {
-        case .all, .free: .accent
-        case .inUse: .accentSecondary
-        case .attention: .accentTertiary
+/// Etiqueta de un chip que abre un menú. Inactivo (valor por defecto) muestra el
+/// nombre del filtro; activo se tiñe y muestra la opción elegida.
+private struct FilterMenuChipLabel<Content: View>: View {
+    let active: Bool
+    let tint: Color
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        HStack(spacing: 6) {
+            content
+                .font(.appCaption().weight(.medium))
+                .foregroundStyle(active ? .white : Color.textPrimary)
+            Image(systemName: "chevron.down")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(active ? .white : Color.textSecondary)
         }
+        .padding(.leading, AppSpacing.sm)
+        .padding(.trailing, AppSpacing.sm - 2)
+        .frame(height: 34)
+        .glassEffect(
+            active ? .regular.tint(tint).interactive() : .regular.interactive(),
+            in: .capsule
+        )
     }
 }
 
@@ -331,8 +356,11 @@ struct TerritoryExplorerRow: View {
             mapBackdrop
         }
         .background {
+            // Sombra en la forma del fondo, no en la tarjeta compuesta: antes
+            // `compositingGroup()+shadow` forzaba un pase offscreen por fila en el scroll.
             RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
                 .fill(Color.surface)
+                .shadow(color: Color.glassShadow, radius: 8, x: 0, y: 4)
         }
         .overlay {
             RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
@@ -345,8 +373,6 @@ struct TerritoryExplorerRow: View {
                     lineWidth: 1
                 )
         }
-        .compositingGroup()
-        .shadow(color: Color.glassShadow, radius: 14, x: 0, y: 8)
         .accessibilityElement(children: .combine)
     }
 
@@ -367,20 +393,40 @@ struct TerritoryExplorerRow: View {
                         .foregroundStyle(Color.textPrimary)
                         .lineLimit(1)
 
-                    HStack(spacing: AppSpacing.xxs) {
-                        Text(status.detail)
-                            .font(.appCaption().weight(.medium))
-                            .foregroundStyle(status.color)
-                            .lineLimit(1)
-
-                        if let deliveryFormat = territory.deliveryFormat {
-                            DeliveryFormatBadge(format: deliveryFormat)
+                    if territory.deliveryFormat == .virtual {
+                        // En línea si cabe; si no (texto grande), "Virtual" baja a su propia
+                        // línea. La marca nunca se pierde ni recorta los días.
+                        ViewThatFits(in: .horizontal) {
+                            assignmentMeta(showsVirtual: true)
+                            VStack(alignment: .leading, spacing: 2) {
+                                assignmentMeta(showsVirtual: false)
+                                DeliveryFormatBadge(format: .virtual)
+                            }
                         }
+                    } else {
+                        assignmentMeta(showsVirtual: false)
                     }
                 }
             }
         } else {
             statusLabel
+        }
+    }
+
+    /// Línea "Desde hace X días" con la marca virtual opcional detrás.
+    private func assignmentMeta(showsVirtual: Bool) -> some View {
+        HStack(spacing: AppSpacing.xxs) {
+            Text(status.detail)
+                .font(.appCaption().weight(.medium))
+                .foregroundStyle(status.color)
+                .lineLimit(1)
+                // En la variante en línea no se permite recortar: si no cabe entero,
+                // ViewThatFits pasa a la variante en dos líneas.
+                .fixedSize(horizontal: showsVirtual, vertical: false)
+
+            if showsVirtual {
+                DeliveryFormatBadge(format: .virtual, leadingSeparator: true)
+            }
         }
     }
 
@@ -392,8 +438,16 @@ struct TerritoryExplorerRow: View {
         return LocalizedStringKey(String(format: String.localized("territories.status.days_available"), days))
     }
 
-    @ViewBuilder
+    /// Fondo de mapa fundido hacia el papel de la tarjeta. Sin `.mask`: el degradado
+    /// del color de superficie encima + `clipShape` da el mismo resultado sin offscreen.
     private var mapBackdrop: some View {
+        mapBackdropContent
+            .overlay { mapFade }
+            .clipShape(cardShape)
+    }
+
+    @ViewBuilder
+    private var mapBackdropContent: some View {
         if let geometry = territory.mapGeometry {
             TerritorySnapshotBackdrop(
                 geometry: geometry,
@@ -401,8 +455,6 @@ struct TerritoryExplorerRow: View {
                 fill: status.color,
                 verticalBias: 0.12
             )
-            .mask(mapFade)
-            .mask(cardShape)
         } else if let imageURL = territory.imgUrl.flatMap(URL.init(string:)) {
             CachedAsyncImage(
                 url: imageURL,
@@ -418,31 +470,18 @@ struct TerritoryExplorerRow: View {
                     mapPlaceholder
                 }
             )
-            .mask(mapFade)
-            .mask(cardShape)
         } else {
             mapPlaceholder
-                .mask(mapFade)
-                .mask(cardShape)
         }
     }
 
     private var mapFade: some View {
-        LinearGradient(
-            stops: [
-                .init(color: .black.opacity(0), location: 0),
-                .init(color: .black.opacity(0.08), location: 0.18),
-                .init(color: .black.opacity(0.38), location: 0.34),
-                .init(color: .black.opacity(0.76), location: 0.52),
-                .init(color: .black, location: 0.68),
-                .init(color: .black, location: 1)
-            ],
-            startPoint: .leading,
-            endPoint: .trailing
-        )
+        SurfaceFade(stops: [
+            (0, 0), (0.08, 0.18), (0.38, 0.34), (0.76, 0.52), (1, 0.68), (1, 1)
+        ])
     }
 
-    private var cardShape: some View {
+    private var cardShape: RoundedRectangle {
         RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
     }
 

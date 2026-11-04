@@ -50,11 +50,22 @@ final class TerritorySnapshotCache {
 
     private let disk = TerritorySnapshotDiskStore()
 
+    /// Escala de pantalla resuelta en main (antes el actor de disco leía `UIScreen.main`
+    /// desde fuera del main actor: aviso de aislamiento y API obsoleta en iOS 26).
+    private var screenScale: CGFloat {
+        UITraitCollection.current.displayScale > 0 ? UITraitCollection.current.displayScale : 3
+    }
+
     /// Trabajos de lectura en vuelo, para que dos tarjetas que piden la misma clave
     /// (por ejemplo el mismo territorio en el drawer y en la lista) no lean dos veces.
     private var inFlightReads: [String: Task<UIImage?, Never>] = [:]
 
     private init() {}
+
+    /// Lectura síncrona sólo de memoria (para pintar en el primer frame sin esperar).
+    func cachedImage(for key: String) -> UIImage? {
+        memory.object(forKey: key as NSString)
+    }
 
     func image(for key: String) async -> UIImage? {
         if let cached = memory.object(forKey: key as NSString) {
@@ -65,8 +76,9 @@ final class TerritorySnapshotCache {
             return await existing.value
         }
 
+        let scale = screenScale
         let task = Task<UIImage?, Never> { [disk] in
-            guard let decoded = await disk.read(key: key) else { return nil }
+            guard let decoded = await disk.read(key: key, scale: scale) else { return nil }
             return decoded.uiImage
         }
         inFlightReads[key] = task
@@ -120,9 +132,13 @@ actor TerritorySnapshotDiskStore {
     private var hasPrunedThisLaunch = false
 
     init() {
+        // Variable local: acceder a propiedades del actor desde el init no aislado es
+        // un error en Swift 6.
+        let fileManager = FileManager.default
         let caches = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first
             ?? fileManager.temporaryDirectory
-        directory = caches.appendingPathComponent("TerritorySnapshotCache", isDirectory: true)
+        let directory = caches.appendingPathComponent("TerritorySnapshotCache", isDirectory: true)
+        self.directory = directory
         try? fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
     }
 
@@ -131,7 +147,7 @@ actor TerritorySnapshotDiskStore {
     /// `UIImage(data:)` difiere parte de la descompresión al primer dibujo, así que devolver
     /// sólo `Data` habría trasladado ese coste de vuelta a main justo al aparecer la tarjeta.
     /// `kCGImageSourceShouldCacheImmediately` fuerza el decode aquí dentro.
-    func read(key: String) -> DecodedSnapshot? {
+    func read(key: String, scale: CGFloat) -> DecodedSnapshot? {
         for url in fileURLs(for: key) {
             guard fileManager.fileExists(atPath: url.path) else { continue }
 
@@ -149,7 +165,7 @@ actor TerritorySnapshotDiskStore {
 
             // Marca de uso reciente para la poda LRU.
             try? fileManager.setAttributes([.modificationDate: Date()], ofItemAtPath: url.path)
-            return DecodedSnapshot(cgImage: cgImage, scale: UIScreen.main.scale)
+            return DecodedSnapshot(cgImage: cgImage, scale: scale)
         }
         return nil
     }

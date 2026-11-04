@@ -58,6 +58,8 @@ struct QuickActionConfirmView: View {
     @State private var customized = false
     @State private var pickedDate = Date()
     @State private var isSubmitting = false
+    /// Solo en entrega: físico por defecto.
+    @State private var deliveryFormat: DeliveryFormat = .physical
     /// El territorio puede llegar sin geometría (p. ej. desde la decisión de persona);
     /// si falta, lo hidratamos con el completo para poder mostrar el mapa.
     @State private var hydratedTerritory: Territory?
@@ -77,6 +79,13 @@ struct QuickActionConfirmView: View {
                 }
 
                 dateCard.appear(index: 2)
+
+                if action.isDeliver {
+                    VirtualDeliveryToggle(format: $deliveryFormat)
+                        .padding(AppSpacing.md)
+                        .paperCard(cornerRadius: AppRadius.lg)
+                        .appear(index: 3)
+                }
             }
             .padding(.horizontal, AppSpacing.md)
             .padding(.top, AppSpacing.sm)
@@ -265,7 +274,12 @@ struct QuickActionConfirmView: View {
             let response: UndoableMutationResponse
             if let personName = action.personName {
                 response = try await apiService.request(
-                    endpoint: TerritoryEndpoint.giveTerritoryUndoable(code: territory.code, personName: personName, date: date)
+                    endpoint: TerritoryEndpoint.giveTerritoryUndoable(
+                        code: territory.code,
+                        personName: personName,
+                        date: date,
+                        deliveryFormat: deliveryFormat
+                    )
                 )
                 toastKey = "assignment.success"
             } else {
@@ -359,7 +373,11 @@ private struct ConfirmTerritoryHero: View {
         .padding(.trailing, 104)
         .frame(maxWidth: .infinity, minHeight: 200, alignment: .topLeading)
         .background(alignment: .trailing) { mapBackdrop }
-        .background { RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous).fill(Color.surface) }
+        .background {
+            RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
+                .fill(Color.surface)
+                .shadow(color: Color.glassShadow, radius: 8, x: 0, y: 4)
+        }
         .overlay {
             RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
                 .strokeBorder(
@@ -368,8 +386,6 @@ private struct ConfirmTerritoryHero: View {
                     lineWidth: 1
                 )
         }
-        .compositingGroup()
-        .shadow(color: Color.glassShadow, radius: 14, x: 0, y: 8)
     }
 
     /// Indicador de estado idéntico al del listado de territorios (icono en círculo
@@ -417,18 +433,9 @@ private struct ConfirmTerritoryHero: View {
                 tint.opacity(0.06)
             }
         }
-        .mask(
-            LinearGradient(
-                stops: [
-                    .init(color: .black.opacity(0), location: 0),
-                    .init(color: .black.opacity(0.35), location: 0.32),
-                    .init(color: .black.opacity(0.8), location: 0.55),
-                    .init(color: .black, location: 0.72),
-                    .init(color: .black, location: 1)
-                ],
-                startPoint: .leading, endPoint: .trailing
-            )
-        )
-        .mask(RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous))
+        .overlay {
+            SurfaceFade(stops: [(0, 0), (0.35, 0.32), (0.8, 0.55), (1, 0.72), (1, 1)])
+        }
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous))
     }
 }

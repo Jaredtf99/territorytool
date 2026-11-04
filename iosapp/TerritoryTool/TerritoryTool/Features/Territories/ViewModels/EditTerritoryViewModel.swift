@@ -6,18 +6,23 @@ class EditTerritoryViewModel: ObservableObject {
     @Published var name: String
     @Published var code: String
     @Published var mapUrl: String
+    @Published var excludeFromSuggestions: Bool
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     @Published private(set) var lastUndoHandle: UndoHandle?
     
     private let apiService: APIService
     private let territoryId: Int
+    /// Valor guardado tal y como llegó; `nil` si la fuente no lo traía.
+    private let storedExcludeFromSuggestions: Bool?
     
     init(territory: TerritoryDetail, apiService: APIService) {
         self.territoryId = territory.id
         self.name = territory.name
         self.code = territory.code
         self.mapUrl = territory.mapUrl
+        self.storedExcludeFromSuggestions = territory.excludeFromSuggestions
+        self.excludeFromSuggestions = territory.excludeFromSuggestions ?? false
         self.apiService = apiService
     }
     
@@ -26,6 +31,8 @@ class EditTerritoryViewModel: ObservableObject {
         self.name = territory.name
         self.code = territory.code
         self.mapUrl = territory.mapUrl
+        self.storedExcludeFromSuggestions = territory.excludeFromSuggestions
+        self.excludeFromSuggestions = territory.excludeFromSuggestions ?? false
         self.apiService = apiService
     }
     
@@ -34,7 +41,7 @@ class EditTerritoryViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            let undoResponse: UndoableMutationResponse = try await apiService.request(endpoint: TerritoryEndpoint.updateTerritoryUndoable(id: territoryId, code: code, name: name, mapUrl: mapUrl))
+            let undoResponse: UndoableMutationResponse = try await apiService.request(endpoint: TerritoryEndpoint.updateTerritoryUndoable(id: territoryId, code: code, name: name, mapUrl: mapUrl, excludeFromSuggestions: excludeFromSuggestionsToSend))
             lastUndoHandle = undoResponse.handle(kind: .domain)
             isLoading = false
             return true
@@ -46,6 +53,13 @@ class EditTerritoryViewModel: ObservableObject {
         }
     }
     
+    /// Sólo se envía si se conocía o si el usuario lo cambió: así, editar desde una fuente
+    /// que no trae el campo nunca pisa el valor guardado (`nil` = no tocar).
+    private var excludeFromSuggestionsToSend: Bool? {
+        if storedExcludeFromSuggestions != nil || excludeFromSuggestions { return excludeFromSuggestions }
+        return nil
+    }
+
     private func mapError(_ error: Error) -> String {
         let message = error.localizedDescription
         

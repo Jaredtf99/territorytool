@@ -37,7 +37,8 @@ export class EditTerritoryModalComponent {
     this.editForm = this.fb.group({
       name: [this.territoryInfo.name, Validators.required],
       code: [this.territoryInfo.code, Validators.required],
-      mapUrl: [this.territoryInfo.mapUrl, Validators.required]
+      mapUrl: [this.territoryInfo.mapUrl, Validators.required],
+      excludeFromSuggestions: [this.territoryInfo.excludeFromSuggestions ?? false]
     });
   }
 
@@ -56,7 +57,8 @@ export class EditTerritoryModalComponent {
       this.territoryInfo.id!,
       formValue.mapUrl,
       formValue.name,
-      formValue.code
+      formValue.code,
+      formValue.excludeFromSuggestions === true
     ).subscribe({
       next: res => {
         $('#editTerritory').modal('hide');

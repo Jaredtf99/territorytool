@@ -70,7 +70,7 @@ struct TrajectorySection: View {
                     HStack(alignment: .top, spacing: AppSpacing.sm) {
                         ForEach(Array(cycles.enumerated()), id: \.element.id) { index, cycle in
                             cycleRing(cycle)
-                                .appear(index: index, base: 0.06)
+                                .appear(index: index, base: 0.035)
                         }
                     }
                     // Aire vertical para que el halo pulsante, la escala de
@@ -120,6 +120,8 @@ struct TrajectorySection: View {
             HStack(spacing: 4) {
                 if let format {
                     Image(systemName: format.systemImage)
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(selected ? .white : DeliveryFormat.familyTint)
                     Text(format.title)
                 } else {
                     Text("delivery_format.all")
@@ -130,8 +132,9 @@ struct TrajectorySection: View {
             .padding(.horizontal, AppSpacing.sm)
             .frame(height: 30)
         }
+        // Mismo color que los chips de formato del listado de territorios.
         .glassEffect(
-            selected ? .regular.tint(.accent).interactive() : .regular.interactive(),
+            selected ? .regular.tint(DeliveryFormat.familyTint).interactive() : .regular.interactive(),
             in: .capsule
         )
         .frame(minHeight: 44)
@@ -178,7 +181,6 @@ struct TrajectorySection: View {
                 }
                 .frame(width: 68, height: 68)
                 .scaleEffect(isSelected ? 1.08 : 1)
-                .shadow(color: isSelected ? tint.opacity(0.35) : .clear, radius: 8, x: 0, y: 3)
 
                 // Nombre completo; el actual se marca con un punto en su color.
                 HStack(spacing: 4) {
@@ -195,9 +197,11 @@ struct TrajectorySection: View {
                 }
                 .frame(maxWidth: 96)
 
-                Image(systemName: cycle.deliveryFormat.systemImage)
-                    .font(.caption2)
-                    .foregroundStyle(Color.textSecondary)
+                // Solo se marcan las entregas virtuales (físico es lo habitual).
+                Image(systemName: DeliveryFormat.virtual.systemImage)
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(DeliveryFormat.virtual.tint)
+                    .opacity(cycle.deliveryFormat == .virtual ? 1 : 0)
                     .accessibilityHidden(true)
             }
             .padding(.horizontal, AppSpacing.xxs)
@@ -322,7 +326,9 @@ struct TrajectorySection: View {
                 .opacity(animate ? 0 : 0.7)
                 .onAppear {
                     guard !reduceMotion else { return }
-                    withAnimation(.easeOut(duration: 2).repeatForever(autoreverses: false).delay(0.6)) {
+                    // Pulso finito (antes infinito): mantenía la pantalla redibujando a 120 Hz
+                    // mientras estuviera visible, compitiendo con el scroll.
+                    withAnimation(.easeOut(duration: 1.6).repeatCount(3, autoreverses: false).delay(0.4)) {
                         animate = true
                     }
                 }
@@ -370,7 +376,6 @@ struct TrajectorySection: View {
                                    startPoint: .topLeading, endPoint: .bottomTrailing),
                     in: Circle()
                 )
-                .shadow(color: tint.opacity(0.35), radius: 4, x: 0, y: 2)
 
             Text(message)
                 .font(.appSubheadline())

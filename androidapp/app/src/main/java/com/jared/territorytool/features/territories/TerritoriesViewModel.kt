@@ -131,11 +131,10 @@ class TerritoriesViewModel(app: Application) : AndroidViewModel(app) {
         return result[0]
     }
 
-    /** Conmutable: volver a elegir el formato activo lo desactiva. */
-    fun toggleDeliveryFormatFilter(format: DeliveryFormat) {
-        val next = if (deliveryFormatFilter.value == format) null else format
-        if (next != null && filterStatus.value == TerritoryFilter.Free) filterStatus.value = TerritoryFilter.InUse
-        deliveryFormatFilter.value = next
+    /** `null` = todos. Un territorio libre no tiene formato, así que filtrar por uno pasa a "En uso". */
+    fun setDeliveryFormatFilter(format: DeliveryFormat?) {
+        if (format != null && filterStatus.value == TerritoryFilter.Free) filterStatus.value = TerritoryFilter.InUse
+        deliveryFormatFilter.value = format
     }
 
     private fun filtered(): List<Territory> {

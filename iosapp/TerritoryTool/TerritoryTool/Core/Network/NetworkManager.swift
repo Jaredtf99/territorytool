@@ -243,18 +243,20 @@ final class NetworkManager: APIService {
                 "p_sort_ascending": sort.ascending
             ])
 
-        case .giveTerritory(let code, let personName, let date):
+        case .giveTerritory(let code, let personName, let date, let deliveryFormat):
             return try await rpcObject("give_territory", body: [
                 "territory_code": code,
                 "person_name": personName,
-                "custom_date": date.map { isoFormatter.string(from: $0) } ?? NSNull()
+                "custom_date": date.map { isoFormatter.string(from: $0) } ?? NSNull(),
+                "delivery_format": deliveryFormat.rawValue
             ])
 
-        case .giveTerritoryUndoable(let code, let personName, let date):
+        case .giveTerritoryUndoable(let code, let personName, let date, let deliveryFormat):
             return try await rpcObject("give_territory_undoable", body: [
                 "territory_code": code,
                 "person_name": personName,
-                "custom_date": date.map { isoFormatter.string(from: $0) } ?? NSNull()
+                "custom_date": date.map { isoFormatter.string(from: $0) } ?? NSNull(),
+                "delivery_format": deliveryFormat.rawValue
             ])
 
         case .pickTerritory(let code, let date):
@@ -317,6 +319,13 @@ final class NetworkManager: APIService {
                 ]
             }
 
+        case .getPersonDetail(let id):
+            // Ficha completa en una sola RPC; ya viene en camelCase y se decodifica tal cual.
+            return try await rpcObject("get_person_detail", body: [
+                "p_person_id": id,
+                "p_timezone": TimeZone.current.identifier
+            ])
+
         case .resolveTerritorySelector(let value):
             let rows = try await rpcRows("resolve_territory_selector", body: ["value": value])
             guard let territory = await mapTerritories(rows).first else {
@@ -348,26 +357,39 @@ final class NetworkManager: APIService {
         case .deletePersonUndoable(let name):
             return try await rpcObject("delete_person_undoable", body: ["name": name])
 
-        case .addTerritory(let code, let name, let mapUrl):
-            return try await rpcObject("add_territory", body: ["code": code, "name": name, "map_url": mapUrl])
+        case .addTerritory(let code, let name, let mapUrl, let exclude):
+            return try await rpcObject("add_territory", body: [
+                "code": code,
+                "name": name,
+                "map_url": mapUrl,
+                "exclude_from_suggestions": exclude
+            ])
 
-        case .addTerritoryUndoable(let code, let name, let mapUrl):
-            return try await rpcObject("add_territory_undoable", body: ["code": code, "name": name, "map_url": mapUrl])
+        case .addTerritoryUndoable(let code, let name, let mapUrl, let exclude):
+            return try await rpcObject("add_territory_undoable", body: [
+                "code": code,
+                "name": name,
+                "map_url": mapUrl,
+                "exclude_from_suggestions": exclude
+            ])
 
-        case .updateTerritory(let id, let code, let name, let mapUrl):
+        case .updateTerritory(let id, let code, let name, let mapUrl, let exclude):
+            // `nil` = no tocar el valor guardado.
             return try await rpcObject("update_territory", body: [
                 "territory_id": id,
                 "code": code,
                 "name": name,
-                "map_url": mapUrl
+                "map_url": mapUrl,
+                "exclude_from_suggestions": exclude.map { $0 as Any } ?? NSNull()
             ])
 
-        case .updateTerritoryUndoable(let id, let code, let name, let mapUrl):
+        case .updateTerritoryUndoable(let id, let code, let name, let mapUrl, let exclude):
             return try await rpcObject("update_territory_undoable", body: [
                 "territory_id": id,
                 "code": code,
                 "name": name,
-                "map_url": mapUrl
+                "map_url": mapUrl,
+                "exclude_from_suggestions": exclude.map { $0 as Any } ?? NSNull()
             ])
 
         case .deleteTerritory(let id):
@@ -648,7 +670,8 @@ final class NetworkManager: APIService {
             "lastUser": history.first?["person_name"] ?? NSNull(),
             "timelineItems": timeline,
             "mapGeometry": state["map_geometry"] ?? NSNull(),
-            "deliveryFormat": territory["deliveryFormat"] ?? NSNull()
+            "deliveryFormat": territory["deliveryFormat"] ?? NSNull(),
+            "excludeFromSuggestions": territory["excludeFromSuggestions"] ?? NSNull()
         ]
     }
 
@@ -667,7 +690,8 @@ final class NetworkManager: APIService {
                 "givenDateUtc": row["given_at"] ?? NSNull(),
                 "lastPickedDateUtc": row["last_picked_at"] ?? NSNull(),
                 "mapGeometry": row["map_geometry"] ?? NSNull(),
-                "deliveryFormat": isNull(row["person_id"]) ? NSNull() : deliveryFormatValue(row["delivery_format"])
+                "deliveryFormat": isNull(row["person_id"]) ? NSNull() : deliveryFormatValue(row["delivery_format"]),
+                "excludeFromSuggestions": (row["exclude_from_suggestions"] as? Bool).map { $0 as Any } ?? NSNull()
             ]
         }
     }

@@ -104,6 +104,12 @@ struct TerritoryAssignmentView: View {
                     .padding(.horizontal)
                 }
                 
+                // MARK: - Delivery Format
+                VirtualDeliveryToggle(format: $viewModel.deliveryFormat)
+                    .padding(AppSpacing.md)
+                    .glassEffect(.regular, in: .rect(cornerRadius: AppRadius.md))
+                    .padding(.horizontal)
+
                 // MARK: - Date Selection
                 VStack(alignment: .leading, spacing: 16) {
                     Toggle("assignment.custom_date", isOn: $viewModel.useCustomDate)

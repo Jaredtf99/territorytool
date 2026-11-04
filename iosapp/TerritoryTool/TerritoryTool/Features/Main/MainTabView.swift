@@ -37,11 +37,11 @@ struct MainTabView: View {
                 .zIndex(1)
             }
         }
-        .animation(.spring(response: 0.42, dampingFraction: 0.86), value: router.isQuickActionPresented)
+        .animation(.spring(response: 0.32, dampingFraction: 0.9), value: router.isQuickActionPresented)
         .overlay(alignment: .bottom) {
             toastOverlay
         }
-        .animation(.bouncy, value: visibleToast)
+        .animation(.snappy(duration: 0.25), value: visibleToast)
         .onChange(of: toastManager.pendingMessage) { _, newValue in
             guard let message = newValue else { return }
             presentToast(message)

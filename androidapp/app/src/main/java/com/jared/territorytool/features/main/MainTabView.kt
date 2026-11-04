@@ -254,7 +254,8 @@ private fun FloatingTabBar(
     modifier: Modifier = Modifier,
 ) {
     val colors = AppTheme.colors
-    val barColor = colors.surfaceRaised.copy(alpha = if (colors.isDark) 0.92f else 0.94f)
+    // Opaca: con la sombra debajo, cualquier transparencia deja ver la lista que pasa por detrás.
+    val barColor = colors.surfaceRaised
     val border = Color.White.copy(alpha = if (colors.isDark) 0.08f else 0.7f)
     Row(
         modifier

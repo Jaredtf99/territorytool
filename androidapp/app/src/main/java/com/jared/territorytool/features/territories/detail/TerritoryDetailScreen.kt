@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.MoveToInbox
 import androidx.compose.material.icons.rounded.PriorityHigh
@@ -52,6 +53,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -83,9 +85,11 @@ import com.jared.territorytool.designsystem.appear
 import com.jared.territorytool.designsystem.bounceClick
 import com.jared.territorytool.designsystem.glass
 import com.jared.territorytool.designsystem.rememberStatusPresentation
+import com.jared.territorytool.designsystem.tintedGlass
 import com.jared.territorytool.features.dashboard.DeleteTransactionAlert
 import com.jared.territorytool.features.dashboard.EditTransactionSheet
 import com.jared.territorytool.features.dashboard.TransactionEvent
+import com.jared.territorytool.features.main.BrotherDetailRoute
 import com.jared.territorytool.features.quickaction.QuickActionResolution
 import com.jared.territorytool.features.territories.EditTerritorySheet
 import com.jared.territorytool.shared.components.DateFormats
@@ -121,6 +125,9 @@ fun TerritoryDetailScreen(territoryId: Int, @Suppress("UNUSED_PARAMETER") territ
     var refreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val scroll = rememberScrollState()
+    val uriHandler = LocalUriHandler.current
+    val mapUri = territory?.mapUri()
+    val openMapError = stringResource(R.string.territory_detail_open_map_error)
 
     // La acción principal fija sustituye a la barra de pestañas.
     DisposableEffect(Unit) {
@@ -146,7 +153,14 @@ fun TerritoryDetailScreen(territoryId: Int, @Suppress("UNUSED_PARAMETER") territ
             current != null -> {
                 PullToRefreshBox(refreshing, onRefresh = { refreshing = true; scope.launch { viewModel.loadData(); refreshing = false } }, Modifier.fillMaxSize()) {
                     Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(bottom = 110.dp)) {
-                        HeroHeader(current, stats?.globalAverageHoldingTime, scroll.value, Modifier.appear(0))
+                        // El responsable abre su ficha: el id sale de la transacción abierta.
+                        val responsibleId = transactions.firstOrNull { it.pickedDateUtc == null }?.personId
+                        HeroHeader(
+                            current, stats?.globalAverageHoldingTime, scroll.value, Modifier.appear(0),
+                            onOpenResponsible = responsibleId?.let { id ->
+                                { HapticManager.selection(); navigator.push(BrotherDetailRoute(id, current.personName.orEmpty())) }
+                            },
+                        )
                         Column(Modifier.padding(horizontal = AppSpacing.md), verticalArrangement = Arrangement.spacedBy(AppSpacing.lg)) {
                             TrajectorySection(
                                 transactions, stats, canManage,
@@ -165,8 +179,20 @@ fun TerritoryDetailScreen(territoryId: Int, @Suppress("UNUSED_PARAMETER") territ
         AppTopBar(
             title = null,
             onBack = navigator::pop,
-            actions = if (canManage) ({
-                Box {
+            actions = if (canManage || mapUri != null) ({
+                // Abrir el enlace del mapa: disponible para todos los usuarios.
+                mapUri?.let { uri ->
+                    GlassIconButton(Icons.Rounded.Map, stringResource(R.string.territory_detail_open_map), {
+                        HapticManager.selection()
+                        try {
+                            uriHandler.openUri(uri)
+                        } catch (_: Exception) {
+                            HapticManager.notification(HapticManager.Notification.Error)
+                            ToastManager.show(openMapError, ToastStyle.Error)
+                        }
+                    }, tint = colors.accentDeep)
+                }
+                if (canManage) Box {
                     if (refreshingImage) {
                         Box(Modifier.size(40.dp).glass(CircleShape), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator(Modifier.size(18.dp), color = colors.accentDeep, strokeWidth = 2.dp)
@@ -243,7 +269,7 @@ fun TerritoryDetailScreen(territoryId: Int, @Suppress("UNUSED_PARAMETER") territ
     }
     if (showEdit) {
         territory?.let { t ->
-            EditTerritorySheet(t.id, t.code, t.name, t.mapUrl, onDismiss = { showEdit = false }, onSuccess = { viewModel.reload() })
+            EditTerritorySheet(t.id, t.code, t.name, t.mapUrl, t.excludeFromSuggestions, onDismiss = { showEdit = false }, onSuccess = { viewModel.reload() })
         }
     }
     editingTransaction?.let { tx ->
@@ -257,7 +283,13 @@ fun TerritoryDetailScreen(territoryId: Int, @Suppress("UNUSED_PARAMETER") territ
 
 /** Cabecera: mapa real a sangre por detrás de la barra (con parallax), código, estado, días y responsable. */
 @Composable
-private fun HeroHeader(territory: TerritoryDetail, globalAverageHolding: Double?, scrollY: Int, modifier: Modifier = Modifier) {
+private fun HeroHeader(
+    territory: TerritoryDetail,
+    globalAverageHolding: Double?,
+    scrollY: Int,
+    modifier: Modifier = Modifier,
+    onOpenResponsible: (() -> Unit)? = null,
+) {
     val colors = AppTheme.colors
     val density = LocalDensity.current
     val isAssigned = territory.personName != null
@@ -337,7 +369,12 @@ private fun HeroHeader(territory: TerritoryDetail, globalAverageHolding: Double?
 
             territory.personName?.let { person ->
                 Row(
-                    Modifier.padding(top = AppSpacing.xs).fillMaxWidth().glass(RoundedCornerShape(AppRadius.lg)).padding(AppSpacing.sm),
+                    Modifier
+                        .padding(top = AppSpacing.xs)
+                        .fillMaxWidth()
+                        .glass(RoundedCornerShape(AppRadius.lg))
+                        .bounceClick(enabled = onOpenResponsible != null) { onOpenResponsible?.invoke() }
+                        .padding(AppSpacing.sm),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm),
                 ) {
@@ -347,6 +384,9 @@ private fun HeroHeader(territory: TerritoryDetail, globalAverageHolding: Double?
                         Text(stringResource(R.string.territory_detail_cycle_responsible), style = AppType.appCaption, color = colors.textSecondary)
                     }
                     territory.deliveryFormat?.let { DeliveryFormatBadge(it) }
+                    if (onOpenResponsible != null) {
+                        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, Modifier.size(16.dp), tint = colors.textSecondary)
+                    }
                 }
             }
 
@@ -357,8 +397,7 @@ private fun HeroHeader(territory: TerritoryDetail, globalAverageHolding: Double?
                     Modifier
                         .padding(top = AppSpacing.xs)
                         .fillMaxWidth()
-                        .background(colors.accentTertiary.copy(alpha = 0.14f), RoundedCornerShape(AppRadius.lg))
-                        .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(AppRadius.lg))
+                        .tintedGlass(colors.accentTertiary, RoundedCornerShape(AppRadius.lg), borderColor = Color.White.copy(alpha = 0.3f))
                         .bounceClick {
                             HapticManager.selection()
                             AppRouter.openQuickAction(QuickActionResolution.ForTerritory(territory.toTerritory()))
@@ -397,6 +436,14 @@ private fun BottomAction(territory: TerritoryDetail, modifier: Modifier) {
             textStyle = AppType.appHeadline,
         )
     }
+}
+
+/** Enlace del mapa listo para abrir, o `null` si no hay uno válido. Sin esquema se asume https. */
+private fun TerritoryDetail.mapUri(): String? {
+    val trimmed = mapUrl.trim()
+    if (trimmed.isEmpty()) return null
+    val withScheme = if ("://" in trimmed) trimmed else "https://$trimmed"
+    return withScheme.takeIf { android.net.Uri.parse(it).host != null }
 }
 
 /** Esqueleto con la silueta de la pantalla real. */

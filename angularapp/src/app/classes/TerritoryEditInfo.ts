@@ -4,4 +4,5 @@ export class TerritoryEditInfo {
   name?: string;
   mapUrl?: string;
   imgUrl?: string;
+  excludeFromSuggestions?: boolean;
 }

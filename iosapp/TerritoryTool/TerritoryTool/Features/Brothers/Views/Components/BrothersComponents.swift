@@ -24,6 +24,14 @@ struct BrothersControls: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        // Un único contenedor para todos los cristales de la barra: se renderizan juntos
+        // en vez de recalcular cada uno por separado mientras la lista se desplaza debajo.
+        GlassEffectContainer {
+            controls
+        }
+    }
+
+    private var controls: some View {
         VStack(spacing: AppSpacing.sm) {
             searchField
                 .padding(.horizontal, AppSpacing.md)
@@ -251,6 +259,9 @@ struct BrotherCard: View {
     var geometry: (Int) -> TerritoryMapGeometry? = { _ in nil }
     var imageURL: (Int) -> String? = { _ in nil }
     var onOpenTerritory: ((TerritoryInUse) -> Void)? = nil
+    /// Abre la ficha del hermano. Si está, el toque en la fila navega y el
+    /// despliegue de territorios pasa al botón del contador.
+    var onOpenDetail: (() -> Void)? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -291,7 +302,10 @@ struct BrotherCard: View {
     }
 
     private func primaryTap() {
-        if person.hasActiveTerritory {
+        if let onOpenDetail {
+            HapticManager.shared.selection()
+            onOpenDetail()
+        } else if person.hasActiveTerritory {
             HapticManager.shared.impact(style: .light)
             withAnimation(reduceMotion ? .easeOut(duration: 0.16) : .spring(response: 0.34, dampingFraction: 0.84)) {
                 onToggle?()
@@ -323,6 +337,25 @@ struct BrotherCard: View {
             inactiveBadge
         } else if territories.isEmpty {
             giveButton
+        } else if onOpenDetail != nil {
+            // Con ficha navegable, el contador es su propio botón de despliegue.
+            Button {
+                HapticManager.shared.impact(style: .light)
+                withAnimation(reduceMotion ? .easeOut(duration: 0.16) : .spring(response: 0.34, dampingFraction: 0.84)) {
+                    onToggle?()
+                }
+            } label: {
+                HStack(spacing: AppSpacing.xs) {
+                    territoryCountBadge
+                    chevron
+                }
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("brothers.territories_assigned"))
+            .accessibilityValue(Text("\(territories.count)"))
+            .accessibilityHint(Text(isExpanded ? "brother.detail.collapse_hint" : "brother.detail.expand_hint"))
         } else {
             HStack(spacing: AppSpacing.xs) {
                 territoryCountBadge
@@ -356,10 +389,11 @@ struct BrotherCard: View {
             }
             .padding(.horizontal, AppSpacing.sm)
             .padding(.vertical, 7)
+            .padding(.horizontal, 4)
         }
-        .buttonStyle(.glassProminent)
-        .tint(.accent)
-        .controlSize(.regular)
+        // Cápsula sólida en vez de `.glassProminent`: un cristal por fila se recalculaba
+        // en cada frame del scroll (~11 % del hilo principal en Hermanos).
+        .buttonStyle(PrimaryActionButtonStyle())
         .accessibilityLabel(Text("brothers.give_to \(person.name)"))
     }
 

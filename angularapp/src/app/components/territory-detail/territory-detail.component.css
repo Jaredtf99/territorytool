@@ -193,9 +193,13 @@
 }
 
 .timeline-format {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   margin-top: 2px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #3E6B8C;
 }
 
 /* Simplificar los botones principales */
@@ -1007,3 +1011,22 @@
 }
 
 
+
+/* Enlace a la ficha del hermano */
+.form-control.info a.person-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-control.info a.person-link i {
+  font-size: 0.75em;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.form-control.info a.person-link:hover i {
+  opacity: 1;
+  transform: translateX(0);
+}

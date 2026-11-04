@@ -67,6 +67,7 @@ export class ChangeTerritoryComponent implements AfterViewInit {
       selectedTerritory: ['', Validators.required],
       selectedPerson: ['', Validators.required],
       customDate: [false, Validators.required],
+      isVirtual: [false],
       date: [formattedDate]
     });
 
@@ -97,6 +98,17 @@ export class ChangeTerritoryComponent implements AfterViewInit {
             this.toastr.error('Error cargando el territorio');
           }
         });
+      }
+    });
+
+    // Desde la ficha del hermano: `?personId=&personName=` deja la persona preseleccionada.
+    this.route.queryParams.subscribe(query => {
+      const personId = Number(query['personId']);
+      const personName = query['personName'];
+      if (personId && personName) {
+        const person = { id: personId, name: personName, enabled: true };
+        this.selectedPerson = person;
+        this.giveTerritoryForm.patchValue({ selectedPerson: person });
       }
     });
 
@@ -143,6 +155,7 @@ export class ChangeTerritoryComponent implements AfterViewInit {
       selectedTerritory: [null, Validators.required],
       selectedPerson: [null, Validators.required],
       customDate: [false, Validators.required],
+      isVirtual: [false],
       date: [formattedDate]
     });
 
@@ -246,7 +259,13 @@ export class ChangeTerritoryComponent implements AfterViewInit {
       ? new Date(this.f['date'].value)
       : undefined;
 
-      this.territoryService.giveTerritory(this.f['selectedTerritory'].value.code, this.f['selectedPerson'].value.name, this.f['customDate'].value, customDate).subscribe({
+      this.territoryService.giveTerritory(
+        this.f['selectedTerritory'].value.code,
+        this.f['selectedPerson'].value.name,
+        this.f['customDate'].value,
+        customDate,
+        this.f['isVirtual'].value ? 'virtual' : 'physical'
+      ).subscribe({
         next: resp => {
           this.spinner.hide();
           this.toastr.success('Territorio entregado');
