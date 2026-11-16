@@ -1,0 +1,89 @@
+<div class="registration-form export-external">
+
+  <div class="form-icon">
+    <i class="fa-solid fa-file-export"></i>
+  </div>
+
+  <h4 class="text-center mb-1">Exportar a NW Scheduler</h4>
+  <p class="text-center text-muted small mb-4">
+    Entregas y devoluciones en un CSV para importarlas en NW Scheduler
+    (Territorios → Importar → "Territory Assignment Records from CSV file").
+  </p>
+
+  <div class="row">
+    <div class="form-group col-6">
+      <label for="exportStart">Desde</label>
+      <input id="exportStart" type="date" class="form-control item" [(ngModel)]="startDate" (ngModelChange)="onDatesChanged()" [class.is-invalid]="rangeInvalid">
+    </div>
+    <div class="form-group col-6">
+      <label for="exportEnd">Hasta</label>
+      <input id="exportEnd" type="date" class="form-control item" [(ngModel)]="endDate" (ngModelChange)="onDatesChanged()" [class.is-invalid]="rangeInvalid">
+    </div>
+  </div>
+  <div *ngIf="rangeInvalid" class="invalid-feedback d-block">
+    La fecha "Desde" no puede ser posterior a "Hasta".
+  </div>
+
+  <p class="ee-last small" *ngIf="summary?.lastExport as last">
+    <i class="fa-solid fa-clock-rotate-left me-1"></i>
+    Última exportación el {{ last.exportedAt | date:'dd/MM/yyyy HH:mm' }}
+    ({{ last.rangeStart | date:'dd/MM/yyyy' }} – {{ last.rangeEnd | date:'dd/MM/yyyy' }},
+    {{ last.rowCount }} movimientos)
+  </p>
+  <p class="ee-last small" *ngIf="summary && !summary.lastExport">
+    <i class="fa-solid fa-circle-info me-1"></i>
+    Todavía no se ha exportado nada.
+  </p>
+
+  <div class="ee-summary" *ngIf="summary && !rangeInvalid" [class.ee-loading]="loading">
+    <div class="ee-stat">
+      <span class="ee-value">{{ summary.rowCount }}</span>
+      <span class="ee-label">filas en el CSV</span>
+    </div>
+    <div class="ee-stat">
+      <span class="ee-value">{{ summary.deliveries }}</span>
+      <span class="ee-label">entregas</span>
+    </div>
+    <div class="ee-stat">
+      <span class="ee-value">{{ summary.returns }}</span>
+      <span class="ee-label">devoluciones</span>
+    </div>
+  </div>
+
+  <div class="alert alert-danger mt-3" *ngIf="previewError">{{ previewError }}</div>
+
+  <div class="ee-skipped mt-3" *ngIf="summary?.skipped?.length">
+    <div class="alert alert-warning mb-2">
+      <i class="fa-solid fa-triangle-exclamation me-1"></i>
+      {{ summary!.skipped.length }} movimiento(s) no se exportarán porque les faltan datos de NW Scheduler.
+      Complétalos en la ficha del
+      <a href="javascript:void(0)" (click)="goToPersons()">hermano</a> o al editar el
+      <a href="javascript:void(0)" (click)="goToTerritories()">territorio</a>.
+    </div>
+    <ul class="list-group">
+      <li class="list-group-item" *ngFor="let item of summary!.skipped; trackBy: trackBySkipped">
+        <div class="d-flex justify-content-between flex-wrap gap-1">
+          <strong>{{ item.territoryCode }} · {{ item.personName }}</strong>
+          <span class="text-muted small">
+            {{ item.givenAt | date:'dd/MM/yyyy' }}
+            <ng-container *ngIf="item.pickedAt"> → {{ item.pickedAt | date:'dd/MM/yyyy' }}</ng-container>
+          </span>
+        </div>
+        <div class="small text-muted">
+          <span *ngFor="let reason of item.reasons; let last = last">{{ reasonLabel(reason) }}<span *ngIf="!last"> · </span></span>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <div class="form_buttons">
+    <button type="button" class="btn btn-primary" (click)="download()"
+            [disabled]="!startDate || !endDate || rangeInvalid || loading || !summary || summary.rowCount === 0">
+      <i class="fa-solid fa-download me-2"></i>Descargar CSV
+    </button>
+  </div>
+  <p class="text-center text-muted small mt-2" *ngIf="summary && summary.rowCount === 0 && !loading">
+    No hay movimientos que exportar en este rango.
+  </p>
+
+</div>

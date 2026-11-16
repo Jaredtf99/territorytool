@@ -24,6 +24,8 @@ export class EditTerritoryModalComponent {
   @Output() territoryUpdated: EventEmitter<void> = new EventEmitter<void>();
 
   editForm!: FormGroup;
+  /** TerritoryID de NW Scheduler tal y como está guardado (para saber si cambia). */
+  private originalExternalId: string | null = null;
 
   constructor(
     private toastr: ToastrService,
@@ -38,7 +40,23 @@ export class EditTerritoryModalComponent {
       name: [this.territoryInfo.name, Validators.required],
       code: [this.territoryInfo.code, Validators.required],
       mapUrl: [this.territoryInfo.mapUrl, Validators.required],
-      excludeFromSuggestions: [this.territoryInfo.excludeFromSuggestions ?? false]
+      excludeFromSuggestions: [this.territoryInfo.excludeFromSuggestions ?? false],
+      externalId: ['']
+    });
+    this.loadExternalId();
+  }
+
+  private loadExternalId(): void {
+    this.originalExternalId = null;
+    const id = this.territoryInfo?.id;
+    if (!id) return;
+    this.territoryService.getTerritoryExternalId(id).subscribe({
+      next: externalId => {
+        if (this.territoryInfo?.id !== id) return;
+        this.originalExternalId = externalId;
+        this.editForm.get('externalId')?.setValue(externalId ?? '', { emitEvent: false });
+      },
+      error: err => console.error(err)
     });
   }
 
@@ -60,15 +78,45 @@ export class EditTerritoryModalComponent {
       formValue.code,
       formValue.excludeFromSuggestions === true
     ).subscribe({
-      next: res => {
-        $('#editTerritory').modal('hide');
-        this.territoryUpdated.emit();
-        this.spinner.hide();
-        this.toastr.success('Territorio editado');
+      next: (res: any) => {
+        if (res?.error) {
+          this.spinner.hide();
+          this.handleEditError({ error: res.error.message });
+          return;
+        }
+        this.saveExternalIdIfChanged(formValue.externalId);
       },
       error: err => {
         this.spinner.hide();
         this.handleEditError(err);
+      }
+    });
+  }
+
+  private saveExternalIdIfChanged(rawExternalId: string): void {
+    const externalId = (rawExternalId ?? '').trim() || null;
+    const finish = () => {
+      $('#editTerritory').modal('hide');
+      this.territoryUpdated.emit();
+      this.spinner.hide();
+      this.toastr.success('Territorio editado');
+    };
+    if (externalId === this.originalExternalId) {
+      finish();
+      return;
+    }
+    this.territoryService.setTerritoryExternal(this.territoryInfo.id!, externalId).subscribe({
+      next: () => {
+        this.originalExternalId = externalId;
+        finish();
+      },
+      error: err => {
+        this.spinner.hide();
+        if (String(err?.message ?? '').includes('EXTERNAL_ID_ALREADY_USED')) {
+          this.editForm.get('externalId')?.setErrors({ externalIdExists: true });
+        } else {
+          this.toastr.error('El territorio se ha guardado, pero no el ID de NW Scheduler');
+        }
       }
     });
   }

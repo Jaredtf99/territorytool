@@ -58,6 +58,12 @@
           <span>Generar reporte</span>
         </a>
       </li>
+      <li *ngIf="userService.roleMatch(['SUPERADMIN', 'ADMIN'])">
+        <a [routerLink]="['/export-external']" [routerLinkActive]="['active']" (click)="toggleSidebar()">
+          <i class="fa-solid fa-file-export"></i>
+          <span>Exportar a NW Scheduler</span>
+        </a>
+      </li>
 
       <li *ngIf="userService.roleMatch(['SUPERADMIN', 'ADMIN'])">
         <a [routerLink]="['/users']" [routerLinkActive]="['active']" (click)="toggleSidebar()">

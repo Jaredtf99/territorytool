@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { SupabaseService } from './supabase.service';
 import { PersonDetail } from '../classes/PersonDetail';
+import { PersonExternalInfo } from '../classes/ExternalExport';
 import { parseDeliveryFormat } from '../enums/DeliveryFormat';
 
 @Injectable()
@@ -57,6 +58,36 @@ export class PersonService {
 
   updatePerson(id: number, name: string, enabled: boolean): Observable<any> {
     return from(this.supabase.client.rpc('update_person', { person_id: id, name, enabled }));
+  }
+
+  /** ID y nombre del hermano en NW Scheduler. */
+  getPersonExternal(id: number): Observable<PersonExternalInfo> {
+    return from(this.supabase.client
+      .from('persons')
+      .select('external_id, external_name')
+      .eq('id', id)
+      .single()).pipe(
+        map((result: any) => {
+          if (result.error) throw result.error;
+          return {
+            externalId: result.data?.external_id ?? null,
+            externalName: result.data?.external_name ?? null
+          };
+        })
+      );
+  }
+
+  /** Vacío = desvincular. El nombre se guarda tal cual (NW Scheduler exige coincidencia exacta). */
+  setPersonExternal(id: number, externalId: string | null, externalName: string | null): Observable<void> {
+    return from(this.supabase.client.rpc('set_person_external', {
+      p_person_id: id,
+      p_external_id: externalId,
+      p_external_name: externalName
+    })).pipe(
+      map((result: any) => {
+        if (result.error) throw result.error;
+      })
+    );
   }
 
   /** Ficha completa del hermano (perfil, resumen, en curso, actividad e historial). */

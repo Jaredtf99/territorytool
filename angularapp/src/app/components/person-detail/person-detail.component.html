@@ -18,6 +18,14 @@
       {{ statusLabel }}
     </span>
 
+    <span class="pd-external" *ngIf="canManage && external"
+          [ngClass]="external.externalName ? 'linked' : 'unlinked'"
+          [title]="external.externalName ? 'Nombre en NW Scheduler' : 'Sin nombre de NW Scheduler: sus movimientos no se exportarán'">
+      <i class="fa-solid" [ngClass]="external.externalName ? 'fa-link' : 'fa-link-slash'"></i>
+      <ng-container *ngIf="external.externalName; else noExternal">NW Scheduler: {{ external.externalName }}</ng-container>
+      <ng-template #noExternal>Sin vincular a NW Scheduler</ng-template>
+    </span>
+
     <div class="pd-actions">
       <button class="btn btn-primary" *ngIf="d.person.enabled" (click)="giveTerritory()">
         <i class="fa fa-share me-2"></i>Entregar territorio
@@ -207,6 +215,19 @@
             <div class="checkbox-wrapper-2 ms-1">
               <input type="checkbox" class="ikxBAC" id="pdEditEnabled" name="pdEditEnabled" [(ngModel)]="editEnabled">
             </div>
+          </div>
+          <hr>
+          <h6 class="mb-2">NW Scheduler</h6>
+          <div class="mb-3">
+            <label for="pdEditExternalName" class="form-label">Nombre en NW Scheduler</label>
+            <input type="text" class="form-control" id="pdEditExternalName" name="pdEditExternalName" [(ngModel)]="editExternalName" placeholder="Apellidos, Nombre" [class.is-invalid]="externalNameTaken">
+            <div class="form-text">Debe coincidir exactamente con el "Display Name" de NW Scheduler, espacios incluidos.</div>
+            <div *ngIf="externalNameTaken" class="invalid-feedback d-block">Otro hermano ya usa ese nombre.</div>
+          </div>
+          <div class="mb-1">
+            <label for="pdEditExternalId" class="form-label">ID en NW Scheduler</label>
+            <input type="text" class="form-control" id="pdEditExternalId" name="pdEditExternalId" [(ngModel)]="editExternalId" placeholder="Opcional" [class.is-invalid]="externalIdTaken">
+            <div *ngIf="externalIdTaken" class="invalid-feedback d-block">Otro hermano ya usa ese ID.</div>
           </div>
         </form>
       </div>

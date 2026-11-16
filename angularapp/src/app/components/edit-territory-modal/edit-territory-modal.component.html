@@ -34,6 +34,15 @@
             </div>
           </div>
 
+          <div class="form-group mb-4">
+            <label>ID en NW Scheduler</label>
+            <input type="text" class="form-control item" formControlName="externalId" placeholder="Opcional" [ngClass]="{ 'is-invalid': editForm.get('externalId')?.invalid }">
+            <div class="form-text">TerritoryID del territorio en NW Scheduler. Necesario para exportarle los movimientos.</div>
+            <div *ngIf="editForm.get('externalId')?.hasError('externalIdExists')" class="invalid-feedback d-block">
+              Otro territorio ya usa ese ID
+            </div>
+          </div>
+
           <div class="form-check mb-4">
             <input class="form-check-input" type="checkbox" id="editExcludeFromSuggestions" formControlName="excludeFromSuggestions">
             <label class="form-check-label" for="editExcludeFromSuggestions">No sugerir para entregar</label>

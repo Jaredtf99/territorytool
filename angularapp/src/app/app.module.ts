@@ -36,6 +36,8 @@ import { AddTerritoryComponent } from './components/add-territory/add-territory.
 import { ChangeTerritoryComponent } from './components/change-territory/change-territory.component';
 import { PickTerritoryComponent } from './components/pick-territory/pick-territory.component';
 import { GenerateReportComponent } from './components/generate-report/generate-report.component';
+import { ExportExternalComponent } from './components/export-external/export-external.component';
+import { ExternalExportService } from './shared/external-export.service';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { TimeagoModule, TimeagoIntl, TimeagoFormatter, TimeagoCustomFormatter } from "ngx-timeago";
 
@@ -78,6 +80,7 @@ export class MyIntl extends TimeagoIntl {
     ChangeTerritoryComponent,
     PickTerritoryComponent,
     GenerateReportComponent,
+    ExportExternalComponent,
     EditTerritoryModalComponent,
     TerritoryCardComponent,
     DeleteTerritoryModalComponent,
@@ -109,6 +112,7 @@ export class MyIntl extends TimeagoIntl {
           { path: 'pick-territory', component: PickTerritoryComponent },
           { path: 'pick-territory/:territoryCode', component: PickTerritoryComponent },
           { path: 'generate-report', component: GenerateReportComponent },
+          { path: 'export-external', component: ExportExternalComponent, data: { permittedRoles: ['SUPERADMIN', 'ADMIN'] } },
           { path: 'registration', component: RegistrationComponent, data: { permittedRoles: ['SUPERADMIN', 'ADMIN'] } },
           { path: 'user-configuration', component: UserConfigurationComponent },
           { path: 'action-logs', component: ViewActionlogsComponent, data: { permittedRoles: ['SUPERADMIN'] } },
@@ -134,7 +138,7 @@ export class MyIntl extends TimeagoIntl {
       formatter: { provide: TimeagoFormatter, useClass: TimeagoCustomFormatter },
     }),
   ],
-  providers: [UserService, PersonService, TerritoryService, TerritoryTransactionService, AuthGuard, Globals],
+  providers: [UserService, PersonService, TerritoryService, ExternalExportService, TerritoryTransactionService, AuthGuard, Globals],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

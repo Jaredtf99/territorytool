@@ -23,6 +23,32 @@ export class TerritoryService {
     }));
   }
 
+  /** TerritoryID de NW Scheduler. */
+  getTerritoryExternalId(id: number): Observable<string | null> {
+    return from(this.supabase.client
+      .from('territories')
+      .select('external_id')
+      .eq('id', id)
+      .single()).pipe(
+        map((result: any) => {
+          if (result.error) throw result.error;
+          return result.data?.external_id ?? null;
+        })
+      );
+  }
+
+  /** Vacío = desvincular. */
+  setTerritoryExternal(id: number, externalId: string | null): Observable<void> {
+    return from(this.supabase.client.rpc('set_territory_external', {
+      p_territory_id: id,
+      p_external_id: externalId
+    })).pipe(
+      map((result: any) => {
+        if (result.error) throw result.error;
+      })
+    );
+  }
+
   getTerritoryDetailInfo(id: number): Observable<TerritoryDetail> {
     return from(this.buildTerritoryDetail(id));
   }

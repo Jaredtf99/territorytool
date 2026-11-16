@@ -196,6 +196,20 @@
   border: 1px solid currentColor;
 }
 
+.pd-external {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  max-width: 100%;
+  font-size: 0.78rem;
+  color: var(--pd-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pd-external.unlinked { color: #b5651d; }
+
 .pd-status .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .pd-status.status-available { color: #2f6b4f; background: rgba(47, 107, 79, 0.1); border-color: rgba(47, 107, 79, 0.35); }
 .pd-status.status-busy { color: #c8821f; background: rgba(200, 130, 31, 0.1); border-color: rgba(200, 130, 31, 0.35); }

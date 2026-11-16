@@ -444,6 +444,12 @@ entrypoint = "./functions/generate-territory-report/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/generate-territory-report/*.html" ]
 
+[functions.export-external-assignments]
+enabled = true
+verify_jwt = true
+import_map = "./functions/export-external-assignments/deno.json"
+entrypoint = "./functions/export-external-assignments/index.ts"
+
 [functions.admin-users]
 enabled = true
 verify_jwt = true

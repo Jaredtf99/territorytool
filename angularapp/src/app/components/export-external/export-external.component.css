@@ -1,0 +1,46 @@
+.export-external {
+  max-width: 680px;
+}
+
+.ee-last {
+  margin: 12px 0 0;
+  color: #718096;
+}
+
+.ee-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+  transition: opacity 0.2s ease;
+}
+
+.ee-summary.ee-loading {
+  opacity: 0.5;
+}
+
+.ee-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 8px;
+  border-radius: 16px;
+  background: rgba(88, 145, 255, 0.08);
+}
+
+.ee-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.ee-label {
+  font-size: 0.78rem;
+  color: #718096;
+  text-align: center;
+}
+
+.ee-skipped .list-group {
+  max-height: 260px;
+  overflow-y: auto;
+}

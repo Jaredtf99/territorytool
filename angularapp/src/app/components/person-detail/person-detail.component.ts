@@ -6,6 +6,7 @@ import { ToastrService } from 'ngx-toastr';
 import { PersonService } from '../../shared/person.service';
 import { UserService } from '../../shared/user.service';
 import { PersonAssignment, PersonDetail, PersonMonthlyActivity } from '../../classes/PersonDetail';
+import { PersonExternalInfo } from '../../classes/ExternalExport';
 import { DELIVERY_FORMAT_ICONS, DELIVERY_FORMAT_LABELS } from '../../enums/DeliveryFormat';
 
 declare var $: any;
@@ -59,6 +60,13 @@ export class PersonDetailComponent implements OnInit, OnDestroy {
   canManage = false;
   editName = '';
   editEnabled = true;
+  editExternalId = '';
+  editExternalName = '';
+  externalNameTaken = false;
+  externalIdTaken = false;
+
+  /** Vínculo con NW Scheduler (solo se carga para administradores). */
+  external?: PersonExternalInfo;
 
   private routeSub?: Subscription;
 
@@ -90,6 +98,7 @@ export class PersonDetailComponent implements OnInit, OnDestroy {
   load(showSpinner = true) {
     if (showSpinner) this.spinner.show();
     this.loadError = false;
+    this.loadExternal();
     this.personService.getPersonDetail(this.personId).subscribe({
       next: detail => {
         this.detail = detail;
@@ -107,8 +116,20 @@ export class PersonDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  private loadExternal() {
+    if (!this.canManage) return;
+    const id = this.personId;
+    this.personService.getPersonExternal(id).subscribe({
+      next: info => {
+        if (this.personId === id) this.external = info;
+      },
+      error: err => console.error(err)
+    });
+  }
+
   private resetView() {
     this.detail = undefined;
+    this.external = undefined;
     this.barsReady = false;
     this.historyFilter = 'all';
     this.historySearch = '';
@@ -275,6 +296,10 @@ export class PersonDetailComponent implements OnInit, OnDestroy {
     if (!this.detail) return;
     this.editName = this.detail.person.name;
     this.editEnabled = this.detail.person.enabled;
+    this.editExternalId = this.external?.externalId ?? '';
+    this.editExternalName = this.external?.externalName ?? '';
+    this.externalIdTaken = false;
+    this.externalNameTaken = false;
     $('#editPersonDetailModal').modal('show');
   }
 
@@ -288,13 +313,39 @@ export class PersonDetailComponent implements OnInit, OnDestroy {
           this.toastr.error(resp.error.message || 'Error al actualizar el hermano.');
           return;
         }
-        $('#editPersonDetailModal').modal('hide');
-        this.toastr.success('Hermano actualizado correctamente.');
-        this.load(false);
+        this.saveExternalIfChanged();
       },
       error: err => {
         this.spinner.hide();
         this.toastr.error(err?.message || 'Error al actualizar el hermano.');
+      }
+    });
+  }
+
+  /** Tras guardar nombre/estado, guarda el vínculo con NW Scheduler si ha cambiado. */
+  private saveExternalIfChanged() {
+    const externalId = this.editExternalId.trim() || null;
+    // El nombre externo no se recorta: debe coincidir exactamente con NW Scheduler.
+    const externalName = this.editExternalName.trim() ? this.editExternalName : null;
+    const finish = () => {
+      $('#editPersonDetailModal').modal('hide');
+      this.toastr.success('Hermano actualizado correctamente.');
+      this.load(false);
+    };
+    if (externalId === (this.external?.externalId ?? null) && externalName === (this.external?.externalName ?? null)) {
+      finish();
+      return;
+    }
+    this.personService.setPersonExternal(this.personId, externalId, externalName).subscribe({
+      next: () => finish(),
+      error: err => {
+        this.spinner.hide();
+        const message = String(err?.message ?? '');
+        this.externalNameTaken = message.includes('EXTERNAL_NAME_ALREADY_USED');
+        this.externalIdTaken = message.includes('EXTERNAL_ID_ALREADY_USED');
+        if (!this.externalNameTaken && !this.externalIdTaken) {
+          this.toastr.error('Se ha guardado el hermano, pero no los datos de NW Scheduler.');
+        }
       }
     });
   }
